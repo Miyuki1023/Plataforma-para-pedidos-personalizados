@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { RouterLink } from 'vue-router'
 import BaseInput from '../atoms/BaseInput.vue'
 import BaseButton from '../atoms/BaseButton.vue'
 
@@ -63,7 +64,7 @@ const handleSubmit = async () => {
 
     <p class="register-text">
       ¿Aún no tienes cuenta?&nbsp;
-      <a href="#">¡Crea una ahora!</a>
+      <RouterLink to="/register">¡Crea una ahora!</RouterLink>
     </p>
 
     <BaseButton type="submit" :disabled="loading">

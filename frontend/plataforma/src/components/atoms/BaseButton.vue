@@ -17,10 +17,11 @@ defineProps<{
 
 <style scoped>
 .base-button {
-  display: inline-flex;
+  display: block;
   align-items: center;
   justify-content: center;
-  padding: 0.9rem 2.5rem;
+  margin: 0 auto;
+  padding: 0.6rem 2.5rem;
   border-radius: 50px;
   border: none;
   cursor: pointer;
@@ -29,7 +30,7 @@ defineProps<{
   font-weight: 600;
   letter-spacing: 0.04em;
   transition: background 0.25s, transform 0.15s, box-shadow 0.25s;
-  width: 100%;
+  width: 50%;
   background: #1a1a1a;
   color: #ffffff;
   box-shadow: 0 4px 16px rgba(26, 26, 26, 0.25);
