@@ -25,6 +25,7 @@ import LoginForm from '../components/molecules/LoginForm.vue'
   display: flex;
   min-height: 100vh;
   width: 100%;
+  background: #ffffff;
 }
 .login-hero {
   flex: 1;
