@@ -22,8 +22,10 @@ defineProps<{
   padding: 0.25rem 0.65rem;
 }
 .badge--tag {
-  background: #f5ece4;
-  color: #8b1a2e;
+  
+  color: #E89A3C;
+  margin: 0;
+  padding: 0;
 }
 .badge--primary {
   background: #8b1a2e;

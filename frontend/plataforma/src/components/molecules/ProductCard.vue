@@ -29,7 +29,7 @@ defineEmits<{ (e: 'add-to-cart'): void }>()
       <h3 class="card-name">{{ name }}</h3>
       <p class="card-desc">{{ description }}</p>
       <p class="card-price">{{ price }}</p>
-      <BaseButton type="button" variant="primary" @click="$emit('add-to-cart')">
+      <BaseButton  class="btn-card" type="button" variant="primary" @click="$emit('add-to-cart')">
         Añadir al carrito
       </BaseButton>
     </div>
@@ -39,7 +39,7 @@ defineEmits<{ (e: 'add-to-cart'): void }>()
 <style scoped>
 .product-card {
   background: #fff;
-  border-radius: 14px;
+  border-radius: 22px;
   overflow: hidden;
   border: 1px solid #f0e0e0;
   display: flex;
@@ -50,7 +50,7 @@ defineEmits<{ (e: 'add-to-cart'): void }>()
 
 .card-image-wrapper {
   position: relative;
-  height: 180px;
+  height: 300px;
   overflow: hidden;
 }
 .card-image {
@@ -62,9 +62,9 @@ defineEmits<{ (e: 'add-to-cart'): void }>()
 
 .badge-new {
   position: absolute;
-  top: 0.6rem; left: 0.6rem;
-  background: #8b1a2e;
-  color: #fff;
+  top: 1.5rem; left: 1.5rem;
+  background: #F5E7CC;
+  color: #99262F;
   font-family: 'Lato', sans-serif;
   font-size: 0.68rem;
   font-weight: 700;
@@ -73,8 +73,8 @@ defineEmits<{ (e: 'add-to-cart'): void }>()
 }
 .btn-fav {
   position: absolute;
-  top: 0.6rem; right: 0.6rem;
-  width: 30px; height: 30px;
+  top: 1.5rem; right: 1.5rem;
+  width: 40px; height: 40px;
   background: #fff;
   border: none;
   border-radius: 50%;
@@ -84,15 +84,16 @@ defineEmits<{ (e: 'add-to-cart'): void }>()
 }
 
 .card-body {
-  padding: 1rem;
+  padding: 1.5rem 2rem;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.5rem;
   flex: 1;
+  text-align: left;
 }
 .card-name {
-  font-family: 'Lato', sans-serif;
-  font-size: 0.95rem;
+  font-family: 'Lato-Bold', sans-serif;
+  font-size: 1rem;
   font-weight: 700;
   color: #2a1a1a;
   margin: 0;
@@ -111,5 +112,10 @@ defineEmits<{ (e: 'add-to-cart'): void }>()
   font-weight: 700;
   color: #8b1a2e;
   margin: 0;
+  padding-bottom: 1.5rem;
 }
+.btn-card {
+  background-color: #AF3439;
+}
+
 </style>

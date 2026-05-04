@@ -7,6 +7,7 @@ import PromoCard from '../components/molecules/PromoCard.vue'
 import TestimonialCard from '../components/molecules/TestimonialCard.vue'
 import BaseIcon from '../components/atoms/BaseIcon.vue'
 import BaseButton from '../components/atoms/BaseButton.vue'
+import Footer from '../components/organisms/Footer.vue'
 
 const activeCategory = ref('Tortas')
 
@@ -20,15 +21,15 @@ const categories = [
 ]
 
 const products = [
-  { image: 'https://images.unsplash.com/photo-1586985289688-ca3cf47d3e6e?w=400&q=80', category: 'TORTAS',   name: 'Torta de Primavera', description: 'Torta fresca y colorida, con sabores ligeros y relleno de frutas.', price: 'S/60', isNew: true },
-  { image: 'https://images.unsplash.com/photo-1549312150-d68be48e9b06?w=400&q=80', category: 'GALLETAS',  name: 'Choco comi',         description: 'Exquisita torta de chocolate con un toque especial de vainilla.', price: 'S/40' },
-  { image: 'https://images.unsplash.com/photo-1533134242443-d4fd215305ad?w=400&q=80', category: 'TORTAS',   name: 'Torta de Helada',    description: 'Postre frío y refrescante, con capas suaves de crema y fruta.', price: 'S/55' },
+  { image: new URL('../assets/recom1.png', import.meta.url).href, category: 'TORTAS',   name: 'Torta de Primavera', description: 'Torta fresca y colorida, con sabores ligeros y relleno de frutas.', price: 'S/60', isNew: true },
+  { image: new URL('../assets/recom2.png', import.meta.url).href, category: 'GALLETAS',  name: 'Choco comi',         description: 'Exquisita torta de chocolate con un toque especial de vainilla.', price: 'S/40' },
+  { image: new URL('../assets/recom3.png', import.meta.url).href, category: 'TORTAS',   name: 'Torta de Helada',    description: 'Postre frío y refrescante, con capas suaves de crema y fruta.', price: 'S/55' },
 ]
 
 const promos = [
-  { image: 'https://images.unsplash.com/photo-1488477181228-c2b533b5e4a3?w=400&q=80', badge: '15%',   title: 'Torta del mes',       subtitle: 'Torta de fresas con 15% · Válido hasta 25 Abr' },
-  { image: 'https://images.unsplash.com/photo-1549312150-d68be48e9b06?w=400&q=80', badge: '2 x 1',  title: 'Caja sorpresa',        subtitle: '¡Llevate un mix de postres · Todos los sabores' },
-  { image: 'https://images.unsplash.com/photo-1576618148400-f54bed99fcfd?w=400&q=80', badge: undefined, title: 'Cupcakes Mix',         subtitle: '6 cupcakes surtidos · Elige tus sabores favoritos' },
+  { image: new URL('../assets/prom1.png', import.meta.url).href, badge: '15%',   title: 'Torta del mes',       subtitle: 'Torta de fresas con 15% ', desc: 'Válido hasta 25 Abril' },
+  { image: new URL('../assets/prom2.png', import.meta.url).href, badge: '2 x 1',  title: 'Caja sorpresa',        subtitle: 'Llevate un mix de postres ', desc: 'Todos los sabores' },
+  { image: new URL('../assets/prom3.jpg', import.meta.url).href, badge: undefined, title: 'Cupcakes Mix',         subtitle: '6 cupcakes surtidos ', desc: 'Elige tus sabores favoritos' },
 ]
 
 const testimonials = [
@@ -115,7 +116,7 @@ const currentTestimonial = ref(1)
     <!-- ── Así trabajamos ── -->
     <section class="about-section">
       <div class="about-image">
-        <img src="https://images.unsplash.com/photo-1486427944299-d1955d23e34d?w=600&q=80" alt="Así trabajamos" />
+        <img src="../assets/about_img.png" alt="Así trabajamos" />
       </div>
       <div class="about-content">
         <h2 class="about-title">Así trabajamos en Vainilla y Miel</h2>
@@ -124,7 +125,7 @@ const currentTestimonial = ref(1)
           Sabemos que cada pedido es único, por eso puedes personalizar ciertos aspectos como sabores, tamaños y
           acabados de forma sencilla y clara.
         </p>
-        <BaseButton variant="primary">Conócenos</BaseButton>
+        <BaseButton class="about-btn" variant="primary">Conócenos</BaseButton>
       </div>
     </section>
 
@@ -155,7 +156,7 @@ const currentTestimonial = ref(1)
         </ul>
       </div>
       <div class="diff-image">
-        <img src="https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=500&q=80" alt="Torta decorada" />
+        <img src="../assets/diff_img.png" alt="Torta decorada" />
       </div>
     </section>
 
@@ -188,37 +189,7 @@ const currentTestimonial = ref(1)
     </section>
 
     <!-- ── Footer ── -->
-    <footer class="footer">
-      <div class="footer-inner">
-        <div class="footer-brand">
-          <p class="footer-name">Vainilla y miel</p>
-          <p class="footer-tagline">Postres artesanales hechos con amor</p>
-        </div>
-
-        <div class="footer-social-col">
-          <div class="footer-book">
-            <BaseIcon name="book" :size="20" color="#fff" />
-            <span>libro de recomendación</span>
-          </div>
-          <p class="footer-social-label">Redes sociales</p>
-          <div class="social-icons">
-            <a href="#"><BaseIcon name="instagram" :size="22" color="#fff" /></a>
-            <a href="#"><BaseIcon name="facebook"  :size="22" color="#fff" /></a>
-            <a href="#"><BaseIcon name="tiktok"    :size="22" color="#fff" /></a>
-          </div>
-        </div>
-
-        <div class="footer-links">
-          <p class="footer-links-title">Políticas</p>
-          <a href="#">Políticas de privacidad</a>
-          <a href="#">Términos y condiciones</a>
-          <a href="#">Preguntas Frecuentes</a>
-        </div>
-      </div>
-      <div class="footer-bottom">
-        Copyright © 2024 Vainilla y Miel. Derechos reservados.
-      </div>
-    </footer>
+    <Footer />
   </div>
 </template>
 
@@ -277,7 +248,7 @@ const currentTestimonial = ref(1)
 }
 
 /* ── Sections shared ── */
-.section { padding: 2.5rem 2rem; 
+.section { padding: 3rem 7rem; 
 }
 .section-eyebrow {
   font-size: 0.68rem;
@@ -291,12 +262,12 @@ const currentTestimonial = ref(1)
   margin-bottom: 0.5rem;
 }
 .section-heading {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: 'Rubik', serif;
   font-size: 1.6rem;
   font-weight: 600;
   color: #8b1a2e;
   text-align: center;
-  margin: 0 0 0.5rem;
+  margin: 0 0 1rem;
 }
 .section-subheading {
   font-size: 0.85rem;
@@ -342,7 +313,10 @@ margin: 0 0 0 5rem;}
   display: flex;
   align-items: flex-start;
   gap: 0.75rem;
-  padding: 0.5rem;
+  padding: 2rem 1rem;
+  border: #f59e0b solid 1px;
+  border-radius: 18px;
+  text-align: left;
 }
 .feature-icon {
   width: 40px; height: 40px;
@@ -355,9 +329,19 @@ margin: 0 0 0 5rem;}
 .feature-desc  { font-size: 0.78rem; color: #9e8080; margin: 0; line-height: 1.4; }
 
 /* ── Products ── */
-.products-section { background: #ffffff; }
-.products-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; margin-top: 1.5rem; }
-.center-btn { text-align: center; margin-top: 1.5rem; }
+.products-section { 
+  background: #ffffff;
+  padding: 1rem 7rem 3rem 7rem;
+}
+.products-grid { 
+  display: grid; 
+  grid-template-columns: repeat(3, 1fr); 
+  gap: 1.25rem; 
+  margin-top: 2rem; 
+}
+.center-btn { 
+  text-align: center;
+   margin-top: 1.5rem; }
 .btn-outline {
   padding: 0.6rem 1.75rem;
   border: 1.5px solid #2a1a1a;
@@ -375,7 +359,7 @@ margin: 0 0 0 5rem;}
 .about-section {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  min-height: 280px;
+  min-height: 600px;
 }
 .about-image img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .about-content {
@@ -383,22 +367,28 @@ margin: 0 0 0 5rem;}
   display: flex;
   flex-direction: column;
   justify-content: center;
+  text-align: left;
   gap: 1rem;
-  padding: 3rem 2.5rem;
+  padding: 3rem 8rem;
 }
 .about-title {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 1.5rem;
+  font-family: 'Rubik', serif;
+  font-size: 2rem;
   font-weight: 600;
+  max-width: 400px;
   color: #8b1a2e;
   margin: 0;
   line-height: 1.3;
 }
 .about-text {
   font-size: 0.85rem;
-  color: #6b5050;
+  color: #000000;
   line-height: 1.7;
   margin: 0;
+}
+.about-btn {
+  background-color: #AF3439;
+  width: fit-content;
 }
 
 /* ── Promos ── */
@@ -419,20 +409,22 @@ margin: 0 0 0 5rem;}
   font-size: 1.4rem;
   font-weight: 800;
   color: #2a1a1a;
-  margin: 0.5rem 0 1.25rem;
+  margin: 1rem auto 1.25rem;
   line-height: 1.2;
+  text-align: justify;
+  max-width: 400px;
 }
-.diff-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 1rem; }
-.diff-item { display: flex; align-items: flex-start; gap: 0.75rem; }
+.diff-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 1rem; justify-self: center;}
+.diff-item { display: flex; align-items: center; gap: 0.75rem; }
 .diff-check {
   width: 28px; height: 28px;
   background: #f5ece4;
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
+  flex-shrink: 0;;
 }
-.diff-item-title { font-weight: 700; font-size: 0.88rem; color: #2a1a1a; margin: 0 0 0.15rem; }
-.diff-item-desc  { font-size: 0.78rem; color: #9e8080; margin: 0; }
+.diff-item-title { font-weight: 700; font-size: 0.88rem; color: #2a1a1a; margin: 0 0 0.15rem; text-align: left;}
+.diff-item-desc  { font-size: 0.78rem; color: #9e8080; margin: 0; text-align: left;}
 .diff-image img { width: 100%; border-radius: 16px; object-fit: cover; max-height: 320px; }
 
 /* ── Testimonials ── */
@@ -466,45 +458,6 @@ margin: 0 0 0 5rem;}
 }
 .dot.active { background: #f59e0b; width: 32px; }
 
-/* ── Footer ── */
-.footer { background: #6b1222; color: #fff; }
-.footer-inner {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 2rem;
-  padding: 2.5rem 2rem;
-}
-.footer-name {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 1.3rem;
-  font-weight: 600;
-  margin: 0 0 0.25rem;
-}
-.footer-tagline { font-size: 0.8rem; color: rgba(255,255,255,0.65); margin: 0; }
-.footer-social-col { display: flex; flex-direction: column; align-items: center; gap: 0.75rem; }
-.footer-book {
-  display: flex; align-items: center; gap: 0.5rem;
-  background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(255,255,255,0.3);
-  border-radius: 8px;
-  padding: 0.5rem 1rem;
-  font-size: 0.8rem;
-}
-.footer-social-label { font-size: 0.82rem; font-weight: 600; margin: 0; }
-.social-icons { display: flex; gap: 1rem; }
-.social-icons a { color: #fff; opacity: 0.85; transition: opacity 0.2s; }
-.social-icons a:hover { opacity: 1; }
-.footer-links { display: flex; flex-direction: column; gap: 0.4rem; }
-.footer-links-title { font-weight: 700; font-size: 0.9rem; margin: 0 0 0.25rem; }
-.footer-links a { font-size: 0.82rem; color: rgba(255,255,255,0.75); text-decoration: none; transition: color 0.2s; }
-.footer-links a:hover { color: #fff; }
-.footer-bottom {
-  text-align: center;
-  font-size: 0.75rem;
-  color: rgba(255,255,255,0.5);
-  padding: 1rem;
-  border-top: 1px solid rgba(255,255,255,0.15);
-}
 
 /* ── Responsive ── */
 @media (max-width: 900px) {
