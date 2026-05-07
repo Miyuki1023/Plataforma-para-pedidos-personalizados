@@ -38,7 +38,7 @@ exports.logout = async (req, res) => {
 
 exports.adminRegister = async (req, res) => {
   try {
-    const adminId = req.user.id; // From the authenticated admin
+    const adminId = req.user.id; // Del admin autenticado
     const user = await authService.adminRegister(req.body, adminId);
     res.status(201).json({
       message: 'Usuario creado exitosamente',

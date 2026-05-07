@@ -3,7 +3,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { addToBlacklist } = require('../middlewares/auth');
 
-exports.register = async ({ usuario, email, password, rol = 'usuario' }) => {
+exports.register = async ({ usuario, email, password, rol = 'usuario', fecha_nacimiento, sexo, telefono }) => {
 
   if (!usuario || !email || !password) {
     throw new Error('Faltan campos');
@@ -21,10 +21,10 @@ exports.register = async ({ usuario, email, password, rol = 'usuario' }) => {
   const hashed = await bcrypt.hash(password, 10);
 
   const result = await pool.query(
-    `INSERT INTO usuario (usuario, email, password, id_rol)
-     VALUES ($1,$2,$3, $4)
-     RETURNING id, usuario, email, id_rol`,
-    [usuario, email, hashed, rol]
+    `INSERT INTO usuario (usuario, email, password, id_rol, fecha_nacimiento, sexo, telefono)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
+     RETURNING id, usuario, email, id_rol, fecha_nacimiento, sexo, telefono`,
+    [usuario, email, hashed, rol, fecha_nacimiento, sexo, telefono]
   );
 
   return result.rows[0];
@@ -70,7 +70,7 @@ exports.login = async ({ email, password }) => {
   };
 };
 
-exports.adminRegister = async ({ usuario, email, password, rol }, adminId) => {
+exports.adminRegister = async ({ usuario, email, password, rol, fecha_nacimiento, sexo, telefono }, adminId) => {
   // Validate that the admin is creating the user
   if (!adminId) {
     throw new Error('Solo administradores pueden crear usuarios');
@@ -92,8 +92,8 @@ exports.adminRegister = async ({ usuario, email, password, rol }, adminId) => {
     throw new Error('Solo administradores pueden crear usuarios con roles especiales');
   }
 
-  // Register the user with the specified role
-  return await this.register({ usuario, email, password, rol });
+  // Register the user with the specified role and optional fields
+  return await this.register({ usuario, email, password, rol, fecha_nacimiento, sexo, telefono });
 };
 
 exports.logout = async (token) => {
