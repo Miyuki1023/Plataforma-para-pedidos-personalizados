@@ -14,3 +14,25 @@ exports.getProducts = async (req, res) => {
     });
   }
 };
+
+exports.getProductById = async (req, res) => {
+
+  try {
+
+    const { id } = req.params;
+
+    const product = await productService.getProductById(id);
+
+    res.json(product);
+
+  } catch (error) {
+
+    console.error(error);
+
+    res.status(404).json({
+      message: error.message
+    });
+
+  }
+
+};
