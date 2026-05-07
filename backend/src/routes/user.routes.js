@@ -6,10 +6,10 @@ const validate = require('../middlewares/validate');
 const { verifyToken } = require('../middlewares/auth');
 const { updateProfileValidation } = require('../validators/user.validator');
 
-// Get user profile
+// Obtener perfil de usuario
 router.get('/profile', verifyToken, userController.getProfile);
 
-// Update user profile
+// Actualizar perfil de usuario
 router.put(
   '/profile',
   verifyToken,

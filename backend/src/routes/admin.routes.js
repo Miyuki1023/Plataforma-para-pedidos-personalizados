@@ -6,13 +6,13 @@ const validate = require('../middlewares/validate');
 const { verifyToken, requireAdmin } = require('../middlewares/auth');
 const { updateRoleValidation } = require('../validators/admin.validator');
 
-// Get all users (admin only)
+// Obtener todos los usuarios (solo admin)
 router.get('/users', verifyToken, requireAdmin, adminController.getAllUsers);
 
-// Get specific user by ID (admin only)
+// Obtener usuario específico por ID (solo admin)
 router.get('/users/:id', verifyToken, requireAdmin, adminController.getUserById);
 
-// Update user role (admin only)
+// Actualizar rol de usuario (solo admin)
 router.put(
   '/users/:id/role',
   verifyToken,
@@ -22,10 +22,10 @@ router.put(
   adminController.updateUserRole
 );
 
-// Activate user (admin only)
+// Activar usuario (solo admin)
 router.put('/users/:id/activate', verifyToken, requireAdmin, adminController.activateUser);
 
-// Deactivate user (admin only)
+// Desactivar usuario (solo admin)
 router.put('/users/:id/deactivate', verifyToken, requireAdmin, adminController.deactivateUser);
 
 module.exports = router;

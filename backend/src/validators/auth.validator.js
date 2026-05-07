@@ -16,12 +16,12 @@ exports.registerValidation = [
     .matches(/[A-Z]/).withMessage('Debe tener al menos 1 mayúscula')
     .matches(/[0-9]/).withMessage('Debe tener al menos 1 número'),
 
-  // Optional fields for registration
+  // Campos opcionales para registro
   body('fecha_nacimiento')
     .optional()
     .isISO8601().withMessage('Fecha de nacimiento debe tener formato YYYY-MM-DD')
     .custom((value) => {
-      if (!value) return true; // Allow empty
+      if (!value) return true; // Permitir vacío
       const birthDate = new Date(value);
       const today = new Date();
       const age = today.getFullYear() - birthDate.getFullYear();
@@ -73,12 +73,12 @@ exports.adminRegisterValidation = [
     .notEmpty().withMessage('Rol es requerido')
     .isIn(['trabajador', 'admin']).withMessage('Rol debe ser "trabajador" o "admin"'),
 
-  // Optional fields for admin registration
+  // Campos opcionales para registro de admin
   body('fecha_nacimiento')
     .optional()
     .isISO8601().withMessage('Fecha de nacimiento debe tener formato YYYY-MM-DD')
     .custom((value) => {
-      if (!value) return true; // Allow empty
+      if (!value) return true; // Permitir vacío
       const birthDate = new Date(value);
       const today = new Date();
       const age = today.getFullYear() - birthDate.getFullYear();

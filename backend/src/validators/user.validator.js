@@ -1,25 +1,25 @@
 const { body } = require('express-validator');
 
 exports.updateProfileValidation = [
-  // Usuario validation (optional)
+  // Validación de usuario (opcional)
   body('usuario')
     .optional()
     .isLength({ min: 3 }).withMessage('Usuario mínimo 3 caracteres')
     .matches(/^[a-zA-Z0-9_]+$/).withMessage('Usuario solo puede contener letras, números y guiones bajos'),
 
-  // Email validation (optional)
+  // Validación de email (opcional)
   body('email')
     .optional()
     .isEmail().withMessage('Email inválido'),
 
-  // Password validation (optional)
+  // Validación de password (opcional)
   body('password')
     .optional()
     .isLength({ min: 6 }).withMessage('Password mínimo 6 caracteres')
     .matches(/[A-Z]/).withMessage('Debe tener al menos 1 mayúscula')
     .matches(/[0-9]/).withMessage('Debe tener al menos 1 número'),
 
-  // Fecha nacimiento validation (optional)
+  // Validación de fecha nacimiento (opcional)
   body('fecha_nacimiento')
     .optional()
     .isISO8601().withMessage('Fecha de nacimiento debe tener formato YYYY-MM-DD')
@@ -36,12 +36,12 @@ exports.updateProfileValidation = [
       return true;
     }),
 
-  // Sexo validation (optional)
+  // Validación de sexo (opcional)
   body('sexo')
     .optional()
     .isIn(['M', 'F', 'Otro']).withMessage('Sexo debe ser M, F u Otro'),
 
-  // Telefono validation (optional)
+  // Validación de teléfono (opcional)
   body('telefono')
     .optional()
     .matches(/^[\+]?[0-9\-\s]+$/).withMessage('Teléfono debe contener solo números, espacios, guiones y el símbolo +')

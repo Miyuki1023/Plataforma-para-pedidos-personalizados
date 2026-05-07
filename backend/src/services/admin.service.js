@@ -2,7 +2,7 @@ const pool = require('../config/db');
 const bcrypt = require('bcrypt');
 
 exports.getAllUsers = async (adminId) => {
-  // Verify admin permissions
+  // Verificar permisos de admin
   const adminCheck = await pool.query(
     'SELECT id_rol FROM usuario WHERE id = $1 AND activo = true',
     [adminId]
@@ -22,7 +22,7 @@ exports.getAllUsers = async (adminId) => {
 };
 
 exports.updateUserRole = async (adminId, targetUserId, newRole) => {
-  // Verify admin permissions
+  // Verificar permisos de admin
   const adminCheck = await pool.query(
     'SELECT id_rol FROM usuario WHERE id = $1 AND activo = true',
     [adminId]
@@ -32,7 +32,7 @@ exports.updateUserRole = async (adminId, targetUserId, newRole) => {
     throw new Error('Acceso denegado: se requieren permisos de administrador');
   }
 
-  // Validate role
+  // Validar rol
   const validRoles = ['usuario', 'trabajador', 'admin'];
   if (!validRoles.includes(newRole)) {
     throw new Error('Rol inválido. Los roles válidos son: usuario, trabajador, admin');
@@ -50,12 +50,12 @@ exports.updateUserRole = async (adminId, targetUserId, newRole) => {
 
   const currentUser = userCheck.rows[0];
 
-  // Prevent admin from demoting themselves
+  // Evitar que el admin se demote a sí mismo
   if (targetUserId === adminId && newRole !== 'admin') {
     throw new Error('No puedes cambiar tu propio rol de administrador');
   }
 
-  // Update the role
+  // Actualizar el rol
   const result = await pool.query(
     `UPDATE usuario
      SET id_rol = $1
@@ -73,7 +73,7 @@ exports.updateUserRole = async (adminId, targetUserId, newRole) => {
 };
 
 exports.toggleUserStatus = async (adminId, targetUserId, activate) => {
-  // Verify admin permissions
+  // Verificar permisos de admin
   const adminCheck = await pool.query(
     'SELECT id_rol FROM usuario WHERE id = $1 AND activo = true',
     [adminId]
@@ -95,12 +95,12 @@ exports.toggleUserStatus = async (adminId, targetUserId, activate) => {
 
   const currentUser = userCheck.rows[0];
 
-  // Prevent admin from deactivating themselves
+  // Evitar que el admin se desactive a sí mismo
   if (targetUserId === adminId && !activate) {
     throw new Error('No puedes desactivar tu propia cuenta');
   }
 
-  // Update the status
+  // Actualizar el estado
   const result = await pool.query(
     `UPDATE usuario
      SET activo = $1
@@ -120,7 +120,7 @@ exports.toggleUserStatus = async (adminId, targetUserId, activate) => {
 };
 
 exports.getUserById = async (adminId, targetUserId) => {
-  // Verify admin permissions
+  // Verificar permisos de admin
   const adminCheck = await pool.query(
     'SELECT id_rol FROM usuario WHERE id = $1 AND activo = true',
     [adminId]

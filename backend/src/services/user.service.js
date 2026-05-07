@@ -2,6 +2,7 @@ const pool = require('../config/db');
 const bcrypt = require('bcrypt');
 
 exports.getUserProfile = async (userId) => {
+  // Obtener perfil completo del usuario
   const result = await pool.query(
     `SELECT id, usuario, email, fecha_nacimiento, sexo, telefono, id_rol, activo, fecha_creacion
      FROM usuario
@@ -19,12 +20,12 @@ exports.getUserProfile = async (userId) => {
 exports.updateUserProfile = async (userId, updateData) => {
   const { usuario, email, password, fecha_nacimiento, sexo, telefono } = updateData;
 
-  // Build dynamic query based on provided fields
+  // Construir consulta de actualización dinámica basada en campos proporcionados
   const updates = [];
   const values = [];
   let paramCount = 1;
 
-  // Check for unique constraints if usuario or email are being updated
+  // Verificar restricciones únicas si se actualizan usuario o email
   if (usuario) {
     const existingUser = await pool.query(
       'SELECT id FROM usuario WHERE usuario = $1 AND id != $2',
@@ -80,7 +81,7 @@ exports.updateUserProfile = async (userId, updateData) => {
     throw new Error('No se proporcionaron campos para actualizar');
   }
 
-  // Add userId as the last parameter
+  // Agregar userId como último parámetro
   values.push(userId);
 
   const query = `
