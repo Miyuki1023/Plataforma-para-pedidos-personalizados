@@ -1,31 +1,15 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import Navbar from '../components/organisms/Navbar.vue'
-import CategoryChip from '../components/molecules/Category.vue'
-import ProductCard from '../components/molecules/ProductCard.vue'
+import CategoriesSection from '../components/organisms/Home/Categorias.vue' // Renombrado para mayor claridad
 import PromoCard from '../components/molecules/PromoCard.vue'
 import TestimonialCard from '../components/molecules/TestimonialCard.vue'
 import BaseIcon from '../components/atoms/BaseIcon.vue'
 import BaseButton from '../components/atoms/BaseButton.vue'
 import Footer from '../components/organisms/Footer.vue'
 import Hero from '../components/organisms/Home/Hero.vue'
-const activeCategory = ref('Tortas')
-
-const categories = [
-  { label: 'Tortas',          image: 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=120&q=80' },
-  { label: 'Cupcake',         image: 'https://images.unsplash.com/photo-1576618148400-f54bed99fcfd?w=120&q=80' },
-  { label: 'Galletas',        image: 'https://images.unsplash.com/photo-1499636136210-6f4ee915583e?w=120&q=80' },
-  { label: 'Bocaditos',       image: 'https://images.unsplash.com/photo-1548365328-8c6db3220e4c?w=120&q=80' },
-  { label: 'Pastelería Salada', image: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=120&q=80' },
-  { label: 'Cheesecakes',     image: 'https://images.unsplash.com/photo-1533134242443-d4fd215305ad?w=120&q=80' },
-]
-
-const products = [
-  { image: new URL('../assets/recom1.png', import.meta.url).href, category: 'TORTAS',   name: 'Torta de Primavera', description: 'Torta fresca y colorida, con sabores ligeros y relleno de frutas.', price: 'S/60', isNew: true },
-  { image: new URL('../assets/recom2.png', import.meta.url).href, category: 'GALLETAS',  name: 'Choco comi',         description: 'Exquisita torta de chocolate con un toque especial de vainilla.', price: 'S/40' },
-  { image: new URL('../assets/recom3.png', import.meta.url).href, category: 'TORTAS',   name: 'Torta de Helada',    description: 'Postre frío y refrescante, con capas suaves de crema y fruta.', price: 'S/55' },
-]
-
+import FeatureCard from '../components/organisms/Home/Features.vue'
+import RecommendedSection from '../components/organisms/Home/ProductsRecomendados.vue'
 const promos = [
   { image: new URL('../assets/prom1.png', import.meta.url).href, badge: '15%',   title: 'Torta del mes',       subtitle: 'Torta de fresas con 15% ', desc: 'Válido hasta 25 Abril' },
   { image: new URL('../assets/prom2.png', import.meta.url).href, badge: '2 x 1',  title: 'Caja sorpresa',        subtitle: 'Llevate un mix de postres ', desc: 'Todos los sabores' },
@@ -38,11 +22,6 @@ const testimonials = [
   { name: 'Lucía Fernández',  stars: 5, text: 'El pan de masa madre me transporta a mi infancia. La calidad de los ingredientes se nota en cada miga. ¡Mi favorito absoluto!' },
 ]
 
-const features = [
-  { icon: 'leaf',  title: 'Ingredientes frescos',  desc: 'Seleccionamos ingredientes de la más alta calidad.' },
-  { icon: 'heart', title: 'Hecho con amor',         desc: 'Recetas tradicionales elaboradas con dedicación.' },
-  { icon: 'truck', title: 'Entrega rápida',          desc: 'En pedidos seleccionados y zonas cercanas.' },
-]
 
 const differentials = [
   { title: 'Personalización a tu gusto',         desc: 'Crea tu combinación ideal: sabor, relleno y acabado.' },
@@ -56,57 +35,10 @@ const currentTestimonial = ref(1)
 <template>
   <div class="home">
     <Navbar />
-
-    <!-- ── Hero ── -->
-<Hero />
-
-
-    <!-- ── Categorías ── -->
-    <section class="section categories-section">
-      <div class="categories-left">
-        <span class="section-eyebrow">CATEGORÍAS</span>
-        <h2 class="section-title-sm">Encuentra tu postre ideal</h2>
-      </div>
-      <div class="chips-row">
-        <CategoryChip
-          v-for="cat in categories"
-          :key="cat.label"
-          :label="cat.label"
-          :image="cat.image"
-          :active="activeCategory === cat.label"
-          @click="activeCategory = cat.label"
-        />
-      </div>
-    </section>
-
-    <!-- ── Features ── -->
-    <section class="section features-section">
-      <div v-for="f in features" :key="f.title" class="feature-item">
-        <div class="feature-icon">
-          <BaseIcon :name="f.icon" :size="22" color="var(--primary)" />
-        </div>
-        <div>
-          <p class="feature-title">{{ f.title }}</p>
-          <p class="feature-desc">{{ f.desc }}</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- ── Recomendados ── -->
-    <section class="section products-section">
-      <h2 class="section-heading">Recomendados para ti</h2>
-      <div class="products-grid">
-        <ProductCard
-          v-for="(p, i) in products"
-          :key="i"
-          v-bind="p"
-          @add-to-cart="() => {}"
-        />
-      </div>
-      <div class="center-btn">
-        <button class="btn-outline">Explorar catálogo</button>
-      </div>
-    </section>
+      <Hero />
+      <CategoriesSection/>
+      <FeatureCard/>
+     <RecommendedSection />
 
     <!-- ── Así trabajamos ── -->
     <section class="about-section">
