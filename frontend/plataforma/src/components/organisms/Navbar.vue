@@ -51,7 +51,7 @@ onBeforeUnmount(() => {
     </button>
 
     <!-- LOGO -->
-    <div class="navbar-brand">
+    <div class="navbar-brand" :class="{ 'logo-compact': isSearchOpen }">
       Vainilla y miel
     </div>
 
