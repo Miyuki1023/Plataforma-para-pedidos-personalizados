@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { RouterLink } from 'vue-router'
 import BaseInput from '../atoms/BaseInput.vue'
 import BaseButton from '../atoms/BaseButton.vue'
 import BaseCheckbox from '../atoms/BaseCheckbox.vue'
@@ -93,7 +94,7 @@ const handleSubmit = async () => {
     <!-- Login link -->
     <p class="login-text">
       Ya tiene una cuenta?&nbsp;
-      <a href="/login">Inicia Sesión</a>
+      <RouterLink to="/login">Inicia Sesión</RouterLink>
     </p>
 
   </form>
@@ -124,7 +125,7 @@ const handleSubmit = async () => {
 }
 
 .login-text a {
-  color: #8b1a2e;
+  color: var(--primary);
   font-weight: 700;
   text-decoration: none;
   transition: opacity 0.2s;

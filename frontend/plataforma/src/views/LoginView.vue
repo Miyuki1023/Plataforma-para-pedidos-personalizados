@@ -25,7 +25,6 @@ import LoginForm from '../components/molecules/LoginForm.vue'
   display: flex;
   min-height: 100vh;
   width: 100%;
-  background: #ffffff;
 }
 .login-hero {
   flex: 1;
@@ -57,7 +56,7 @@ import LoginForm from '../components/molecules/LoginForm.vue'
   font-family: 'Rochester', cursive;
   font-size: 3rem;
   font-weight: 600;
-  color: #8b1a2e;
+  color: var(--primary);
   text-align: center;
   margin: 0;
   padding-bottom: 3%;
