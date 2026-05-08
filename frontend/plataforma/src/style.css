@@ -388,7 +388,12 @@ h1, h2, h3 {
    🎯 HERO
 ========================= */
 .hero {
-  background-image: url('./assets/img_herohome.png');
+ background-image:
+    linear-gradient(
+      rgba(0, 0, 0, 0.10),
+      rgba(0, 0, 0, 0.10)
+    ),
+    url('./assets/img_herohome.png');  
   background-size: cover;
   min-height: 630px;
   display: flex;
@@ -434,6 +439,7 @@ h1, h2, h3 {
   font-size: 0.85rem !important;
   padding: 0.65rem 1.5rem !important;
   width: auto !important;
+  margin-left: 0 !important;
 }
 
 /* =========================
@@ -693,7 +699,10 @@ margin: 0 0 0 5rem;}
 .base-button--primary { background: #AF3439; }
 .base-button--secondary { background: var(--secondary); color: var(--primary); }
 .base-button--ghost { background: transparent; border: 1px solid var(--border); color: var(--text-h); }
-
+.base-button--ghost:hover {
+  background: var(--primary) !important;
+  color: var(--bg) !important;
+}
 .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.4); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
