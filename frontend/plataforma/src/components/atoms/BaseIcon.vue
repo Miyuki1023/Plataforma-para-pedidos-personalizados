@@ -1,13 +1,50 @@
 <script setup lang="ts">
+import {
+  Menu,
+  Search,
+  User,
+  ShoppingCart,
+  Leaf,
+  Heart,
+  Truck,
+  ArrowLeft,
+  ArrowRight,
+  Book,
+  Instagram,
+  Facebook,
+  Music,
+  Star,
+} from 'lucide-vue-next'
+
+const icons = {
+  menu: Menu,
+  search: Search,
+  user: User,
+  cart: ShoppingCart,
+  leaf: Leaf,
+  heart: Heart,
+  truck: Truck,
+  'arrow-left': ArrowLeft,
+  'arrow-right': ArrowRight,
+  book: Book,
+  instagram: Instagram,
+  facebook: Facebook,
+  tiktok: Music,
+  star: Star,
+}
+
+type IconName = keyof typeof icons
+
 defineProps<{
-  name: string
-  size?: number | string
-  color?: string
+  name: IconName
+  size?: number
 }>()
 </script>
 
 <template>
-  <div class="icon-wrapper" :style="{ width: size + 'px', height: size + 'px', color: color }">
-    <span style="font-size: 0.7em;">{{ name }}</span>
-  </div>
+  <component
+    :is="icons[name]"
+    :size="size || 20"
+    stroke-width="1.8"
+  />
 </template>
