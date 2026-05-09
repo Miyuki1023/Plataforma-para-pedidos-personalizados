@@ -1,4 +1,7 @@
 <script setup lang="ts">
+
+import { useRouter } from 'vue-router'
+
 import BaseButton from '../atoms/BaseButton.vue'
 import FavoriteIcon from '../atoms/FavoriteIcon.vue'
 
@@ -13,12 +16,21 @@ interface Props {
   isNew?: boolean
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
 
 defineEmits([
   'add-to-cart',
   'view-details'
 ])
+
+const router = useRouter()
+
+const goToProduct = () => {
+
+  router.push(
+    `/producto/${props.id}`
+  )
+}
 </script>
 
 <template>
@@ -68,7 +80,7 @@ defineEmits([
 
       <BaseButton
         class="btn-card"
-        @click="$emit('add-to-cart')"
+        @click="goToProduct"
       >
         Agregar al carrito
       </BaseButton>

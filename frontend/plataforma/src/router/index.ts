@@ -11,8 +11,8 @@ import RegisterView from '../views/RegisterView.vue'
 import HomeUserView from '../views/HomeUserView.vue'
 import CatalogoView from '../views/Catalogo.vue'
 import ProductProfileView from '../views/ProductProfileView.vue'
-import ResumendeCompraView from '../views/ResumendeCompraView.vue'
-import PerfilView from '../views/PerfilView.vue'
+// import ResumendeCompraView from '../views/ResumendeCompraView.vue'
+// import PerfilView from '../views/PerfilView.vue'
 
 const router = createRouter({
 
@@ -65,19 +65,19 @@ const router = createRouter({
       props: true
     },
 
-    /* RESUMEN DE COMPRA */
-    {
-      path: '/resumen-compra',
-      name: 'resumen-compra',
-      component: ResumendeCompraView
-    },
+    // /* RESUMEN DE COMPRA */
+    // {
+    //   path: '/resumen-compra',
+    //   name: 'resumen-compra',
+    //   component: ResumendeCompraView
+    // },
 
-    /* PERFIL */
-    {
-      path: '/perfil',
-      name: 'perfil',
-      component: PerfilView
-    },
+    // /* PERFIL */
+    // {
+    //   path: '/perfil',
+    //   name: 'perfil',
+    //   component: PerfilView
+    // },
 
     /* 404 */
     {
