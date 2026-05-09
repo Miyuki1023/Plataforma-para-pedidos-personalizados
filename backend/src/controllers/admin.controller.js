@@ -14,7 +14,7 @@ exports.getAllUsers = async (req, res) => {
         telefono: user.telefono,
         rol: user.id_rol,
         activo: user.activo,
-        fecha_creacion: user.fecha_creacion
+        fecha_registro: user.fecha_registro
       }))
     });
   } catch (error) {
@@ -42,7 +42,7 @@ exports.getUserById = async (req, res) => {
         telefono: user.telefono,
         rol: user.id_rol,
         activo: user.activo,
-        fecha_creacion: user.fecha_creacion
+        fecha_registro: user.fecha_registro
       }
     });
   } catch (error) {
@@ -54,14 +54,14 @@ exports.updateUserRole = async (req, res) => {
   try {
     const adminId = req.user.id;
     const targetUserId = parseInt(req.params.id);
-    const { rol } = req.body;
+    const rol = parseInt(req.body.rol);
 
     if (isNaN(targetUserId)) {
       return res.status(400).json({ message: 'ID de usuario inválido' });
     }
 
-    if (!rol) {
-      return res.status(400).json({ message: 'El campo rol es requerido' });
+    if (isNaN(rol)) {
+      return res.status(400).json({ message: 'El campo rol debe ser un número válido' });
     }
 
     const result = await adminService.updateUserRole(adminId, targetUserId, rol);

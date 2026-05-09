@@ -39,7 +39,7 @@ const requireRole = (requiredRole) => {
   };
 };
 
-const requireAdmin = requireRole('admin');
+const requireAdmin = requireRole(3);
 
 const addToBlacklist = (token) => {
   tokenBlacklist.add(token);

@@ -39,7 +39,12 @@ exports.logout = async (req, res) => {
 exports.adminRegister = async (req, res) => {
   try {
     const adminId = req.user.id; // Del admin autenticado
-    const user = await authService.adminRegister(req.body, adminId);
+    const { rol, ...userData } = req.body;
+    const rolNum = parseInt(rol);
+    if (isNaN(rolNum)) {
+      return res.status(400).json({ message: 'Rol debe ser un número válido' });
+    }
+    const user = await authService.adminRegister({ ...userData, rol: rolNum }, adminId);
     res.status(201).json({
       message: 'Usuario creado exitosamente',
       user: {

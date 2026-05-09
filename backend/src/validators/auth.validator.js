@@ -71,7 +71,7 @@ exports.adminRegisterValidation = [
 
   body('rol')
     .notEmpty().withMessage('Rol es requerido')
-    .isIn(['trabajador', 'admin']).withMessage('Rol debe ser "trabajador" o "admin"'),
+    .isIn([2, 3]).withMessage('Rol debe ser 2 (trabajador) o 3 (admin)'),
 
   // Campos opcionales para registro de admin
   body('fecha_nacimiento')
