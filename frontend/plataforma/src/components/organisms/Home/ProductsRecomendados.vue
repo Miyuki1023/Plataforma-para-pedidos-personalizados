@@ -36,7 +36,7 @@ const products = [
 
 <template>
 
-  <section class="section products-section">
+  <section class="products-section">
 
     <div class="section-intro">
       <span class="section-eyebrow">SELECCIÓN ESPECIAL</span>
