@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { RouterLink } from 'vue-router'
+
 import BaseIcon from '../atoms/BaseIcon.vue'
 
 const isMenuOpen = ref(false)
@@ -12,15 +14,23 @@ const toggleMenu = () => {
   isMenuOpen.value = !isMenuOpen.value
 }
 
+const closeMenu = () => {
+  isMenuOpen.value = false
+}
+
 const toggleSearch = () => {
   isSearchOpen.value = !isSearchOpen.value
+
   if (isSearchOpen.value) {
+
     nextTick(() => {
       searchInputRef.value?.focus()
     })
   }
 }
+
 const handleClickOutside = (event: MouseEvent) => {
+
   if (
     navbarRef.value &&
     !navbarRef.value.contains(event.target as Node)
@@ -103,44 +113,63 @@ onBeforeUnmount(() => {
       </button>
     </div>
   </header>
+<!-- SIDEBAR -->
+<transition name="slide">
 
-  <!-- SIDEBAR -->
-  <transition name="slide">
-    <aside
-      v-if="isMenuOpen"
-      class="sidebar"
-    >
+  <aside
+    v-if="isMenuOpen"
+    class="sidebar"
+  >
 
-      <div class="sidebar-header">
+    <div class="sidebar-header">
 
-        <h2>Vainilla y miel</h2>
+      <h2>
+        Vainilla y miel
+      </h2>
 
-        <button
-          class="close-btn"
-          @click="toggleMenu"
-        >
-          ✕
-        </button>
-      </div>
+      <button
+        class="close-btn"
+        @click="toggleMenu"
+      >
+        ✕
+      </button>
 
-      <nav class="sidebar-nav">
+    </div>
 
-        <a href="#" class="sidebar-link">
-          Inicio
-        </a>
+    <nav class="sidebar-nav">
 
-        <a href="#" class="sidebar-link">
-          Antojitos
-        </a>
+      <!-- HOME -->
+      <RouterLink
+        to="/home"
+        class="sidebar-link"
+        @click="closeMenu"
+      >
+        Inicio
+      </RouterLink>
 
-        <a href="#" class="sidebar-link">
-          Sobre nosotros
-        </a>
+      <!-- CATALOGO -->
+      <RouterLink
+        to="/catalogo"
+        class="sidebar-link"
+        @click="closeMenu"
+      >
+        Antojitos
+      </RouterLink>
 
-      </nav>
-    </aside>
-  </transition>
+      <!-- ABOUT -->
+      <RouterLink
+        to="/home"
+        class="sidebar-link"
+        @click="closeMenu"
+      >
+        Sobre nosotros
+      </RouterLink>
 
+    </nav>
+
+  </aside>
+
+</transition>
   <!-- OVERLAY -->
   <div
     v-if="isMenuOpen"
