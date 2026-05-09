@@ -11,7 +11,7 @@ import RegisterView from '../views/RegisterView.vue'
 import HomeUserView from '../views/HomeUserView.vue'
 import CatalogoView from '../views/Catalogo.vue'
 import ProductProfileView from '../views/ProductProfileView.vue'
-// import ResumendeCompraView from '../views/ResumendeCompraView.vue'
+import ResumendeCompraView from '../views/ResumendeCompraView.vue'
 // import PerfilView from '../views/PerfilView.vue'
 
 const router = createRouter({
@@ -25,7 +25,7 @@ const router = createRouter({
     /* REDIRECT */
     {
       path: '/',
-      redirect: '/login'
+      redirect: '/home'
     },
 
     /* LOGIN */
@@ -35,28 +35,24 @@ const router = createRouter({
       component: LoginView
     },
 
-    /* REGISTER */
     {
       path: '/register',
       name: 'register',
       component: RegisterView
     },
 
-    /* HOME */
     {
       path: '/home',
       name: 'home',
       component: HomeUserView
     },
 
-    /* CATALOGO */
     {
       path: '/catalogo',
       name: 'catalogo',
       component: CatalogoView
     },
 
-    /* PRODUCT DETAIL */
     {
       path: '/producto/:id',
       name: 'producto',
@@ -65,12 +61,11 @@ const router = createRouter({
       props: true
     },
 
-    // /* RESUMEN DE COMPRA */
-    // {
-    //   path: '/resumen-compra',
-    //   name: 'resumen-compra',
-    //   component: ResumendeCompraView
-    // },
+    {
+      path: '/resumen-compra',
+      name: 'resumen-compra',
+      component: ResumendeCompraView
+    },
 
     // /* PERFIL */
     // {

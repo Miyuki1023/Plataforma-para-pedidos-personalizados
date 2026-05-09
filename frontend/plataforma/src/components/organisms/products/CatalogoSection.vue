@@ -249,6 +249,8 @@ const changePage = (page: number) => {
           />
 
         </div>
+
+        
         <!-- PAGINATION -->
 <div
   v-if="totalPages > 1"
