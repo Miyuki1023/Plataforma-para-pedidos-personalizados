@@ -10,7 +10,7 @@ defineEmits<{
 </script>
 
 <template>
-  <label class="base-checkbox">
+  <label class="base-checkbox ">
     <input
       type="checkbox"
       :checked="modelValue"

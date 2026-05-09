@@ -1,22 +1,51 @@
 <script setup lang="ts">
-defineProps<{
+import { ref, watch } from 'vue'
+
+const props = defineProps<{
   active?: boolean
   size?: number
 }>()
+
+const emit = defineEmits<{
+  (e: 'toggle', value: boolean): void
+}>()
+
+/* estado local */
+
+const isFavorite = ref(props.active || false)
+
+/* sincroniza si cambia desde afuera */
+
+watch(
+  () => props.active,
+  (value) => {
+    isFavorite.value = !!value
+  }
+)
+
+/* toggle */
+
+const toggleFavorite = () => {
+  isFavorite.value = !isFavorite.value
+
+  /* aquí luego puedes guardar en backend */
+  emit('toggle', isFavorite.value)
+}
 </script>
 
 <template>
   <button
-    class="favorite-btn"
-    :class="{ active }"
+    class="btn-fav"
+    :class="{ active: isFavorite }"
     :style="{
-      width: `${size || 42}px`,
-      height: `${size || 42}px`
+      width: `${size || 44}px`,
+      height: `${size || 44}px`,
+      flexShrink: 0
     }"
+    @click="toggleFavorite"
   >
     <svg
       viewBox="0 0 24 24"
-      fill="currentColor"
       class="heart-icon"
     >
       <path

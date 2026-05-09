@@ -1,12 +1,14 @@
 <script setup lang="ts">
 defineProps<{
-  label: string
-  variant?: 'primary' | 'promo' | 'tag'
+  variant?: 'primary' | 'promo' | 'success'
 }>()
 </script>
 
 <template>
-  <span class="badge" :class="`badge--${variant ?? 'tag'}`">
-    {{ label }}
+  <span
+    class="base-badge"
+    :class="variant ? `base-badge--${variant}` : ''"
+  >
+    <slot />
   </span>
 </template>

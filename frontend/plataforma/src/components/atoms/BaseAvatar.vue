@@ -11,7 +11,8 @@ defineProps<{
     class="base-avatar"
     :style="{
       width: `${size || 40}px`,
-      height: `${size || 40}px`
+      height: `${size || 40}px`,
+      flexShrink: 0
     }"
   >
     <img
@@ -26,4 +27,3 @@ defineProps<{
     </div>
   </div>
 </template>
-

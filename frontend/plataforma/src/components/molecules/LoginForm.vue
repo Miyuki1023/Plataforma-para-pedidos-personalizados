@@ -30,7 +30,7 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <form class="login-form" @submit.prevent="handleSubmit" novalidate>
+  <form class="form-L-R" @submit.prevent="handleSubmit" novalidate>
 
     <div class="field-group">
       <BaseInput v-model="email" type="email" placeholder="usua@gmail.com">
@@ -75,4 +75,3 @@ const handleSubmit = async () => {
 
   </form>
 </template>
-

@@ -38,7 +38,7 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <form class="register-form" @submit.prevent="handleSubmit" novalidate>
+  <form class="form-L-R" @submit.prevent="handleSubmit" novalidate>
 
     <!-- Username -->
     <BaseInput v-model="username" type="text" placeholder="Nombre de usuario">
@@ -77,7 +77,7 @@ const handleSubmit = async () => {
     </BaseInput>
 
     <!-- Policy -->
-    <BaseCheckbox v-model="acceptPolicy">
+    <BaseCheckbox v-model="acceptPolicy" class="center">
       Estoy de acuerdo con la
       <a href="#">política de privacidad</a>.
     </BaseCheckbox>

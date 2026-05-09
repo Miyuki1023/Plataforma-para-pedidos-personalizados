@@ -10,17 +10,42 @@ defineProps<{
 </script>
 
 <template>
-  <div class="testimonial" :class="{ active }">
-    <div class="testi-avatar">{{ name.charAt(0) }}</div>
-    <p class="testi-name">{{ name }}</p>
-    <div class="testi-stars">
-      <BaseIcon
-        v-for="i in 5" :key="i"
-        name="star"
-        :size="14"
-        :color="i <= (stars ?? 5) ? '#f59e0b' : '#e5e7eb'"
-      />
+
+  <article
+    class="testimonial"
+    :class="{ active }"
+  >
+
+    <!-- AVATAR -->
+    <div class="testi-avatar">
+      {{ name.charAt(0) }}
     </div>
-    <p class="testi-text">"{{ text }}"</p>
-  </div>
+
+    <!-- NAME -->
+    <h4 class="testi-name">
+      {{ name }}
+    </h4>
+
+    <!-- STARS -->
+    <div class="testi-stars">
+
+      <BaseIcon
+        v-for="i in 5"
+        :key="i"
+        name="star"
+        :size="16"
+        :color="
+          i <= (stars ?? 5)
+            ? '#f59e0b'
+            : '#ececec'
+        "
+      />
+
+    </div>
+    <p class="testi-text">
+      “{{ text }}”
+    </p>
+
+  </article>
+
 </template>

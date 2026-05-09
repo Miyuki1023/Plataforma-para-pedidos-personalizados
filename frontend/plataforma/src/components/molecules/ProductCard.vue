@@ -1,37 +1,80 @@
 <script setup lang="ts">
-import BaseBadge from '../atoms/BaseBadge.vue'
 import BaseButton from '../atoms/BaseButton.vue'
-import BaseIcon from '../atoms/BaseIcon.vue'
+import FavoriteIcon from '../atoms/FavoriteIcon.vue'
 
-defineProps<{
-  image: string
-  category: string
+interface Props {
+  id: string | number
   name: string
-  description: string
-  price: string
+  price: number
+  description?: string
+  imageUrl?: string
+  image?: string
+  category?: string
   isNew?: boolean
-}>()
+}
 
-defineEmits<{ (e: 'add-to-cart'): void }>()
+defineProps<Props>()
+
+defineEmits([
+  'add-to-cart',
+  'view-details'
+])
 </script>
 
 <template>
-  <div class="product-card">
+
+  <article class="product-card">
+
+    <!-- IMAGE -->
     <div class="card-image-wrapper">
-      <img :src="image" :alt="name" class="card-image" />
-      <span v-if="isNew" class="badge-new">Nuevo</span>
-      <button class="btn-fav">
-        <BaseIcon name="heart" :size="16" color="#8b1a2e" />
-      </button>
+
+      <img
+        :src="image || imageUrl"
+        :alt="name"
+        class="card-image"
+      />
+
+      <!-- BADGE -->
+      <span
+        v-if="isNew"
+        class="badge-new"
+      >
+        NUEVO
+      </span>
+
+      <!-- FAVORITE -->
+      <FavoriteIcon />
+
     </div>
+
+    <!-- BODY -->
     <div class="card-body">
-      <BaseBadge :label="category" variant="tag" />
-      <h3 class="card-name">{{ name }}</h3>
-      <p class="card-desc">{{ description }}</p>
-      <p class="card-price">{{ price }}</p>
-      <BaseButton  class="btn-card" type="button" variant="primary" @click="$emit('add-to-cart')">
-        Añadir al carrito
+
+      <span class="card-category">
+        {{ category }}
+      </span>
+
+      <h3 class="card-name">
+        {{ name }}
+      </h3>
+
+      <p class="card-desc">
+        {{ description }}
+      </p>
+
+      <p class="card-price">
+        S/{{ price }}
+      </p>
+
+      <BaseButton
+        class="btn-card"
+        @click="$emit('add-to-cart')"
+      >
+        Agregar al carrito
       </BaseButton>
+
     </div>
-  </div>
+
+  </article>
+
 </template>

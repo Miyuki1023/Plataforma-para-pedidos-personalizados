@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import ProductCard from '../../molecules/ProductCard.vue'
 import BaseButton from '../../atoms/BaseButton.vue'
+import FavoriteIcon from '../../atoms/FavoriteIcon.vue'
 
 const products = [
   {
