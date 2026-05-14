@@ -1,5 +1,9 @@
 const pool = require('../config/db');
 
+// =========================
+// PRODUCTOS
+// =========================
+
 exports.getProducts = async () => {
   const result = await pool.query(`
     SELECT 
@@ -40,7 +44,6 @@ exports.getProductById = async (id) => {
 
   const product = result.rows[0];
 
-  // Obtener opciones de personalización
   const optionsResult = await pool.query(`
     SELECT 
       id,
@@ -57,188 +60,146 @@ exports.getProductById = async (id) => {
   return product;
 };
 
-exports.getProductOptions = async (idProducto) => {
-  const result = await pool.query(`
-    SELECT 
-      id,
-      id_producto,
-      nombre,
-      precio_adicional
-    FROM opcion_producto
-    WHERE id_producto = $1
-    ORDER BY nombre ASC
-  `, [idProducto]);
+exports.createProduct = async (
+  nombre,
+  precio,
+  categoria,
+  stock,
+  imagenUrls = [],
+  descripcion = ''
+) => {
 
-  return result.rows;
-};
-
-exports.createProductOption = async (idProducto, nombre, precioAdicional) => {
-  // Validar que el producto existe
-  const productCheck = await pool.query(
-    'SELECT id FROM producto WHERE id = $1',
-    [idProducto]
-  );
-
-  if (productCheck.rows.length === 0) {
-    throw new Error('Producto no encontrado');
-  }
-
-  // Validar campos requeridos
-  if (!nombre || nombre.trim() === '') {
-    throw new Error('El nombre de la opción es requerido');
-  }
-
-  if (precioAdicional === undefined || precioAdicional === null) {
-    throw new Error('El precio adicional es requerido');
-  }
-
-  const result = await pool.query(`
-    INSERT INTO opcion_producto (id_producto, nombre, precio_adicional)
-    VALUES ($1, $2, $3)
-    RETURNING id, id_producto, nombre, precio_adicional
-  `, [idProducto, nombre.trim(), precioAdicional]);
-
-  return result.rows[0];
-};
-
-exports.updateProductOption = async (id, nombre, precioAdicional) => {
-  // Validar campos
-  if (!nombre || nombre.trim() === '') {
-    throw new Error('El nombre de la opción es requerido');
-  }
-
-  if (precioAdicional === undefined || precioAdicional === null) {
-    throw new Error('El precio adicional es requerido');
-  }
-
-  const result = await pool.query(`
-    UPDATE opcion_producto
-    SET nombre = $1, precio_adicional = $2
-    WHERE id = $3
-    RETURNING id, id_producto, nombre, precio_adicional
-  `, [nombre.trim(), precioAdicional, id]);
-
-  if (result.rows.length === 0) {
-    throw new Error('Opción de producto no encontrada');
-  }
-
-  return result.rows[0];
-};
-
-exports.deleteProductOption = async (id) => {
-  const result = await pool.query(`
-    DELETE FROM opcion_producto
-    WHERE id = $1
-    RETURNING id, id_producto, nombre
-  `, [id]);
-
-  if (result.rows.length === 0) {
-    throw new Error('Opción de producto no encontrada');
-  }
-
-  return result.rows[0];
-};
-, descripcion = '') => {
-  // Validate imagen_url array
   if (!Array.isArray(imagenUrls)) {
     imagenUrls = [imagenUrls];
   }
-  
-  // Ensure maximum 3 URLs
+
   if (imagenUrls.length > 3) {
-    throw new Error('Se permite un máximo de 3 URLs de imagen');
+    throw new Error('Máximo 3 imágenes');
   }
 
-  // Filter out null and empty strings
-  imagenUrls = imagenUrls.filter(url => url && url.trim() !== '');
+  imagenUrls = imagenUrls.filter(
+    url => url && url.trim() !== ''
+  );
 
   const result = await pool.query(`
-    INSERT INTO producto (nombre, precio, categoria, stock, imagen_url, disponible, descripcion)
+    INSERT INTO producto
+    (
+      nombre,
+      precio,
+      categoria,
+      stock,
+      imagen_url,
+      disponible,
+      descripcion
+    )
     VALUES ($1, $2, $3, $4, $5, true, $6)
-    RETURNING id, nombre, precio, categoria, disponible, imagen_url, stock, descripcion
-  `, [nombre, precio, categoria, stock, imagenUrls, descripcionnible, imagen_url, stock
-  `, [nombre, precio, categoria, stock, imagenUrls]);
+    RETURNING
+      id,
+      nombre,
+      precio,
+      categoria,
+      disponible,
+      imagen_url,
+      stock,
+      descripcion
+  `, [
+    nombre,
+    precio,
+    categoria,
+    stock,
+    imagenUrls,
+    descripcion
+  ]);
 
   return result.rows[0];
 };
 
 exports.updateProduct = async (id, updateData) => {
-  const { nombre, precio, categoria, stock, imagenUrls, disponible, descripcion } = updateData;
 
-  // Validate imagen_url array if provided
-  let validImagenUrls = imagenUrls;
-  if (imagenUrls !== undefined) {
-    if (!Array.isArray(imagenUrls)) {
-      validImagenUrls = [imagenUrls];
-    }
-    
-    // Ensure maximum 3 URLs
-    if (validImagenUrls.length > 3) {
-      throw new Error('Se permite un máximo de 3 URLs de imagen');
-    }
+  const {
+    nombre,
+    precio,
+    categoria,
+    stock,
+    imagenUrls,
+    disponible,
+    descripcion
+  } = updateData;
 
-    // Filter out null and empty strings
-    validImagenUrls = validImagenUrls.filter(url => url && url.trim() !== '');
-  }
-
-  // Build dynamic update query
-  const updateFields = [];
+  const fields = [];
   const values = [];
-  let paramCounter = 1;
+
+  let count = 1;
 
   if (nombre !== undefined) {
-    updateFields.push(`nombre = $${paramCounter}`);
+    fields.push(`nombre = $${count++}`);
     values.push(nombre);
-    paramCounter++;
   }
 
   if (precio !== undefined) {
-    updateFields.push(`precio = $${paramCounter}`);
+    fields.push(`precio = $${count++}`);
     values.push(precio);
-    paramCounter++;
   }
 
   if (categoria !== undefined) {
-    updateFields.push(`categoria = $${paramCounter}`);
+    fields.push(`categoria = $${count++}`);
     values.push(categoria);
-    paramCounter++;
   }
 
   if (stock !== undefined) {
-    updateFields.push(`stock = $${paramCounter}`);
+    fields.push(`stock = $${count++}`);
     values.push(stock);
-    paramCounter++;
   }
 
   if (imagenUrls !== undefined) {
-    updateFields.push(`imagen_url = $${paramCounter}`);
-    values.push(validImagenUrls);
-    paramCounter++;
+
+    let validUrls = imagenUrls;
+
+    if (!Array.isArray(validUrls)) {
+      validUrls = [validUrls];
+    }
+
+    if (validUrls.length > 3) {
+      throw new Error('Máximo 3 imágenes');
+    }
+
+    validUrls = validUrls.filter(
+      url => url && url.trim() !== ''
+    );
+
+    fields.push(`imagen_url = $${count++}`);
+    values.push(validUrls);
   }
 
   if (disponible !== undefined) {
-    updateFields.push(`disponible = $${paramCounter}`);
+    fields.push(`disponible = $${count++}`);
     values.push(disponible);
-    paramCounter++;
   }
 
   if (descripcion !== undefined) {
-    updateFields.push(`descripcion = $${paramCounter}`);
+    fields.push(`descripcion = $${count++}`);
     values.push(descripcion);
-    paramCounter++;
   }
 
-  if (updateFields.length === 0) {
-    throw new Error('No hay campos para actualizar');
+  if (fields.length === 0) {
+    throw new Error('No hay datos para actualizar');
   }
 
   values.push(id);
 
   const query = `
     UPDATE producto
-    SET ${updateFields.join(', ')}
-    WHERE id = $${paramCounter}
-    RETURNING id, nombre, precio, categoria, disponible, imagen_url, stock, descripcion
+    SET ${fields.join(', ')}
+    WHERE id = $${count}
+    RETURNING
+      id,
+      nombre,
+      precio,
+      categoria,
+      disponible,
+      imagen_url,
+      stock,
+      descripcion
   `;
 
   const result = await pool.query(query, values);
@@ -259,6 +220,131 @@ exports.deleteProduct = async (id) => {
 
   if (result.rows.length === 0) {
     throw new Error('Producto no encontrado');
+  }
+
+  return result.rows[0];
+};
+
+// =========================
+// STOCK
+// =========================
+
+exports.updateStock = async (id, cantidad) => {
+
+  const result = await pool.query(`
+    UPDATE producto
+    SET stock = $1
+    WHERE id = $2
+    RETURNING
+      id,
+      nombre,
+      stock
+  `, [cantidad, id]);
+
+  if (result.rows.length === 0) {
+    throw new Error('Producto no encontrado');
+  }
+
+  return result.rows[0];
+};
+
+// =========================
+// OPCIONES
+// =========================
+
+exports.getProductOptions = async (idProducto) => {
+
+  const result = await pool.query(`
+    SELECT
+      id,
+      id_producto,
+      nombre,
+      precio_adicional
+    FROM opcion_producto
+    WHERE id_producto = $1
+    ORDER BY nombre ASC
+  `, [idProducto]);
+
+  return result.rows;
+};
+
+exports.createProductOption = async (
+  idProducto,
+  nombre,
+  precioAdicional
+) => {
+
+  const productCheck = await pool.query(
+    'SELECT id FROM producto WHERE id = $1',
+    [idProducto]
+  );
+
+  if (productCheck.rows.length === 0) {
+    throw new Error('Producto no encontrado');
+  }
+
+  const result = await pool.query(`
+    INSERT INTO opcion_producto
+    (
+      id_producto,
+      nombre,
+      precio_adicional
+    )
+    VALUES ($1, $2, $3)
+    RETURNING
+      id,
+      id_producto,
+      nombre,
+      precio_adicional
+  `, [
+    idProducto,
+    nombre,
+    precioAdicional
+  ]);
+
+  return result.rows[0];
+};
+
+exports.updateProductOption = async (
+  id,
+  nombre,
+  precioAdicional
+) => {
+
+  const result = await pool.query(`
+    UPDATE opcion_producto
+    SET
+      nombre = $1,
+      precio_adicional = $2
+    WHERE id = $3
+    RETURNING
+      id,
+      id_producto,
+      nombre,
+      precio_adicional
+  `, [
+    nombre,
+    precioAdicional,
+    id
+  ]);
+
+  if (result.rows.length === 0) {
+    throw new Error('Opción no encontrada');
+  }
+
+  return result.rows[0];
+};
+
+exports.deleteProductOption = async (id) => {
+
+  const result = await pool.query(`
+    DELETE FROM opcion_producto
+    WHERE id = $1
+    RETURNING id, nombre
+  `, [id]);
+
+  if (result.rows.length === 0) {
+    throw new Error('Opción no encontrada');
   }
 
   return result.rows[0];
