@@ -8,14 +8,14 @@ exports.getAllUsers = async (adminId) => {
     [adminId]
   );
 
-  if (adminCheck.rows.length === 0 || adminCheck.rows[0].id_rol !== 'admin') {
+  if (adminCheck.rows.length === 0 || adminCheck.rows[0].id_rol !== 3) {
     throw new Error('Acceso denegado: se requieren permisos de administrador');
   }
 
   const result = await pool.query(
-    `SELECT id, usuario, email, fecha_nacimiento, sexo, telefono, id_rol, activo, fecha_creacion
+    `SELECT id, usuario, email, fecha_nacimiento, sexo, telefono, id_rol, activo, fecha_registro
      FROM usuario
-     ORDER BY fecha_creacion DESC`
+     ORDER BY fecha_registro DESC`
   );
 
   return result.rows;
@@ -28,14 +28,14 @@ exports.updateUserRole = async (adminId, targetUserId, newRole) => {
     [adminId]
   );
 
-  if (adminCheck.rows.length === 0 || adminCheck.rows[0].id_rol !== 'admin') {
+  if (adminCheck.rows.length === 0 || adminCheck.rows[0].id_rol !== 3) {
     throw new Error('Acceso denegado: se requieren permisos de administrador');
   }
 
   // Validar rol
-  const validRoles = ['usuario', 'trabajador', 'admin'];
+  const validRoles = [1, 2, 3];
   if (!validRoles.includes(newRole)) {
-    throw new Error('Rol inválido. Los roles válidos son: usuario, trabajador, admin');
+    throw new Error('Rol inválido. Los roles válidos son: 1 (usuario), 2 (trabajador), 3 (admin)');
   }
 
   // Check if target user exists
@@ -51,7 +51,7 @@ exports.updateUserRole = async (adminId, targetUserId, newRole) => {
   const currentUser = userCheck.rows[0];
 
   // Evitar que el admin se demote a sí mismo
-  if (targetUserId === adminId && newRole !== 'admin') {
+  if (targetUserId === adminId && newRole !== 3) {
     throw new Error('No puedes cambiar tu propio rol de administrador');
   }
 
@@ -79,7 +79,7 @@ exports.toggleUserStatus = async (adminId, targetUserId, activate) => {
     [adminId]
   );
 
-  if (adminCheck.rows.length === 0 || adminCheck.rows[0].id_rol !== 'admin') {
+  if (adminCheck.rows.length === 0 || adminCheck.rows[0].id_rol !== 3) {
     throw new Error('Acceso denegado: se requieren permisos de administrador');
   }
 
@@ -131,7 +131,7 @@ exports.getUserById = async (adminId, targetUserId) => {
   }
 
   const result = await pool.query(
-    `SELECT id, usuario, email, fecha_nacimiento, sexo, telefono, id_rol, activo, fecha_creacion
+    `SELECT id, usuario, email, fecha_nacimiento, sexo, telefono, id_rol, activo, fecha_registro
      FROM usuario
      WHERE id = $1`,
     [targetUserId]

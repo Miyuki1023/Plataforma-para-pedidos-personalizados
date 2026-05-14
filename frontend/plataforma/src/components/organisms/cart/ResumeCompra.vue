@@ -1,39 +1,28 @@
 <script setup lang="ts">
 
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 
 import CartProductCard from '../../molecules/CartProductCard.vue'
 import DeliveryCard from '../../molecules/DeliveryCard.vue'
 import PurchaseSummary from '../../molecules/PurchaseSummary.vue'
 import BaseButton from '../../atoms/BaseButton.vue'
 
-const cartItems = ref([
-  {
-    id: 1,
+const cartItems = ref<any[]>([])
 
-    image: new URL('../../../assets/recom1.png', import.meta.url).href,
+/* LOAD CART */
 
-    name: 'Torta de Primavera',
+onMounted(() => {
 
-    description:
-      'Torta fresca y colorida, con sabores ligeros y frutales.',
+  const savedProduct =
+    localStorage.getItem('cartProduct')
 
-    size: 'Mediano',
+  if (savedProduct) {
 
-    avoidIngredient: 'Naranja',
-
-    toppings: [
-      'Frutilla',
-      'Crema batida'
-    ],
-
-    message: 'Feliz aniversario',
-
-    quantity: 1,
-
-    price: 80
+    cartItems.value = [
+      JSON.parse(savedProduct)
+    ]
   }
-])
+})
 
 /* DELIVERY */
 
@@ -42,6 +31,45 @@ const selectedDay = ref('May 12')
 const selectedSchedule = ref(
   'Mañana (07:00 - 09:00)'
 )
+
+/* QUANTITY */
+
+const increaseQty = (id: number) => {
+
+  const product = cartItems.value.find(
+    item => item.id === id
+  )
+
+  if (product) {
+    product.quantity++
+  }
+}
+
+const decreaseQty = (id: number) => {
+
+  const product = cartItems.value.find(
+    item => item.id === id
+  )
+
+  if (
+    product &&
+    product.quantity > 1
+  ) {
+    product.quantity--
+  }
+}
+
+/* REMOVE */
+
+const removeProduct = (id: number) => {
+
+  cartItems.value =
+    cartItems.value.filter(
+      item => item.id !== id
+    )
+
+  localStorage.removeItem('cartProduct')
+}
 
 /* TOTALS */
 
@@ -87,10 +115,13 @@ const total = computed(() => {
       <div class="cart-products">
 
         <CartProductCard
-          v-for="item in cartItems"
-          :key="item.id"
-          :item="item"
-        />
+  v-for="item in cartItems"
+  :key="item.id"
+  :item="item"
+  @increase="increaseQty(item.id)"
+  @decrease="decreaseQty(item.id)"
+  @remove="removeProduct(item.id)"
+/>
 
       </div>
 

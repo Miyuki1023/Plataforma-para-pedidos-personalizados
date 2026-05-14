@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, onMounted, onBeforeUnmount, nextTick, computed } from 'vue'
 import { RouterLink } from 'vue-router'
+import { useAuthStore } from '../../stores/auth'
 
 import BaseIcon from '../atoms/BaseIcon.vue'
 
+const authStore = useAuthStore()
 const isMenuOpen = ref(false)
 const isSearchOpen = ref(false)
 
@@ -17,6 +19,11 @@ const toggleMenu = () => {
 const closeMenu = () => {
   isMenuOpen.value = false
 }
+
+// Si el usuario está autenticado, lo lleva a su perfil, de lo contrario al login
+const profileLink = computed(() => {
+  return authStore.user ? '/perfil' : '/login'
+})
 
 const toggleSearch = () => {
   isSearchOpen.value = !isSearchOpen.value
@@ -103,14 +110,14 @@ onBeforeUnmount(() => {
       </div>
 
       <!-- USER -->
-      <button class="icon-btn">
+      <RouterLink class="icon-btn" :to="profileLink">
         <BaseIcon name="user" :size="20" />
-      </button>
+      </RouterLink>
 
       <!-- CART -->
-      <button class="icon-btn">
+      <RouterLink class="icon-btn" to="/carrito">
         <BaseIcon name="cart" :size="20" />
-      </button>
+      </RouterLink>
     </div>
   </header>
 <!-- SIDEBAR -->
@@ -158,7 +165,7 @@ onBeforeUnmount(() => {
 
       <!-- ABOUT -->
       <RouterLink
-        to="/home"
+        to="/sobre-nosotros"
         class="sidebar-link"
         @click="closeMenu"
       >

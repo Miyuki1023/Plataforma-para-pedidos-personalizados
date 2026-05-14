@@ -1,16 +1,21 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import BaseInput from '../atoms/BaseInput.vue'
 import BaseButton from '../atoms/BaseButton.vue'
 import BaseCheckbox from '../atoms/BaseCheckbox.vue'
+import { useAuthStore } from '../../stores/auth'
 
 const username = ref('')
 const email = ref('')
 const password = ref('')
+const phone = ref('')
+const birthdate = ref('')
 const acceptPolicy = ref(false)
 const loading = ref(false)
 const error = ref('')
+const router = useRouter()
+const authStore = useAuthStore()
 
 const handleSubmit = async () => {
   error.value = ''
@@ -26,11 +31,20 @@ const handleSubmit = async () => {
 
   loading.value = true
   try {
-    // TODO: reemplazar con tu llamada al backend
-    await new Promise(r => setTimeout(r, 1200))
-    console.log('Registro:', { username: username.value, email: email.value })
-  } catch {
-    error.value = 'Ocurrió un error. Inténtalo de nuevo.'
+    // Mapeamos 'username' a 'usuario' que es lo que espera tu backend (auth.service.js)
+    await authStore.register({
+      usuario: username.value,
+      email: email.value,
+      password: password.value,
+      telefono: phone.value,
+      fecha_nacimiento: birthdate.value,
+      sexo: 'M' // Valor por defecto o puedes añadir un selector en el template
+    })
+    
+    // Si el registro es exitoso, redirigimos al login
+    router.push('/login')
+  } catch (err: any) {
+    error.value = err.message || 'Ocurrió un error al registrarse. Inténtalo de nuevo.'
   } finally {
     loading.value = false
   }
@@ -60,6 +74,27 @@ const handleSubmit = async () => {
           stroke-linecap="round" stroke-linejoin="round">
           <rect x="2" y="4" width="20" height="16" rx="3"/>
           <polyline points="2,4 12,13 22,4"/>
+        </svg>
+      </template>
+    </BaseInput>
+
+    <!-- Phone -->
+    <BaseInput v-model="phone" type="tel" placeholder="999 999 999">
+      <template #icon>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l2.19-1.3a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+        </svg>
+      </template>
+    </BaseInput>
+
+    <!-- Birthdate -->
+    <BaseInput v-model="birthdate" type="date" placeholder="Fecha de nacimiento">
+      <template #icon>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/>
+          <line x1="8" y1="2" x2="8" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
         </svg>
       </template>
     </BaseInput>

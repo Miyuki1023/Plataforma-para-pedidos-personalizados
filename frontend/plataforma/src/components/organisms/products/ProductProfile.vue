@@ -14,6 +14,37 @@ const router = useRouter()
 
 const goToProduct = () => {
 
+  const cartProduct = {
+
+    id: product.id,
+
+    image: product.image,
+
+    name: product.name,
+
+    description: product.description,
+
+    size: selectedSize.value,
+
+    avoidIngredient: ingredient.value,
+
+    toppings: [
+      fruit.value,
+      cream.value
+    ].filter(Boolean),
+
+    message: message.value,
+
+    quantity: quantity.value,
+
+    price: totalPrice.value
+  }
+
+  localStorage.setItem(
+    'cartProduct',
+    JSON.stringify(cartProduct)
+  )
+
   router.push({
     name: 'resumen-compra'
   })

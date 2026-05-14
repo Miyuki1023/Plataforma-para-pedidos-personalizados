@@ -1,7 +1,17 @@
 <script setup lang="ts">
 import BaseBadge from '../atoms/BaseBadge.vue'
 
-defineProps<{
+import { useRouter } from 'vue-router'
+const router = useRouter()
+const goToProduct = () => {
+
+  router.push(
+    `/producto/${props.id}`
+  )
+}
+
+const props = defineProps<{
+  id: string | number
   image: string
   badge?: string
   title: string
@@ -55,6 +65,8 @@ defineProps<{
       <!-- LINK -->
       <a
         href="#"
+        @click="goToProduct"
+
         class="promo-link"
       >
         Ver detalles

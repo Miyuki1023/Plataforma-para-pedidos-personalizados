@@ -1,5 +1,12 @@
 <script setup lang="ts">
 import BaseButton from '../../atoms/BaseButton.vue'
+import { useRouter } from 'vue-router'
+const router = useRouter()
+const goToCatalog = () => {
+  router.push('/catalogo')
+}
+
+
 </script>
 
 <template>
@@ -14,6 +21,7 @@ import BaseButton from '../../atoms/BaseButton.vue'
       </p>
 
       <BaseButton
+        @click="goToCatalog"
         variant="ghost"
         class="hero-cta"
       >

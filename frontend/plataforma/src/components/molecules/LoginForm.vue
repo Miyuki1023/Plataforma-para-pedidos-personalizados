@@ -3,12 +3,14 @@ import { ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import BaseInput from '../atoms/BaseInput.vue'
 import BaseButton from '../atoms/BaseButton.vue'
+import { useAuthStore } from '../../stores/auth'
 
 const email = ref('')
 const password = ref('')
 const loading = ref(false)
 const error = ref('')
 const router = useRouter()
+const authStore = useAuthStore()
 
 const handleSubmit = async () => {
   error.value = ''
@@ -18,11 +20,14 @@ const handleSubmit = async () => {
   }
   loading.value = true
   try {
-    // TODO: reemplazar con tu llamada al backend
-    await new Promise(r => setTimeout(r, 1200))
+    await authStore.login({
+      email: email.value,
+      password: password.value
+    })
+
     router.push('/home') // Redirige a la página de inicio después del login exitoso
-  } catch {
-    error.value = 'Credenciales incorrectas. Inténtalo de nuevo.'
+  } catch (err: any) {
+    error.value = err.message || 'Credenciales incorrectas. Inténtalo de nuevo.'
   } finally {
     loading.value = false
   }

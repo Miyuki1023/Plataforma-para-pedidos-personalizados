@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 
 import BaseButton from '../atoms/BaseButton.vue'
 import FavoriteIcon from '../atoms/FavoriteIcon.vue'
+import { useFavoritesStore } from '../../stores/favorites'
 
 interface Props {
   id: string | number
@@ -24,12 +25,17 @@ defineEmits([
 ])
 
 const router = useRouter()
+const favStore = useFavoritesStore()
 
 const goToProduct = () => {
 
   router.push(
     `/producto/${props.id}`
   )
+}
+
+const toggleFavorite = () => {
+  favStore.toggleFavorite(props)
 }
 </script>
 
@@ -55,7 +61,11 @@ const goToProduct = () => {
       </span>
 
       <!-- FAVORITE -->
-      <FavoriteIcon />
+      <FavoriteIcon 
+        :active="favStore.isFavorite(id)" 
+        @click.stop="toggleFavorite"
+        style="cursor: pointer"
+      />
 
     </div>
 

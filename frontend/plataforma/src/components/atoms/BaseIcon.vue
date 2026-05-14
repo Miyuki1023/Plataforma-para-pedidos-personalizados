@@ -14,6 +14,14 @@ import {
   Facebook,
   Music,
   Star,
+  Settings,
+  Bell,
+  BellOff,
+  Lock,
+  ChevronRight,
+  Mail,
+  ShieldCheck
+
 } from 'lucide-vue-next'
 
 const icons = {
@@ -31,6 +39,13 @@ const icons = {
   facebook: Facebook,
   tiktok: Music,
   star: Star,
+  settings: Settings,
+  bell: Bell,
+  'bell-off': BellOff,
+  lock: Lock,
+  'chevron-right': ChevronRight,
+  mail: Mail,
+  'shield-check': ShieldCheck,
 }
 
 type IconName = keyof typeof icons

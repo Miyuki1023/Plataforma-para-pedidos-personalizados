@@ -8,5 +8,5 @@ exports.updateRoleValidation = [
   // Validar rol en el cuerpo
   body('rol')
     .notEmpty().withMessage('Rol es requerido')
-    .isIn(['usuario', 'trabajador', 'admin']).withMessage('Rol debe ser "usuario", "trabajador" o "admin"')
+    .isIn([1, 2, 3]).withMessage('Rol debe ser 1 (usuario), 2 (trabajador) o 3 (admin)')
 ];

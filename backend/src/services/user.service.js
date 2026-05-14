@@ -4,7 +4,7 @@ const bcrypt = require('bcrypt');
 exports.getUserProfile = async (userId) => {
   // Obtener perfil completo del usuario
   const result = await pool.query(
-    `SELECT id, usuario, email, fecha_nacimiento, sexo, telefono, id_rol, activo, fecha_creacion
+    `SELECT id, usuario, email, fecha_nacimiento, sexo, telefono, id_rol, activo, fecha_registro
      FROM usuario
      WHERE id = $1 AND activo = true`,
     [userId]

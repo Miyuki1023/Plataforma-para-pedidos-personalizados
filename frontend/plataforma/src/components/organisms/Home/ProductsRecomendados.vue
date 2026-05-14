@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import ProductCard from '../../molecules/ProductCard.vue'
 import BaseButton from '../../atoms/BaseButton.vue'
-import FavoriteIcon from '../../atoms/FavoriteIcon.vue'
 
 const products = [
   {
@@ -58,9 +57,11 @@ const products = [
 
     <div class="center-btn">
 
-      <BaseButton variant="ghost">
-        Explorar catálogo
-      </BaseButton>
+     <RouterLink to="/catalogo">
+  <BaseButton variant="ghost">
+    Explorar catálogo
+  </BaseButton>
+</RouterLink>
 
     </div>
 

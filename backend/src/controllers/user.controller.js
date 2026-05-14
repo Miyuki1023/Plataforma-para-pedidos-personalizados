@@ -13,7 +13,7 @@ exports.getProfile = async (req, res) => {
         sexo: user.sexo,
         telefono: user.telefono,
         rol: user.id_rol,
-        fecha_creacion: user.fecha_creacion
+        fecha_registro: user.fecha_registro
       }
     });
   } catch (error) {

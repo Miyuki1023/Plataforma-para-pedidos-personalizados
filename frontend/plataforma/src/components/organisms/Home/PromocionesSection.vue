@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import PromoCard from '../../molecules/PromoCard.vue'
 import BaseButton from '../../atoms/BaseButton.vue'
+import { useRouter } from 'vue-router'
+const router = useRouter()
+const goToCatalog = () => {
+
+  router.push(
+    `/catalogo`
+  )
+}
 
 /* IMAGES */
 
@@ -12,6 +20,7 @@ import prom3 from '../../../assets/prom3.jpg'
 
 const promos = [
   {
+    id: 1,
     image: prom1,
     badge: '15% OFF',
     title: 'Torta del mes',
@@ -20,6 +29,7 @@ const promos = [
   },
 
   {
+    id: 2,
     image: prom2,
     badge: '2x1',
     title: 'Caja sorpresa',
@@ -28,6 +38,7 @@ const promos = [
   },
 
   {
+    id: 3,
     image: prom3,
     badge: 'NUEVO',
     title: 'Cupcakes Mix',
@@ -63,8 +74,8 @@ const promos = [
     <div class="promos-grid">
 
       <PromoCard
-        v-for="(promo, index) in promos"
-        :key="index"
+        v-for="promo in promos"
+        :key="promo.id"
         v-bind="promo"
       />
 
@@ -73,7 +84,7 @@ const promos = [
     <!-- BUTTON -->
     <div class="center-btn">
 
-      <BaseButton variant="primary">
+      <BaseButton variant="primary" @click="goToCatalog">
         Ver promociones
       </BaseButton>
 

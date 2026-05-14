@@ -12,7 +12,8 @@ import HomeUserView from '../views/HomeUserView.vue'
 import CatalogoView from '../views/Catalogo.vue'
 import ProductProfileView from '../views/ProductProfileView.vue'
 import ResumendeCompraView from '../views/ResumendeCompraView.vue'
-// import PerfilView from '../views/PerfilView.vue'
+import PerfilUserView from '../views/PerfilUserView.vue'
+import SobreNosotrosView from '../views/SobreNosotrosView.vue'
 
 const router = createRouter({
 
@@ -67,12 +68,21 @@ const router = createRouter({
       component: ResumendeCompraView
     },
 
-    // /* PERFIL */
-    // {
-    //   path: '/perfil',
-    //   name: 'perfil',
-    //   component: PerfilView
-    // },
+    {
+      path: '/perfil',
+      name: 'perfil',
+      component: PerfilUserView
+    },
+     {
+      path: '/carrito',
+      name: 'carrito',
+      component: ResumendeCompraView
+    },
+    {
+      path: '/sobre-nosotros',
+      name: 'sobre-nosotros',
+      component: SobreNosotrosView
+    },
 
     /* 404 */
     {

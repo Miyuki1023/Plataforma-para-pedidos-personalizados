@@ -3,7 +3,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { addToBlacklist } = require('../middlewares/auth');
 
-exports.register = async ({ usuario, email, password, rol = 'usuario', fecha_nacimiento, sexo, telefono }) => {
+exports.register = async ({ usuario, email, password, rol = 1, fecha_nacimiento, sexo, telefono }) => {
 
   if (!usuario || !email || !password) {
     throw new Error('Faltan campos');
@@ -77,9 +77,9 @@ exports.adminRegister = async ({ usuario, email, password, rol, fecha_nacimiento
   }
 
   // Validate role
-  const validRoles = ['trabajador', 'admin'];
+  const validRoles = [2, 3];
   if (!validRoles.includes(rol)) {
-    throw new Error('Rol inválido. Solo se puede crear usuarios con rol "trabajador" o "admin"');
+    throw new Error('Rol inválido. Solo se puede crear usuarios con rol 2 (trabajador) o 3 (admin)');
   }
 
   // Check if the requester is an admin
@@ -88,7 +88,7 @@ exports.adminRegister = async ({ usuario, email, password, rol, fecha_nacimiento
     [adminId]
   );
 
-  if (adminCheck.rows.length === 0 || adminCheck.rows[0].id_rol !== 'admin') {
+  if (adminCheck.rows.length === 0 || adminCheck.rows[0].id_rol !== 3) {
     throw new Error('Solo administradores pueden crear usuarios con roles especiales');
   }
 

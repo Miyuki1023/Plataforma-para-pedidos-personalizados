@@ -1,126 +1,112 @@
-<!-- molecules/CartProductCard.vue -->
-
 <script setup lang="ts">
 
-import { ref } from 'vue'
-
-const props = defineProps<{
+defineProps<{
   item: any
 }>()
 
-const quantity = ref(props.item.quantity)
-
-const increase = () => {
-  quantity.value++
-}
-
-const decrease = () => {
-
-  if (quantity.value > 1) {
-    quantity.value--
-  }
-}
+const emit = defineEmits([
+  'increase',
+  'decrease',
+  'remove'
+])
 
 </script>
 
 <template>
 
-  <article class="cart-card">
+  <div class="cart-card">
 
-    <!-- IMAGE -->
     <img
       :src="item.image"
-      :alt="item.name"
       class="cart-image"
-    />
+    >
 
-    <!-- INFO -->
-    <div class="cart-info">
+    <div class="cart-content">
 
       <div class="cart-top">
 
-        <div>
+        <h2>
+          {{ item.name }}
+        </h2>
 
-          <h2 class="cart-name">
-            {{ item.name }}
-          </h2>
-
-          <p class="cart-desc">
-            {{ item.description }}
-          </p>
-
-        </div>
-
-        <h3 class="cart-price">
+        <h3>
           S/{{ item.price }}
         </h3>
 
       </div>
 
-      <!-- TAGS -->
+      <p>
+        {{ item.description }}
+      </p>
+
       <div class="cart-tags">
 
-        <span class="tag">
+        <span>
           {{ item.size }}
         </span>
 
         <span
           v-if="item.avoidIngredient"
-          class="tag soft"
         >
           Sin {{ item.avoidIngredient }}
         </span>
 
       </div>
 
-      <!-- TOPPINGS -->
-      <div class="extra-list">
+      <div
+        v-if="item.toppings.length"
+        class="toppings"
+      >
 
         <span
           v-for="top in item.toppings"
           :key="top"
         >
-          + {{ top }}
+          {{ top }}
         </span>
 
       </div>
 
-      <!-- MESSAGE -->
       <p
         v-if="item.message"
-        class="cake-message"
       >
-        “{{ item.message }}”
+        "{{ item.message }}"
       </p>
 
-      <!-- ACTIONS -->
-      <div class="cart-actions">
+      <!-- QTY -->
 
-        <div class="qty-box">
+      <div class="qty-box">
 
-          <button @click="decrease">
-            −
-          </button>
+        <button
+          @click="emit('decrease')"
+        >
+          −
+        </button>
 
-          <span>
-            {{ quantity }}
-          </span>
+        <span>
+          {{ item.quantity }}
+        </span>
 
-          <button @click="increase">
-            +
-          </button>
-
-        </div>
-
-        <button class="remove-btn">
-          Quitar
+        <button
+          @click="emit('increase')"
+        >
+          +
         </button>
 
       </div>
 
+      <!-- REMOVE -->
+
+      <button
+        class="remove-btn"
+        @click="emit('remove')"
+      >
+        Quitar
+      </button>
+
     </div>
 
-  </article>
+  </div>
 
 </template>
 

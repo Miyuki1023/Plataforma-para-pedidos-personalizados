@@ -1,74 +1,49 @@
 <!-- CatalogView.vue -->
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 
 import ProductFilter from '../../molecules/FiltroCard.vue'
 import ProductCard from '../../molecules/ProductCard.vue'
-
+import { apiService } from '../../../modules/service/api.service'
 const search = ref('')
 
 const selectedCategories = ref<string[]>([])
 const minPrice = ref(20)
 const maxPrice = ref(400)
+const loading = ref(true)
+const error = ref('')
 
-const products = [
-  {
-    id: 1,
-    image: new URL('../../../assets/recom1.png', import.meta.url).href,
-    category: 'TORTAS',
-    name: 'Torta de Primavera',
-    description: 'Torta fresca y colorida, con sabores ligeros y relleno de frutas.',
-    price: 60,
-    isNew: true
-  },
+const products = ref<any[]>([])
 
-  {
-    id: 2,
-    image: new URL('../../../assets/recom2.png', import.meta.url).href,
-    category: 'GALLETAS',
-    name: 'Choco comi',
-    description: 'Exquisita torta de chocolate con un toque especial de vainilla.',
-    price: 40
-  },
+onMounted(async () => {
+  try {
+    loading.value = true
+    // Cambiamos a /productos para coincidir con el lenguaje de tu base de datos
+    const data = await apiService.get('/productos')
+    
+    console.log('Datos recibidos del backend:', data)
 
-  {
-    id: 3,
-    image: new URL('../../../assets/recom3.png', import.meta.url).href,
-    category: 'TORTAS',
-    name: 'Torta de Helada',
-    description: 'Postre frío y refrescante, con capas suaves de crema y fruta.',
-    price: 55
-  },
+    // Verificamos si data es un arreglo o si viene dentro de una propiedad
+    const rawProducts = Array.isArray(data) ? data : (data.products || [])
 
-  {
-    id: 4,
-    image: new URL('../../../assets/recom1.png', import.meta.url).href,
-    category: 'CHEESECAKES',
-    name: 'Cheesecake Frutal',
-    description: 'Base crocante y crema suave con topping de frutos.',
-    price: 70
-  },
-
-  {
-    id: 5,
-    image: new URL('../../../assets/recom2.png', import.meta.url).href,
-    category: 'GALLETAS',
-    name: 'Cookies Deluxe',
-    description: 'Galletas artesanales rellenas de chocolate.',
-    price: 35
-  },
-
-  {
-    id: 6,
-    image: new URL('../../../assets/recom3.png', import.meta.url).href,
-    category: 'TORTAS',
-    name: 'Berry Cake',
-    description: 'Sabores suaves con frutas frescas y crema.',
-    price: 65
+    products.value = rawProducts.map((p: any) => ({
+      id: p.id,
+      name: p.nombre || p.name || 'Producto sin nombre',
+      // Aseguramos que el precio sea un número para los filtros
+      price: Number(p.precio || p.price || 0),
+      description: p.descripcion || p.description || '',
+      // Normalizamos la categoría a mayúsculas para el filtrado
+      category: String(p.categoria || p.category || 'OTROS').toUpperCase(),
+      image: p.imagen_url || p.imagen || p.image || p.imageUrl,
+      isNew: p.es_nuevo || p.isNew || false
+    }))
+  } catch (err: any) {
+    error.value = `Error: ${err.message || 'No se pudo conectar con el servidor'}`
+    console.error(err)
+  } finally {
+    loading.value = false
   }
-]
-
-
+})
 
 const toggleCategory = (category: string) => {
 
@@ -96,14 +71,13 @@ const productsPerPage = 12
 /* FILTERED PRODUCTS */
 const filteredProducts = computed(() => {
 
-  return products.filter((product) => {
+  return products.value.filter((product: any) => {
 
     /* SEARCH */
-    const matchesSearch =
-
-      product.name
-        .toLowerCase()
-        .includes(search.value.toLowerCase())
+    const searchTerm = search.value.toLowerCase()
+    const matchesSearch = 
+      (product.name || '').toLowerCase().includes(searchTerm) ||
+      (product.description || '').toLowerCase().includes(searchTerm)
 
     /* CATEGORY */
     const matchesCategory =
@@ -239,15 +213,24 @@ const changePage = (page: number) => {
           Descubre nuestros favoritos
         </h2>
 
-        <div class="products-grid">
+        <div v-if="loading" class="loading-state">
+          <p>Cargando delicias desde la cocina...</p>
+        </div>
 
+        <div v-else-if="error" class="error-state">
+          <p>{{ error }}</p>
+        </div>
+
+        <div v-else class="products-grid">
           <ProductCard
             v-for="product in paginatedProducts"
             :key="product.id"
             v-bind="product"
             @add-to-cart="() => {}"
           />
-
+          <p v-if="paginatedProducts.length === 0" class="no-results">
+            No se encontraron productos con estos filtros.
+          </p>
         </div>
 
         
