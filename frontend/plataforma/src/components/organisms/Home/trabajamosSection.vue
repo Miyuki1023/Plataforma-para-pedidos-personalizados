@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import { useRouter } from 'vue-router'
 import BaseButton from '../../atoms/BaseButton.vue'
+
+const router = useRouter()
 </script>
 
 <template>
@@ -60,6 +63,7 @@ import BaseButton from '../../atoms/BaseButton.vue'
     <BaseButton
       class="about-btn"
       variant="primary"
+      @click="router.push('/sobre-nosotros')"
     >
       Conócenos
     </BaseButton>

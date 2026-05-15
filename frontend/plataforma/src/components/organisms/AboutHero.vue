@@ -22,12 +22,23 @@ import HistoryContent from '../molecules/HistoryContent.vue'
 
 .hero-image {
   width: 500px;
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
 }
 
 @media (max-width: 900px) {
-  .hero {
+  .hero-about {
     flex-direction: column;
+    gap: 40px;
+    padding: 60px 5%;
     text-align: center;
+  }
+
+  .hero-image {
+    width: 100%;
+    max-width: 400px;
+    order: -1; /* La imagen aparece arriba en móviles */
   }
 }
 </style>

@@ -3,22 +3,17 @@
 
 <template>
   <div class="history-content">
-    <h1>
-      Nuestra historia
-    </h1>
-
+    <h1 class="history-title">Nuestra historia</h1><br>
     <h3>
       Endulzando momentos desde el primer pedido
     </h3>
 
     <p>
-      Vainilla y Miel inició como un emprendimiento
-      enfocado en pedidos personalizados.
+      Vainilla y Miel inició como un emprendimiento de repostería artesanal enfocado en la elaboración de pedidos personalizados, gestionados inicialmente desde el hogar a través de redes sociales y recomendaciones cercanas.
     </p>
 
     <p>
-      La dedicación en cada preparación permitió
-      consolidar una experiencia dulce y especial.
+      A pesar de no contar con un local físico, el compromiso con la calidad y la dedicación en cada preparación permitieron consolidar una propuesta orientada a la creación de productos pensados para acompañar momentos especiales.A pesar de no contar con un local físico, el compromiso con la calidad y la dedicación en cada preparación permitieron consolidar una propuesta orientada a la creación de productos pensados para acompañar momentos especiales.
     </p>
   </div>
 </template>

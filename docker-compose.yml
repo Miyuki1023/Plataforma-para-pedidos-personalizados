@@ -1,0 +1,31 @@
+version: '3.9'
+
+services:
+
+  backend:
+    build: ./backend
+    container_name: backend_app
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    environment:
+      PORT: 3000
+      DB_USER: postgres
+      DB_HOST: host.docker.internal
+      DB_NAME: vainillaYmiel_db
+      DB_PASSWORD: tu_password
+      DB_PORT: 5432
+      JWT_SECRET: super_secretosuper_secretosuper_secretosuper_secreto
+
+  frontend:
+    build: ./frontend
+    container_name: frontend_app
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend

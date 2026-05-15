@@ -28,16 +28,53 @@ const challenges = [
 .challenges-list {
   display: flex;
   flex-direction: column;
-  gap: 2.5rem;
-  max-width: 500px;
+  gap: 2rem;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
 }
+
+.challenge-item {
+  padding: 1.5rem;
+  background: white;
+  border-radius: 20px;
+  border-left: 5px solid var(--primary);
+  box-shadow: var(--shadow);
+  transition: transform 0.3s ease;
+}
+
+.challenge-item:hover {
+  transform: translateX(10px);
+}
+
 .challenge-item-title {
-  font-size: 1.8rem;
-  color: #a52b2b;
-  margin-bottom: 0.5rem;
+  font-family: var(--heading);
+  font-size: 1.5rem;
+  color: var(--primary);
+  margin: 0 0 0.5rem 0;
 }
+
 .challenge-item-desc {
-  color: #555;
+  color: var(--text);
   line-height: 1.6;
+  margin: 0;
+  font-size: 1rem;
+}
+
+@media (max-width: 900px) {
+  .challenges-container {
+    align-items: center;
+    text-align: center;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .challenge-item {
+    padding: 1.2rem 1.5rem;
+  }
+  .challenge-item-title {
+    font-size: 1.15rem;
+  }
 }
 </style>

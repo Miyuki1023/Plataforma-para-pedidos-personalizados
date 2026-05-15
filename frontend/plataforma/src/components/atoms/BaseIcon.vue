@@ -20,8 +20,10 @@ import {
   Lock,
   ChevronRight,
   Mail,
-  ShieldCheck
-
+  ShieldCheck,
+  Pencil,
+  Eye,
+  DollarSign
 } from 'lucide-vue-next'
 
 const icons = {
@@ -46,6 +48,9 @@ const icons = {
   'chevron-right': ChevronRight,
   mail: Mail,
   'shield-check': ShieldCheck,
+  pencil: Pencil,
+  eye: Eye,
+  'dollar-sign': DollarSign
 }
 
 type IconName = keyof typeof icons

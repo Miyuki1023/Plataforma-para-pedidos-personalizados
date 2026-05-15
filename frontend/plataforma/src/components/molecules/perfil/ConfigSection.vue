@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import BaseIcon from '../../atoms/BaseIcon.vue'
 import { useAuthStore } from '../../../stores/auth'
 import { apiService } from '../../../modules/service/api.service'
 
 const authStore = useAuthStore()
+const router = useRouter()
 const notificationsActive = ref(true)
 const showPasswordModal = ref(false)
 const step = ref(1)
@@ -74,6 +76,15 @@ const savePassword = async () => {
     }
   } else {
     error.value = 'Las contraseñas no coinciden.'
+  }
+}
+
+const handleLogout = async () => {
+  try {
+    await authStore.logout()
+    router.push('/') // Redirigir al inicio después de cerrar sesión
+  } catch (err) {
+    console.error('Error al cerrar sesión:', err)
   }
 }
 </script>
@@ -185,6 +196,38 @@ const savePassword = async () => {
           class="mini-arrow"
         />
 
+      </button>
+
+      <!-- LOGOUT -->
+      <button
+        class="mini-config-item mini-logout-btn"
+        @click="handleLogout"
+      >
+
+        <div class="mini-config-left">
+
+          <div class="mini-config-icon logout">
+            <BaseIcon
+              name="user"
+              :size="16"
+            />
+          </div>
+
+          <div>
+            <h3 class="mini-config-label logout-text">
+              Cerrar sesión
+            </h3>
+            <p class="mini-config-desc">
+              Finalizar sesión actual
+            </p>
+          </div>
+        </div>
+
+        <BaseIcon
+          name="chevron-right"
+          :size="16"
+          class="mini-arrow"
+        />
       </button>
 
     </div>
