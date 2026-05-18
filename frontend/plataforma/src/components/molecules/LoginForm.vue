@@ -67,7 +67,7 @@ const handleSubmit = async () => {
       <RouterLink to="/register">¡Crea una ahora!</RouterLink>
     </p>
 
-    <BaseButton type="submit" :disabled="loading">
+    <BaseButton class="w-half" type="submit" :disabled="loading">
       <span v-if="!loading">Enviar</span>
       <span v-else class="spinner" />
     </BaseButton>
@@ -117,4 +117,5 @@ const handleSubmit = async () => {
   text-align: center;
   margin: 0;
 }
+.w-half { width: 50%; align-self: center; }
 </style>

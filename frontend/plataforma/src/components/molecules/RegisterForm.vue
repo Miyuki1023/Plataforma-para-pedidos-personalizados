@@ -85,7 +85,7 @@ const handleSubmit = async () => {
     <p v-if="error" class="form-error">{{ error }}</p>
 
     <!-- Submit -->
-    <BaseButton type="submit" :disabled="loading">
+    <BaseButton class="w-half" type="submit" :disabled="loading">
       <span v-if="!loading">Registrar</span>
       <span v-else class="spinner" />
     </BaseButton>
@@ -147,4 +147,6 @@ const handleSubmit = async () => {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+.w-half { width: 50%; align-self: center; }
 </style>

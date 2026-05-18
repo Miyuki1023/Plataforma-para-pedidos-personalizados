@@ -30,7 +30,7 @@ defineProps<{
   font-weight: 600;
   letter-spacing: 0.04em;
   transition: background 0.25s, transform 0.15s, box-shadow 0.25s;
-  width: 50%;
+  width: 100%;
   background: #1a1a1a;
   color: #ffffff;
   box-shadow: 0 4px 16px rgba(26, 26, 26, 0.25);
