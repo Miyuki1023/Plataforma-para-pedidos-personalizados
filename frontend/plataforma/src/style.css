@@ -1374,18 +1374,14 @@ h3 {
 
 .categories-section {
   position: relative;
-
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 1.5rem;
-
   width: 100%;
   max-width: 100vw;
-
-  padding: 2.8rem 6%;
-
+  padding:6%;
   overflow: hidden;
-
   background:var(--secondary);
 }
 
@@ -1491,15 +1487,11 @@ h3 {
 ========================= */
 .chips-row-wrapper {
   position: relative;
-
   flex: 1;
   min-width: 0;
-
   display: flex;
   flex-direction: column;
-
   overflow: hidden;
-  /* Movemos la máscara aquí para no interferir con el scroll táctil */
   -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
   mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
 }
@@ -1510,35 +1502,14 @@ h3 {
 .chips-row {
   display: flex;
   align-items: flex-start;
-
   gap: 1rem;
-
   overflow-x: auto;
-
   scroll-snap-type: x mandatory;
   scroll-behavior: smooth;
-
-  padding: 1rem 0 1.4rem;
-
+  padding: 1rem 1.4rem;
   -webkit-overflow-scrolling: touch;
 
-  mask-image:
-    linear-gradient(
-      to right,
-      transparent,
-      black 5%,
-      black 95%,
-      transparent
-    );
 
-  -webkit-mask-image:
-    linear-gradient(
-      to right,
-      transparent,
-      black 5%,
-      black 95%,
-      transparent
-    );
   touch-action: pan-x;
   width: 100%;
 }
@@ -1790,13 +1761,8 @@ h3 {
 .features-section {
   display: grid;
   grid-template-columns: repeat(3, minmax(220px, 1fr));
-
   gap: 1.5rem;
-
   padding: 5rem 7%;
-
- 
-
   position: relative;
   overflow: hidden;
 }
@@ -1804,20 +1770,14 @@ h3 {
 /* Glow decorativo */
 .features-section::before {
   content: '';
-
   position: absolute;
   top: -120px;
   right: -120px;
-
   width: 260px;
   height: 260px;
-
   background: rgba(232, 154, 60, 0.08);
-
   border-radius: 50%;
-
   filter: blur(40px);
-
   pointer-events: none;
 }
 
@@ -1827,28 +1787,20 @@ h3 {
 
 .feature-item {
   position: relative;
-
   display: flex;
   align-items: flex-start;
   gap: 1rem;
-
   padding: 1.7rem;
-
   border-radius: 28px;
-
   background:
     linear-gradient(
       145deg,
       rgba(255,255,255,0.96),
       rgba(255,248,244,0.92)
     );
-
   border: 1px solid rgba(139, 26, 46, 0.08);
-
   backdrop-filter: blur(12px);
-
   overflow: hidden;
-
   transition:
     transform .35s cubic-bezier(.175,.885,.32,1.2),
     box-shadow .35s ease,
@@ -1858,28 +1810,22 @@ h3 {
 /* Glow hover */
 .feature-item::before {
   content: '';
-
   position: absolute;
   inset: 0;
-
   background:
     linear-gradient(
       135deg,
       rgba(139, 26, 46, 0.05),
       transparent 60%
     );
-
   opacity: 0;
-
   transition: opacity .35s ease;
 }
 
 /* Hover */
 .feature-item:hover {
   transform: translateY(-8px);
-
   border-color: rgba(139, 26, 46, 0.18);
-
   box-shadow:
     0 14px 30px rgba(139, 26, 46, 0.08),
     0 4px 12px rgba(0,0,0,0.04);
@@ -1895,17 +1841,13 @@ h3 {
 
 .feature-icon {
   position: relative;
-
   min-width: 62px;
   width: 62px;
   height: 62px;
-
   border-radius: 20px;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   background:
     linear-gradient(
       145deg,
@@ -1924,19 +1866,15 @@ h3 {
 /* Halo interno */
 .feature-icon::after {
   content: '';
-
   position: absolute;
   inset: 8px;
-
   border-radius: 16px;
-
   border: 1px solid rgba(255,255,255,0.5);
 }
 
 /* Hover icon */
 .feature-item:hover .feature-icon {
   transform: scale(1.08) rotate(-4deg);
-
   box-shadow:
     0 10px 22px rgba(139, 26, 46, 0.15);
 }
@@ -1947,14 +1885,10 @@ h3 {
 
 .feature-title {
   font-family: var(--heading);
-
   font-size: 1rem;
   font-weight: 700;
-
   color: var(--text-h);
-
   margin: 0 0 .35rem;
-
   transition: color .25s ease;
 }
 
@@ -1965,9 +1899,7 @@ h3 {
 .feature-desc {
   font-size: .92rem;
   line-height: 1.65;
-
   color: #756767;
-
   margin: 0;
 }
 
@@ -1984,21 +1916,16 @@ h3 {
 ========================= */
 .products-section {
   position: relative;
-
   padding: 4.5rem 6%;
-
   overflow: hidden;
 
 }
 
 .products-section::before {
   content: '';
-
   position: absolute;
-
   top: 30px;
   left: -120px;
-
   width: 240px;
   height: 240px;
 
@@ -2007,14 +1934,9 @@ h3 {
     no-repeat center;
 
   background-size: contain;
-
   opacity: .18;
-
   pointer-events: none;
-
   z-index: 0;
-
-  /* DUPLICATES */
   box-shadow:
     1180px 140px 0 0 rgba(0,0,0,0),
     1050px 420px 0 0 rgba(0,0,0,0);
@@ -2023,24 +1945,15 @@ h3 {
 /* SECOND DECOR */
 .products-section::after {
   content: '';
-
   position: absolute;
-
   top: 160px;
   right: -90px;
-
   width: 220px;
   height: 220px;
-
   border-radius: 50%;
-
   border: 14px solid rgba(232,214,196,.42);
-
   pointer-events: none;
-
   z-index: 0;
-
-  /* SECOND CIRCLE */
   box-shadow:
     -1050px 420px 0 -6px rgba(232,214,196,.32);
 }
@@ -2058,11 +1971,8 @@ h3 {
   display: flex;
   flex-direction: column;
   align-items: center;
-
   text-align: center;
-
   margin-bottom: 3.5rem;
-
   position: relative;
   z-index: 2;
 }
@@ -2071,11 +1981,8 @@ h3 {
   font-size: 2.3rem;
   font-family: var(--heading);
   font-weight: 700;
-
   color: var(--primary);
-
   margin: .6rem 0 0;
-
   line-height: 1.2;
 }
 
@@ -2085,20 +1992,15 @@ h3 {
 
 .products-grid {
   display: grid;
-
   grid-template-columns:
     repeat(
       auto-fit,
       minmax(280px, 1fr)
     );
-
   gap: 2rem;
-
   width: 100%;
   max-width: 1250px;
-
   margin: 0 auto 3rem;
-
   position: relative;
   z-index: 2;
 }
@@ -2115,12 +2017,10 @@ h3 {
   border-radius: 30px;
   overflow: hidden;
   border: 1px solid rgba(139, 26, 46, 0.08);
-
   transition:
     transform .4s cubic-bezier(.175,.885,.32,1.2),
     box-shadow .35s ease,
     border-color .35s ease;
-
   backdrop-filter: blur(10px);
 }
 
@@ -2137,9 +2037,7 @@ h3 {
     );
 
   opacity: 0;
-
   transition: opacity .35s ease;
-
   pointer-events: none;
 }
 
@@ -2766,24 +2664,18 @@ h3 {
 /* Glow decorativo */
 .promos-section::before {
   content: '';
-
   position: absolute;
-
   top: -140px;
   left: -120px;
-
   width: 320px;
   height: 320px;
-
   border-radius: 50%;
   filter: blur(10px);
-
   pointer-events: none;
 }
 
 .promos-section::after {
   content: '';
-
   position: absolute;
   right: -120px;
   bottom: -120px;
@@ -2803,40 +2695,25 @@ h3 {
 
 .promos-section .section-heading {
   font-size: clamp(2rem, 4vw, 3rem);
-
   margin-top: .8rem;
-
   letter-spacing: -.03em;
-
   position: relative;
 }
 
 .section-heading::after {
   content: '';
-
   width: 90px;
   height: 5px;
-
   border-radius: 999px;
-  background:
-    linear-gradient(
-      to right,
-      var(--primary),
-      var(--accent)
-    );
-
+  
   display: block;
-
   margin: 1rem auto 0;
-
   animation: lineGrow 1s ease;
 }
 
 .promos-section .section-subheading {
   max-width: 700px;
-
   margin: 1rem auto 0;
-
   font-size: 1rem;
   line-height: 1.8;
 }
@@ -2847,7 +2724,6 @@ h3 {
 
 .promos-grid {
   display: grid;
-
   grid-template-columns:
     repeat(
       auto-fit,
@@ -2855,12 +2731,9 @@ h3 {
     );
 
   gap: 2rem;
-
   width: 100%;
   max-width: 1280px;
-
   margin: 0 auto;
-
   position: relative;
   z-index: 2;
 }
@@ -3179,47 +3052,24 @@ h3 {
 /* Glow decorativo */
 .promos-section::before {
   content: '';
-
   position: absolute;
-
   top: -140px;
   left: -120px;
-
   width: 320px;
   height: 320px;
-
   border-radius: 50%;
-
-  background:
-    radial-gradient(
-      rgba(232,154,60,.14),
-      transparent 70%
-    );
-
   filter: blur(10px);
-
   pointer-events: none;
 }
 
 .promos-section::after {
   content: '';
-
   position: absolute;
-
   right: -120px;
   bottom: -120px;
-
   width: 280px;
   height: 280px;
-
   border-radius: 50%;
-
-  background:
-    radial-gradient(
-      rgba(139,26,46,.08),
-      transparent 70%
-    );
-
   pointer-events: none;
 }
 
@@ -4076,32 +3926,19 @@ h3 {
 
   overflow: hidden;
 
-  background:
-    linear-gradient(
-      180deg,
-      #fff,
-      #fff8f6
-    );
+  
 }
 
 /* GLOW */
 
 .testi-section::before {
   content: '';
-
   position: absolute;
-
   top: -120px;
   right: -120px;
-
   width: 320px;
   height: 320px;
-
   border-radius: 50%;
-
-  background:
-    rgba(232,154,60,.10);
-
   filter: blur(55px);
 
   pointer-events: none;
@@ -7373,5 +7210,63 @@ h3 {
   .mini-config-item{
     padding:12px;
   }
+  
+   .categories-section {
+    padding: 3.5rem 1.2rem;
+    gap: 1.8rem;
+  }
+
+  .section-title-sm {
+    font-size: 1.8rem;
+  }
+
+  .chips-row {
+    gap: 1rem;
+
+    padding-bottom: 1rem;
+  }
+
+  .chip-img-wrapper {
+    width: 74px;
+    height: 74px;
+
+    border-radius: 24px;
+  }
+
+  .chip-label {
+    font-size: 0.75rem;
+  }
+
+  .scroll-indicator {
+    height: 4px;
+  }
+
+  .features-section {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding: 2.4rem 1.2rem;
+  }
+
+  .feature-item {
+    padding: 1rem;
+
+    border-radius: 24px;
+  }
+
+  .feature-icon {
+    width: 56px;
+    height: 56px;
+    min-width: 56px;
+
+    border-radius: 18px;
+  }
+  .feature-title {
+    font-size: .96rem;
+  }
+
+  .feature-desc {
+    font-size: .84rem;
+}
+
 
 }

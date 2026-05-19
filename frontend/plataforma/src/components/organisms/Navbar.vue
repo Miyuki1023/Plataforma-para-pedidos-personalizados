@@ -115,7 +115,7 @@ onBeforeUnmount(() => {
       </RouterLink>
 
       <!-- CART -->
-      <RouterLink class="icon-btn" to="/carrito">
+      <RouterLink class="icon-btn" :to="{ name: 'carrito' }">
         <BaseIcon name="cart" :size="20" />
       </RouterLink>
     </div>

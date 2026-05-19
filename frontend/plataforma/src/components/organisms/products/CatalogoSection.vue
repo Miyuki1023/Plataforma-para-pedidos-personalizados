@@ -1,7 +1,11 @@
-<!-- CatalogView.vue -->
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import {
+  ref,
+  computed,
+  onMounted
+} from 'vue'
 
+import { useRoute } from 'vue-router'
 import ProductFilter from '../../molecules/FiltroCard.vue'
 import ProductCard from '../../molecules/ProductCard.vue'
 import { apiService } from '../../../modules/service/api.service'
@@ -12,38 +16,113 @@ const minPrice = ref(20)
 const maxPrice = ref(400)
 const loading = ref(true)
 const error = ref('')
+const cartFeedback = ref('') 
 
 const products = ref<any[]>([])
+const route = useRoute()
 
 onMounted(async () => {
+
   try {
+
     loading.value = true
-    // Cambiamos a /productos para coincidir con el lenguaje de tu base de datos
-    const data = await apiService.get('/productos')
-    
-    console.log('Datos recibidos del backend:', data)
 
-    // Verificamos si data es un arreglo o si viene dentro de una propiedad
-    const rawProducts = Array.isArray(data) ? data : (data.products || [])
+    const data =
+      await apiService.get('/productos')
 
-    products.value = rawProducts.map((p: any) => ({
-      id: p.id,
-      name: p.nombre || p.name || 'Producto sin nombre',
-      // Aseguramos que el precio sea un número para los filtros
-      price: Number(p.precio || p.price || 0),
-      description: p.descripcion || p.description || '',
-      // Normalizamos la categoría a mayúsculas para el filtrado
-      category: String(p.categoria || p.category || 'OTROS').toUpperCase(),
-      image: p.imagen_url || p.imagen || p.image || p.imageUrl,
-      isNew: p.es_nuevo || p.isNew || false
-    }))
+    const rawProducts =
+      Array.isArray(data)
+        ? data
+        : (data.products || [])
+
+    products.value = rawProducts.map((p: any) => {
+
+      const imgSource =
+        p.imagen_url ||
+        p.imagen ||
+        p.image ||
+        p.imageUrl
+
+      const finalImg =
+        Array.isArray(imgSource)
+          ? imgSource[0]
+          : imgSource
+
+      return {
+
+        id: p.id || p.id_producto || p._id,
+
+        name:
+          p.nombre ||
+          p.name ||
+          'Producto sin nombre',
+
+        price: Number(
+          p.precio ||
+          p.price ||
+          0
+        ),
+
+        description:
+          p.descripcion ||
+          p.description ||
+          '',
+
+        category: String(
+          p.categoria ||
+          p.category ||
+          'OTROS'
+        ).toUpperCase(),
+
+        image: finalImg,
+        imageUrl: finalImg,
+
+        isNew:
+          p.es_nuevo ||
+          p.isNew ||
+          false
+      }
+    })
+
+    /* CATEGORY FROM URL */
+    const categoryFromQuery =
+      route.query.categoria as string
+
+    if (categoryFromQuery) {
+
+      selectedCategories.value = [
+        categoryFromQuery
+      ]
+    }
+
   } catch (err: any) {
-    error.value = `Error: ${err.message || 'No se pudo conectar con el servidor'}`
-    console.error(err)
+
+    error.value =
+      `Error: ${
+        err.message ||
+        'No se pudo conectar con el servidor'
+      }`
+
   } finally {
+
     loading.value = false
   }
 })
+
+const addToCart = async (product: any) => {
+  try {
+    // Aquí podrías llamar a tu API: await apiService.post('/carrito/items', { id: product.id, qty: 1 })
+    console.log('Producto añadido:', product.name)
+    cartFeedback.value = `¡${product.name} añadido al carrito!`
+    
+    // Limpiar mensaje después de 3 segundos
+    setTimeout(() => {
+      cartFeedback.value = ''
+    }, 3000)
+  } catch (err) {
+    error.value = 'No se pudo añadir el producto al carrito'
+  }
+}
 
 const toggleCategory = (category: string) => {
 
@@ -213,6 +292,11 @@ const changePage = (page: number) => {
           Descubre nuestros favoritos
         </h2>
 
+        <!-- Feedback de carrito -->
+        <div v-if="cartFeedback" class="cart-feedback-toast">
+          {{ cartFeedback }}
+        </div>
+
         <div v-if="loading" class="loading-state">
           <p>Cargando delicias desde la cocina...</p>
         </div>
@@ -226,7 +310,7 @@ const changePage = (page: number) => {
             v-for="product in paginatedProducts"
             :key="product.id"
             v-bind="product"
-            @add-to-cart="() => {}"
+            @add-to-cart="addToCart(product)"
           />
           <p v-if="paginatedProducts.length === 0" class="no-results">
             No se encontraron productos con estos filtros.
@@ -277,3 +361,39 @@ const changePage = (page: number) => {
   </section>
 
 </template>
+
+<style scoped>
+/* Estilos para el feedback visual del carrito */
+.cart-feedback-toast {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  background-color: var(--primary, #af3439);
+  color: white;
+  padding: 1rem 2rem;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+  z-index: 1000;
+  font-weight: 600;
+  animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.loading-state, .error-state {
+  text-align: center;
+  padding: 4rem;
+  color: var(--text-p);
+  font-size: 1.2rem;
+}
+
+.no-results {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 2rem;
+  color: #888;
+}
+</style>

@@ -63,8 +63,8 @@ const router = createRouter({
     },
 
     {
-      path: '/resumen-compra',
-      name: 'resumen-compra',
+      path: '/carrito',
+      name: 'carrito',
       component: ResumendeCompraView
     },
 
@@ -74,8 +74,8 @@ const router = createRouter({
       component: PerfilUserView
     },
      {
-      path: '/carrito',
-      name: 'carrito',
+      path: '/resumen-compra',
+      name: 'resumen-compra',
       component: ResumendeCompraView
     },
     {

@@ -56,6 +56,10 @@ const savePassword = async () => {
     confirmPassword.value &&
     newPassword.value === confirmPassword.value
   ) {
+    if (newPassword.value.length < 6) {
+      error.value = 'La contraseña debe tener al menos 6 caracteres.'
+      return
+    }
     loading.value = true
     try {
       // Usamos la función del store para actualizar el perfil en la DB

@@ -31,20 +31,30 @@ const handleSubmit = async () => {
 
   loading.value = true
   try {
-    // Mapeamos 'username' a 'usuario' que es lo que espera tu backend (auth.service.js)
-    await authStore.register({
+    const signupData: any = {
       usuario: username.value,
       email: email.value,
       password: password.value,
-      telefono: phone.value,
-      fecha_nacimiento: birthdate.value,
-      sexo: 'M' // Valor por defecto o puedes añadir un selector en el template
-    })
-    
-    // Si el registro es exitoso, redirigimos al login
+      sexo: 'M' // Valor por defecto requerido por el backend
+    }
+
+    // Solo enviamos estos campos si tienen contenido real para evitar errores de validación por strings vacíos
+    if (phone.value.trim()) signupData.telefono = phone.value;
+    if (birthdate.value) signupData.fecha_nacimiento = birthdate.value;
+
+    console.log('Enviando datos de registro:', signupData);
+
+    await authStore.register(signupData)
+
     router.push('/login')
   } catch (err: any) {
-    error.value = err.message || 'Ocurrió un error al registrarse. Inténtalo de nuevo.'
+    console.error('Error detallado del registro:', err.response?.data);
+    
+    // Intentamos extraer el mensaje específico de express-validator si existe
+    const backendErrors = err.response?.data?.errors;
+    error.value = Array.isArray(backendErrors) 
+      ? backendErrors[0].msg 
+      : (err.message || 'Error al registrarse. Revisa los requisitos.');
   } finally {
     loading.value = false
   }

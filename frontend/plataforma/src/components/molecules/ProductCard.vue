@@ -28,9 +28,10 @@ const router = useRouter()
 const favStore = useFavoritesStore()
 
 const goToProduct = () => {
-
+  if (!props.id) return console.error("ID de producto no válido");
+  
   router.push(
-    `/producto/${props.id}`
+    `/producto/${String(props.id).replace('id:', '')}`
   )
 }
 
@@ -92,7 +93,7 @@ const toggleFavorite = () => {
         class="btn-card"
         @click="goToProduct"
       >
-        Agregar al carrito
+        Ver detalles
       </BaseButton>
 
     </div>

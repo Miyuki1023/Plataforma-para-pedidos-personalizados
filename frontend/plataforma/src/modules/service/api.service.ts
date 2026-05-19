@@ -62,6 +62,13 @@ export const apiService = {
     });
   },
 
+  patch(endpoint: string, body?: any) {
+    return this.request(endpoint, {
+      method: 'PATCH',
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  },
+
   put(endpoint: string, body: any) {
     return this.request(endpoint, {
       method: 'PUT',

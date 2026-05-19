@@ -93,7 +93,7 @@ const visibleTestimonials = computed(() => {
 
 <template>
 
-  <section class="section testi-section">
+  <section class="testi-section">
 
     <!-- INTRO -->
     <div class="section-intro">

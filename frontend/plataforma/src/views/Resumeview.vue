@@ -2,10 +2,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 
-import CartProductCard from '../../molecules/CartProductCard.vue'
-import DeliveryCard from '../../molecules/DeliveryCard.vue'
-import PurchaseSummary from '../../molecules/PurchaseSummary.vue'
-import BaseButton from '../../atoms/BaseButton.vue'
+import CartProductCard from '../components/molecules/CartProductCard.vue'
+import DeliveryCard from '../components/molecules/DeliveryCard.vue'
+import PurchaseSummary from '../components/molecules/PurchaseSummary.vue'
+import BaseButton from '../components/atoms/BaseButton.vue'
 
 const cartItems = ref<any[]>([])
 

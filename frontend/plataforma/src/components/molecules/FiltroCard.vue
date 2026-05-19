@@ -13,8 +13,25 @@ defineEmits([
   'toggle-category'
 ])
 
+const categories = [
+
+  'PROMOS',
+  'TORTAS',
+  'CUPCAKE',
+  'CHEESECAKES',
+  'GALLETAS',
+  'BOCADITOS',
+  'PASTELERÍA SALADA',
+  'PROMOS',
+
+  'OTROS'
+]
+
 const isSelected = (category: string) => {
-  return props.selectedCategories.includes(category)
+
+  return props.selectedCategories.includes(
+    category
+  )
 }
 </script>
 
@@ -24,13 +41,10 @@ const isSelected = (category: string) => {
 
     <!-- HEADER -->
     <div class="filter-header">
-
       <span class="filter-line" />
-
       <h3 class="filter-title">
         Filtrar productos
       </h3>
-
     </div>
 
     <!-- PRICE -->
@@ -72,7 +86,6 @@ const isSelected = (category: string) => {
         <label class="slider-label">
           Precio máximo
         </label>
-
         <input
           :value="maxPrice"
           type="range"
@@ -125,50 +138,24 @@ const isSelected = (category: string) => {
 
     <!-- CATEGORY -->
     <div class="filter-group">
-
       <p class="filter-label">
         Categorías
       </p>
 
       <div class="filter-options">
 
-        <BaseCheckbox
-          :model-value="isSelected('TORTAS')"
-          @update:modelValue="
-            $emit('toggle-category', 'TORTAS')
-          "
-        >
-          Tortas
-        </BaseCheckbox>
+  <BaseCheckbox
+    v-for="category in categories"
+    :key="category"
+    :model-value="isSelected(category)"
+    @update:modelValue="
+      $emit('toggle-category', category)
+    "
+  >
+    {{ category }}
+  </BaseCheckbox>
 
-        <BaseCheckbox
-          :model-value="isSelected('CHEESECAKES')"
-          @update:modelValue="
-            $emit('toggle-category', 'CHEESECAKES')
-          "
-        >
-          Cheesecakes
-        </BaseCheckbox>
-
-        <BaseCheckbox
-          :model-value="isSelected('GALLETAS')"
-          @update:modelValue="
-            $emit('toggle-category', 'GALLETAS')
-          "
-        >
-          Galletas
-        </BaseCheckbox>
-
-        <BaseCheckbox
-          :model-value="isSelected('OTROS')"
-          @update:modelValue="
-            $emit('toggle-category', 'OTROS')
-          "
-        >
-          Otros
-        </BaseCheckbox>
-
-      </div>
+</div>
 
     </div>
 
