@@ -92,7 +92,7 @@ function nextMonth() { if (currentMonth.value === 11) { currentMonth.value = 0; 
 }
 .cal-title {
   font-family: 'Noto Serif', sans-serif;
-  font-size: 0.95rem; font-weight: 800;
+  font-size: 1rem; font-weight: 800;
   color: #2a1a1a;
 }
 .cal-nav { display: flex; align-items: center; gap: 0.4rem; }

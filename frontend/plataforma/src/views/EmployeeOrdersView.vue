@@ -129,7 +129,7 @@ const orders = [
 }
 .orders-main {
   flex: 1;
-  padding: 1.5rem 1.75rem;
+  padding: 1.5rem 2.75rem;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;

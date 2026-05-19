@@ -246,7 +246,7 @@ const toggles = ref<Record<number, boolean>>({ 1: true, 2: true, 3: false });
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
-  padding: 1.25rem 1.75rem;
+  padding: 1.25rem 2.75rem;
 }
 
 /* Topbar */
