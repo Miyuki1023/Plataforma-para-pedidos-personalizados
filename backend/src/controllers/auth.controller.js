@@ -58,3 +58,39 @@ exports.adminRegister = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
+
+exports.verifyAccount = async (req, res) => {
+
+  try {
+
+    const { email, code } = req.body;
+
+    const result = await authService.verifyAccount(
+      email,
+      code
+    );
+
+    res.json(result);
+
+  } catch (error) {
+
+    console.error(error);
+
+    if (
+      error.message === 'Usuario no encontrado' ||
+      error.message === 'Código incorrecto' ||
+      error.message === 'Código expirado' ||
+      error.message === 'La cuenta ya está verificada'
+    ) {
+      return res.status(400).json({
+        message: error.message
+      });
+    }
+
+    res.status(500).json({
+      message: 'Error al verificar cuenta'
+    });
+
+  }
+
+};
