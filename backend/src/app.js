@@ -7,6 +7,7 @@ const cartRoutes = require('./routes/cart.routes');
 const userRoutes = require('./routes/user.routes');
 const adminRoutes = require('./routes/admin.routes');
 const addressRoutes = require('./routes/address.routes');
+const orderRoutes = require('./routes/order.routes');
 
 const app = express();
 
@@ -20,5 +21,6 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/addresses', addressRoutes);
+app.use('/api/orders', orderRoutes);
 
 module.exports = app;
