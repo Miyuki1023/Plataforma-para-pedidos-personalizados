@@ -138,26 +138,39 @@ exports.deleteProductOption = async (id) => {
 
   return result.rows[0];
 };
-, descripcion = '') => {
-  // Validate imagen_url array
+
+exports.createProduct = async (nombre, precio, categoria, stock, imagenUrls = [], descripcion = '') => {
+  if (!nombre || typeof nombre !== 'string' || nombre.trim() === '') {
+    throw new Error('El nombre del producto es requerido');
+  }
+
+  if (precio === undefined || precio === null || typeof precio !== 'number') {
+    throw new Error('El precio del producto es requerido y debe ser un número');
+  }
+
+  if (!categoria || typeof categoria !== 'string' || categoria.trim() === '') {
+    throw new Error('La categoría del producto es requerida');
+  }
+
+  if (stock === undefined || stock === null || typeof stock !== 'number') {
+    throw new Error('El stock del producto es requerido y debe ser un número');
+  }
+
   if (!Array.isArray(imagenUrls)) {
     imagenUrls = [imagenUrls];
   }
-  
-  // Ensure maximum 3 URLs
+
   if (imagenUrls.length > 3) {
     throw new Error('Se permite un máximo de 3 URLs de imagen');
   }
 
-  // Filter out null and empty strings
-  imagenUrls = imagenUrls.filter(url => url && url.trim() !== '');
+  imagenUrls = imagenUrls.filter(url => url && typeof url === 'string' && url.trim() !== '');
 
   const result = await pool.query(`
     INSERT INTO producto (nombre, precio, categoria, stock, imagen_url, disponible, descripcion)
     VALUES ($1, $2, $3, $4, $5, true, $6)
     RETURNING id, nombre, precio, categoria, disponible, imagen_url, stock, descripcion
-  `, [nombre, precio, categoria, stock, imagenUrls, descripcionnible, imagen_url, stock
-  `, [nombre, precio, categoria, stock, imagenUrls]);
+  `, [nombre.trim(), precio, categoria.trim(), stock, imagenUrls, descripcion]);
 
   return result.rows[0];
 };
