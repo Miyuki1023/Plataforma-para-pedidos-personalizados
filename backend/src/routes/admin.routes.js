@@ -28,4 +28,13 @@ router.put('/users/:id/activate', verifyToken, requireAdmin, adminController.act
 // Desactivar usuario (solo admin)
 router.put('/users/:id/deactivate', verifyToken, requireAdmin, adminController.deactivateUser);
 
+//establecer meta diaria
+router.post('/meta', adminController.createGoal);
+
+//actualizar meta diaria
+router.put('/meta/:fecha', adminController.updateGoal);
+
+//obtener la cantidad de pedidos segun el dia
+router.get('/meta/:fecha',adminController.getGoalByDate);
+
 module.exports = router;

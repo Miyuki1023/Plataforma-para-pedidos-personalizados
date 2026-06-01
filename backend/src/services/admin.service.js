@@ -126,7 +126,7 @@ exports.getUserById = async (adminId, targetUserId) => {
     [adminId]
   );
 
-  if (adminCheck.rows.length === 0 || adminCheck.rows[0].id_rol !== 'admin') {
+  if (adminCheck.rows.length === 0 || adminCheck.rows[0].id_rol !== 3) {
     throw new Error('Acceso denegado: se requieren permisos de administrador');
   }
 
@@ -142,4 +142,117 @@ exports.getUserById = async (adminId, targetUserId) => {
   }
 
   return result.rows[0];
+};
+
+exports.createGoal = async (
+  fecha,
+  meta
+) => {
+
+  const existingGoal = await pool.query(
+    `
+    SELECT id
+    FROM meta_diaria
+    WHERE fecha = $1
+    `,
+    [fecha]
+  );
+
+  if (existingGoal.rows.length > 0) {
+    throw new Error(
+      'Ya existe una meta para esa fecha'
+    );
+  }
+
+  const result = await pool.query(
+    `
+    INSERT INTO meta_diaria
+    (
+      fecha,
+      meta
+    )
+    VALUES
+    (
+      $1,
+      $2
+    )
+    RETURNING *
+    `,
+    [fecha, meta]
+  );
+
+  return result.rows[0];
+
+};
+
+//obtener canitdad de pedidos x dia
+exports.getGoalByDate = async (fecha) => {
+
+  const goalResult = await pool.query(
+    `
+    SELECT *
+    FROM meta_diaria
+    WHERE fecha = $1
+    `,
+    [fecha]
+  );
+
+  if (goalResult.rows.length === 0) {
+    throw new Error('No existe meta para esa fecha');
+  }
+
+  const goal = goalResult.rows[0];
+
+  const ordersResult = await pool.query(
+    `
+    SELECT COUNT(*) AS total
+    FROM pedido
+    WHERE DATE(fecha_creacion) = $1
+    `,
+    [fecha]
+  );
+
+  const pedidosActuales =
+    parseInt(ordersResult.rows[0].total);
+
+  const cumplimiento =
+    goal.meta > 0
+      ? Math.round(
+          (pedidosActuales / goal.meta) * 100
+        )
+      : 0;
+
+  return {
+    fecha,
+    meta: goal.meta,
+    pedidos_actuales: pedidosActuales,
+    cumplimiento
+  };
+
+};
+
+//actualizar meta diaria
+exports.updateGoal = async (
+  fecha,
+  meta
+) => {
+
+  const result = await pool.query(
+    `
+    UPDATE meta_diaria
+    SET meta = $1
+    WHERE fecha = $2
+    RETURNING *
+    `,
+    [meta, fecha]
+  );
+
+  if (result.rows.length === 0) {
+    throw new Error(
+      'No existe meta para esa fecha'
+    );
+  }
+
+  return result.rows[0];
+
 };

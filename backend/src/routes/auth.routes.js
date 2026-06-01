@@ -18,6 +18,11 @@ router.post(
 );
 
 router.post(
+  '/verify', 
+  authController.verifyAccount
+);
+
+router.post(
   '/login',
   loginValidation,
   validate,
@@ -37,6 +42,16 @@ router.post(
   adminRegisterValidation,
   validate,
   authController.adminRegister
+);
+
+router.post(
+  '/forgot-password',
+  authController.forgotPassword
+);
+
+router.post(
+  '/change-password',
+  authController.changePassword
 );
 
 module.exports = router;

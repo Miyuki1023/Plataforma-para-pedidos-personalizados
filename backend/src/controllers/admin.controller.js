@@ -138,3 +138,113 @@ exports.deactivateUser = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
+
+exports.createGoal = async (req, res) => {
+
+  try {
+
+    const { fecha, meta } = req.body;
+
+    if (!fecha || !meta) {
+      return res.status(400).json({
+        message: 'Fecha y meta son requeridos'
+      });
+    }
+
+    const result = await adminService.createGoal(
+      fecha,
+      meta
+    );
+
+    res.status(201).json({
+      message: 'Meta creada correctamente',
+      data: result
+    });
+
+  } catch (error) {
+
+    console.error(error);
+
+    res.status(500).json({
+      message: error.message
+    });
+
+  }
+
+};
+
+
+//pedidos x dia
+exports.getGoalByDate = async (req, res) => {
+
+  try {
+
+    const { fecha } = req.params;
+
+    const result =
+      await adminService.getGoalByDate(
+        fecha
+      );
+
+    res.json(result);
+
+  } catch (error) {
+
+    console.error(error);
+
+    if (
+      error.message ===
+      'No existe meta para esa fecha'
+    ) {
+      return res.status(404).json({
+        message: error.message
+      });
+    }
+
+    res.status(500).json({
+      message: 'Error al obtener la meta'
+    });
+
+  }
+
+};
+
+//actualizar meta diaria
+exports.updateGoal = async (req, res) => {
+
+  try {
+
+    const { fecha } = req.params;
+    const { meta } = req.body;
+
+    const result =
+      await adminService.updateGoal(
+        fecha,
+        meta
+      );
+
+    res.json({
+      message: 'Meta actualizada',
+      meta: result
+    });
+
+  } catch (error) {
+
+    console.error(error);
+
+    if (
+      error.message ===
+      'No existe meta para esa fecha'
+    ) {
+      return res.status(404).json({
+        message: error.message
+      });
+    }
+
+    res.status(500).json({
+      message: 'Error al actualizar meta'
+    });
+
+  }
+
+};
