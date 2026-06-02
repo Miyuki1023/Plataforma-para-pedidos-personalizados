@@ -35,11 +35,15 @@ const calendarCells = computed(() =>
   Array.from({ length: 35 }, (_, i) => {
     const day = i - firstDay.value + 1
     if (day > 0 && day <= daysInMonth.value) {
-      const date = new Date(currentYear.value, currentMonth.value, day)
+      const y = currentYear.value
+      const m = String(currentMonth.value + 1).padStart(2, '0')
+      const d = String(day).padStart(2, '0')
+      const iso = `${y}-${m}-${d}`
+
       return {
         day,
-        iso: date.toISOString().slice(0, 10),
-        count: busyDateCounts.value.get(date.toISOString().slice(0, 10)) ?? 0,
+        iso,
+        count: busyDateCounts.value.get(iso) ?? 0,
       }
     }
     return { day: null, iso: null, count: 0 }
@@ -52,7 +56,14 @@ const selectedDate = computed(() => {
 })
 
 watch(selectedDate, (value) => {
-  emit('update:selectedDate', value ? value.toISOString().slice(0, 10) : null)
+  if (!value) {
+    emit('update:selectedDate', null)
+    return
+  }
+  const y = value.getFullYear()
+  const m = String(value.getMonth() + 1).padStart(2, '0')
+  const d = String(value.getDate()).padStart(2, '0')
+  emit('update:selectedDate', `${y}-${m}-${d}`)
 })
 
 function getDaysInMonth(month: number, year: number) {

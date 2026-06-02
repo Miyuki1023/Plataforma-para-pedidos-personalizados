@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
+import { useRouter } from "vue-router";
 import ProductCreateModal from "./ProductCreateModal.vue";
 import ProductEditModal from "./ProductEditModal.vue";
 import api from "../../lib/api";
@@ -21,6 +22,8 @@ const selected = ref<number[]>([]);
 const currentPage = ref(1);
 const loading = ref(false);
 const error = ref("");
+
+const router = useRouter();
 
 // Modal states
 const isCreateModalOpen = ref(false);
@@ -149,6 +152,10 @@ async function handleToggleProduct(product: Product) {
   }
 }
 
+function handleNewSale() {
+  router.push("/");
+}
+
 // Computed for display
 const displayProducts = computed(() => {
   const start = (currentPage.value - 1) * ITEMS_PER_PAGE;
@@ -187,7 +194,7 @@ onMounted(() => {
           </p>
         </div>
         <!-- Watermark decorativo -->
-        <div class="hero-watermark" aria-hidden="true">🥐</div>
+        <div class="hero-watermark" aria-hidden="true"></div>
       </div>
 
       <!-- Card derecha: inspiración del día -->
@@ -211,6 +218,10 @@ onMounted(() => {
         <button class="btn-primary" @click="handleOpenCreateModal">
           <span class="material-symbols-rounded">add</span>
           Nueva producto
+        </button>
+        <button class="btn-secondary" @click="handleNewSale">
+          <span class="material-symbols-rounded">shopping_cart</span>
+          Nueva venta
         </button>
         <button 
           class="btn-secondary"

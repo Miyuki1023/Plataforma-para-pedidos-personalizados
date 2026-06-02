@@ -1,23 +1,17 @@
 <script setup lang="ts">
+import { useRouter } from 'vue-router'
 import EmployeeSidebar      from '../components/organisms/EmployeeSidebar.vue'
 import AppTopBar            from '../components/organisms/AppTopBar.vue'
-import DashboardFilters     from '../components/organisms/DashboardFilters.vue'
-import InventoryTable       from '../components/organisms/InventoryTable.vue'
-import RealtimeOrders       from '../components/organisms/RealTimeOrders.vue'
+import InventoryAttention   from '../components/molecules/InventoryAttention.vue'
+import RealTimeOrders       from '../components/molecules/RealTimeOrders.vue'
 import ProductionGoalCard   from '../components/molecules/ProductionGoalCard.vue'
 import WorkloadChart        from '../components/molecules/WorkloadChart.vue'
 
-const inventory = [
-  { id: 1, name: 'Sourdough Loaf',   desc: 'Traditional Hearth', img: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=60&q=80', stockLabel: '42 en stock', stockType: 'ok'  as const, price: 'S/50' },
-  { id: 2, name: 'Butter Croissant', desc: 'Viennoserie',        img: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=60&q=80', stockLabel: '8 en stock',  stockType: 'low' as const, price: 'S/50' },
-  { id: 3, name: 'Sea Salt Cookies', desc: 'Daily Batch',        img: 'https://images.unsplash.com/photo-1499636136210-6f4ee915583e?w=60&q=80', stockLabel: 'Sin stock',   stockType: 'out' as const, price: 'S/50' },
-]
+const router = useRouter()
 
-const orders = [
-  { id: '#ORD-8821', amount: 'S/34.50', time: '2 mins',  items: '2x Almond Croissant, 1x Vanilla Latte, 1x Sourdough', status: 'PROCESO',    statusType: 'process'   as const },
-  { id: '#ORD-8819', amount: 'S/12.00', time: '24 mins', items: '3x Chocolate Chunk Cookies',                           status: 'FINALIZADO', statusType: 'done'      as const },
-  { id: '#ORD-8815', amount: 'S/46.10', time: '45 mins', items: 'Mix hora',                                             status: 'ENTREGADO',  statusType: 'delivered' as const },
-]
+function handleNewSale() {
+  router.push('/')
+}
 </script>
 
 <template>
@@ -29,8 +23,14 @@ const orders = [
 
       <div class="emp-content">
         <div class="page-header">
-          <h1 class="page-title">Panel de control</h1>
-          <p class="page-subtitle">Resumen en tiempo real de tu negocio</p>
+          <div class="header-titles">
+            <h1 class="page-title">Panel de control</h1>
+            <p class="page-subtitle">Resumen en tiempo real de tu negocio</p>
+          </div>
+          <button class="btn-new-sale" @click="handleNewSale">
+            <span class="material-symbols-rounded">shopping_cart</span>
+            Nueva venta
+          </button>
         </div>
       
         <div class="top-cards">
@@ -42,11 +42,9 @@ const orders = [
           <WorkloadChart />
         </div>
 
-        <DashboardFilters />
-
         <div class="bottom-grid">
-          <InventoryTable :items="inventory" />
-          <RealtimeOrders :orders="orders" />
+          <InventoryAttention />
+          <RealTimeOrders />
         </div>
       </div>
     </main>
@@ -60,6 +58,8 @@ const orders = [
 .emp-main { flex: 1; display: flex; flex-direction: column; overflow: auto; }
 .emp-content { display: flex; flex-direction: column; gap: 1.25rem; padding: 1.25rem 2.75rem; text-align: start; }
 
+.page-header { display: flex; justify-content: space-between; align-items: flex-end; }
+
 .page-title { font-family: "Noto Serif", sans-serif;
   font-size: 1.8rem;
   font-weight: 700;
@@ -68,6 +68,15 @@ const orders = [
 .page-subtitle { font-size: 0.8rem;
   color: #7c5730;
   margin: 0; }
+
+.btn-new-sale {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.65rem 1.25rem; background: #8b1a2e;
+  color: #fff; border: none; border-radius: 12px;
+  font-family: 'Lato', sans-serif; font-size: 0.85rem; font-weight: 700;
+  cursor: pointer; transition: background 0.2s;
+}
+.btn-new-sale:hover { background: #721525; }
 
 .top-cards { display: grid; grid-template-columns: 1.2fr 1fr; gap: 1rem; }
 .bottom-grid { display: grid; grid-template-columns: 1fr 280px; gap: 1rem; align-items: start; }
