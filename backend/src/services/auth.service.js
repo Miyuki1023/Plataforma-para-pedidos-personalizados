@@ -11,7 +11,8 @@ exports.register = async ({
   rol = 1,
   fecha_nacimiento,
   sexo,
-  telefono
+  telefono,
+  verified = false
 }) => {
 
   if (!usuario || !email || !password) {
@@ -37,12 +38,16 @@ exports.register = async ({
     Date.now() + 10 * 60 * 1000
   );
 
-  try {
+  const isBypass = String(process.env.BYPASS_AUTH).trim().toLowerCase() === 'true';
 
-    await emailService.sendVerificationEmail(
-      email,
-      verificationCode
-    );
+  try {
+    // Saltar envío de correo si estamos en modo Bypass o si el usuario ya viene verificado (por un admin)
+    if (!isBypass && !verified) {
+      await emailService.sendVerificationEmail(
+        email,
+        verificationCode
+      );
+    }
 
     const result = await pool.query(
       `INSERT INTO usuario (
@@ -75,7 +80,7 @@ exports.register = async ({
         sexo,
         telefono,
         verificationCode,
-        false,
+        isBypass || verified,
         verificationExpires
       ]
     );
@@ -201,18 +206,23 @@ exports.adminRegister = async ({ usuario, email, password, rol, fecha_nacimiento
     throw new Error('Rol inválido. Solo se puede crear usuarios con rol 2 (trabajador) o 3 (admin)');
   }
 
-  // Check if the requester is an admin
-  const adminCheck = await pool.query(
-    'SELECT id_rol FROM usuario WHERE id = $1 AND activo = true',
-    [adminId]
-  );
+  // Desarrollo: permitir bypass de autenticación para pruebas locales.
+  const isBypass = String(process.env.BYPASS_AUTH).trim().toLowerCase() === 'true';
 
-  if (adminCheck.rows.length === 0 || adminCheck.rows[0].id_rol !== 3) {
-    throw new Error('Solo administradores pueden crear usuarios con roles especiales');
+  if (!isBypass) {
+    // Check if the requester is an admin
+    const adminCheck = await pool.query(
+      'SELECT id_rol FROM usuario WHERE id = $1 AND activo = true',
+      [adminId]
+    );
+
+    if (adminCheck.rows.length === 0 || adminCheck.rows[0].id_rol !== 3) {
+      throw new Error('Solo administradores pueden crear usuarios con roles especiales');
+    }
   }
 
   // Register the user with the specified role and optional fields
-  return await this.register({ usuario, email, password, rol, fecha_nacimiento, sexo, telefono });
+  return await this.register({ usuario, email, password, rol, fecha_nacimiento, sexo, telefono, verified: true });
 };
 
 exports.logout = async (token) => {

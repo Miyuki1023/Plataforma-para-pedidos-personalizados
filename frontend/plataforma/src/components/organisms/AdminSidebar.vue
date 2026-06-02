@@ -1,13 +1,20 @@
 <script setup lang="ts">
-import { RouterLink, useRoute } from "vue-router";
+import { RouterLink, useRoute, useRouter } from "vue-router";
 
 const route = useRoute();
+const router = useRouter();
 
 const navItems = [
   { id: "analytics", label: "Análisis",  icon: "analytics",    to: "/admin" },
   { id: "products",  label: "Productos", icon: "package_2",    to: "/admin/productos" },
   { id: "users",     label: "Usuarios",  icon: "group",        to: "/admin/usuarios" },
 ];
+
+const handleLogout = () => {
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+  router.push('/login');
+};
 </script>
 
 <template>
@@ -43,6 +50,9 @@ const navItems = [
           <span class="user-name">Elena R.</span>
           <span class="user-role">Bakery Owner</span>
         </div>
+        <button class="logout-mini-btn" @click="handleLogout" title="Cerrar sesión">
+          <span class="material-symbols-outlined">logout</span>
+        </button>
       </div>
     </div>
   </aside>
@@ -177,5 +187,21 @@ const navItems = [
 .user-role {
   font-size: 0.68rem;
   color: #9e8080;
+}
+
+.logout-mini-btn {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  color: #8b1a2e;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+.logout-mini-btn:hover {
+  background: #fde8e8;
 }
 </style>

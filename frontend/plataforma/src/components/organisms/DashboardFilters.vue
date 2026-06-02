@@ -4,19 +4,26 @@ defineProps<{
   categories?: string[]
   years?:      string[]
 }>()
+
+const emit = defineEmits(['filter-change'])
+
+const onChange = (type: string, event: Event) => {
+  const value = (event.target as HTMLSelectElement).value
+  emit('filter-change', { type, value })
+}
 </script>
 
 <template>
   <div class="filters">
-    <select class="filter-select">
+    <select class="filter-select" @change="onChange('period', $event)">
       <option>Selecciona por periodo</option>
       <option v-for="p in (periods ?? ['Hoy','Esta semana','Este mes'])" :key="p">{{ p }}</option>
     </select>
-    <select class="filter-select">
+    <select class="filter-select" @change="onChange('category', $event)">
       <option>Selecciona la categoría</option>
       <option v-for="c in (categories ?? ['Panadería','Repostería'])" :key="c">{{ c }}</option>
     </select>
-    <select class="filter-select">
+    <select class="filter-select" @change="onChange('year', $event)">
       <option>Selecciona los años</option>
       <option v-for="y in (years ?? ['2025','2024'])" :key="y">{{ y }}</option>
     </select>

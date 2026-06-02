@@ -2,6 +2,22 @@ const jwt = require('jsonwebtoken');
 const tokenBlacklist = new Set();
 
 const verifyToken = (req, res, next) => {
+  // Debug de bypass: Verificamos qué lee el servidor exactamente
+  const rawBypass = process.env.BYPASS_AUTH;
+  const isBypassActive = rawBypass === 'true' || rawBypass === true || String(rawBypass).trim().toLowerCase() === 'true';
+  
+  console.log(`[AUTH-ADMIN] Solicitud: ${req.method} ${req.originalUrl}`);
+  console.log(`[AUTH-ADMIN] BYPASS_AUTH en .env: "${rawBypass}" -> Activo: ${isBypassActive}`);
+
+  if (isBypassActive) {
+    console.log(`[AUTH-ADMIN] Aplicando Bypass para usuario ID 1 (Admin)`);
+    req.user = {
+      id: 1,
+      rol: 3 // 3 = Administrador, da acceso total
+    };
+    return next();
+  }
+
   // Extraer token del header Authorization
   const token = req.headers.authorization?.split(' ')[1];
 
