@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { ref, onMounted } from 'vue'
 import BaseCheckbox from '../atoms/BaseCheckbox.vue'
+import { apiService } from '../../modules/service/api.service'
 
 const props = defineProps<{
   minPrice: number
@@ -13,19 +15,31 @@ defineEmits([
   'toggle-category'
 ])
 
-const categories = [
+const categories = ref<string[]>([])
 
-  'PROMOS',
-  'TORTAS',
-  'CUPCAKE',
-  'CHEESECAKES',
-  'GALLETAS',
-  'BOCADITOS',
-  'PASTELERÍA SALADA',
-  'PROMOS',
+const fetchCategories = async () => {
+  try {
+    const response = await apiService.get('/categorias')
+    
+    // Manejamos si la API devuelve la respuesta de Axios (.data) o el array directo
+    const data = response?.data || response
+    const rawCategories = Array.isArray(data) ? data : (data?.categories || [])
 
-  'OTROS'
-]
+    categories.value = [...new Set(
+      rawCategories.map((c: any): string => {
+        // Extraemos el valor de forma segura si es un objeto o un string
+        const val = (typeof c === 'object' && c !== null) 
+          ? (c.nombre || c.categoria) 
+          : c
+        return String(val || '').trim().toUpperCase()
+      })
+    )].filter(Boolean)
+  } catch (err) {
+    console.error('Error al cargar categorías:', err)
+  }
+}
+
+onMounted(fetchCategories)
 
 const isSelected = (category: string) => {
 

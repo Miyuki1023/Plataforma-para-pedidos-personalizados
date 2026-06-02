@@ -17,8 +17,10 @@ interface Address {
 
 interface Props {
   name: string
+  lastName?: string
   phone: string
   email: string
+  fotoPerfil?: string
 }
 
 const props = defineProps<Props>()
@@ -27,21 +29,42 @@ const authStore = useAuthStore()
 
 /* ── DATOS PERSONALES ── */
 const localName  = ref(props.name)
+const localLastName = ref(props.lastName || '')
 const localPhone = ref(props.phone)
+const localFoto = ref(props.fotoPerfil || '')
 const savingProfile = ref(false)
 const profileMsg = ref('')
 
+const handlePhotoUpload = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  if (target.files && target.files[0]) {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      localFoto.value = e.target?.result as string
+    }
+    reader.readAsDataURL(target.files[0])
+  }
+}
+
 const saveProfile = async () => {
+  if (localPhone.value && !/^\d{9}$/.test(localPhone.value)) {
+    profileMsg.value = '✗ El teléfono debe tener 9 dígitos'
+    return
+  }
+
   savingProfile.value = true
   profileMsg.value = ''
   try {
     await authStore.updateProfile({
       usuario: localName.value,
-      telefono: localPhone.value
+      apellido: localLastName.value,
+      telefono: localPhone.value,
+      foto_perfil: localFoto.value
     })
     profileMsg.value = '✓ Cambios guardados'
-  } catch {
-    profileMsg.value = '✗ Error al guardar'
+  } catch (err: any) {
+    // Ahora el mensaje mostrará el error real (ej: "Payload Too Large" o "no existe la columna apellido")
+    profileMsg.value = `✗ ${err.message || 'Error al guardar'}`
   } finally {
     savingProfile.value = false
     setTimeout(() => { profileMsg.value = '' }, 3000)
@@ -91,7 +114,8 @@ const fetchAddresses = async () => {
 const fetchDistricts = async () => {
   try {
     const res = await apiService.get('/addresses/districts')
-    districts.value = res
+    // Normalizamos la respuesta para aceptar tanto un array directo como un objeto con la propiedad districts
+    districts.value = Array.isArray(res) ? res : (res.districts || [])
   } catch (err) {
     console.error('Error fetching districts:', err)
   }
@@ -128,8 +152,8 @@ const addAddress = async () => {
     newStreet.value = ''
     newRef.value = ''
     selectedDistrictId.value = null
-  } catch {
-    addrError.value = 'No se pudo guardar.'
+  } catch (err: any) {
+    addrError.value = err.message || 'No se pudo guardar.'
   } finally {
     savingAddr.value = false
   }
@@ -158,12 +182,47 @@ const deleteAddress = async (id: number) => {
 <template>
   <aside class="premium-sidebar">
     <!-- ── DATOS PERSONALES ── -->
-    <h2 class="sidebar-title">Información Personal</h2>
+    <div class="sidebar-section-header">
+      <h2 class="sidebar-title">Mi Perfil</h2>
+      <p class="sidebar-subtitle">Actualiza tu información y gestiona tus entregas.</p>
+    </div>
 
     <div class="sidebar-form">
-      <BaseInput label="Nombre Completo" v-model="localName" />
-      <BaseInput label="Teléfono" v-model="localPhone" />
-      <BaseInput label="Correo Electrónico" :model-value="email" :disabled="true" />
+      <!-- FOTO DE PERFIL -->
+      <div class="profile-photo-section">
+        <div class="photo-container">
+          <img :src="localFoto || '/user.jpg'" alt="Avatar" class="main-photo" />
+          <label class="photo-overlay">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            <input type="file" accept="image/*" @change="handlePhotoUpload" hidden />
+          </label>
+        </div>
+        <div class="photo-info">
+          <span class="photo-title">Foto de perfil</span>
+          <p class="photo-hint">Toca la cámara para cambiarla</p>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label class="field-label">Nombre de usuario</label>
+        <BaseInput v-model="localName" placeholder="Tu nombre" />
+      </div>
+
+      <div class="input-group">
+        <label class="field-label">Apellido</label>
+        <BaseInput v-model="localLastName" placeholder="Tu apellido" />
+      </div>
+      
+      <div class="input-group">
+        <label class="field-label">Teléfono de contacto</label>
+        <BaseInput v-model="localPhone" placeholder="Ej: 987654321" maxlength="9" />
+      </div>
+     
+      <div class="input-group locked">
+        <label class="field-label">Correo Electrónico</label>
+        <BaseInput :model-value="email" :disabled="true" />
+        <span class="field-info">El correo electrónico no puede ser modificado por seguridad.</span>
+      </div> 
     </div>
 
     <p v-if="profileMsg" class="profile-msg" :class="{ error: profileMsg.startsWith('✗') }">
@@ -223,15 +282,33 @@ const deleteAddress = async (id: number) => {
 
         <!-- FORMULARIO NUEVA -->
         <div v-if="showNewForm" class="addr-new-form">
-          <input v-model="newLabel"  class="addr-input" placeholder="Etiqueta (Casa, Trabajo…)" />
-          <input v-model="newStreet" class="addr-input" placeholder="Calle y número *" />
-          <select v-model="selectedDistrictId" class="addr-input">
-            <option :value="null" disabled>Selecciona un distrito *</option>
-            <option v-for="d in districts" :key="d.id" :value="d.id">
-              {{ d.distrito }}
-            </option>
-          </select>
-          <input v-model="newRef"    class="addr-input" placeholder="Referencia (opcional)" />
+          <div class="form-row">
+            <label class="form-label">Nombre de dirección</label>
+            <input v-model="newLabel" class="addr-input" placeholder="Ej: Mi Casa, Oficina..." />
+            <span class="input-help">Ayuda a identificarla rápido.</span>
+          </div>
+
+          <div class="form-row">
+            <label class="form-label">Dirección exacta *</label>
+            <input v-model="newStreet" class="addr-input" placeholder="Calle, número, dpto..." />
+          </div>
+
+          <div class="form-row">
+            <label class="form-label">Distrito *</label>
+            <select v-model="selectedDistrictId" class="addr-input addr-select">
+              <option :value="null" disabled>Selecciona tu distrito</option>
+              <option v-for="d in districts" :key="d.id" :value="d.id">
+                {{ d.distrito }}
+              </option>
+            </select>
+          </div>
+
+          <div class="form-row">
+            <label class="form-label">Referencia</label>
+            <input v-model="newRef" class="addr-input" placeholder="Ej: Portón blanco, frente al parque" />
+            <span class="input-help">Indicaciones útiles para el reparto.</span>
+          </div>
+
           <p v-if="addrError" class="addr-error">{{ addrError }}</p>
           <button class="addr-save-btn" :disabled="savingAddr" @click="addAddress">
             {{ savingAddr ? 'Guardando…' : 'Guardar dirección' }}
@@ -243,7 +320,7 @@ const deleteAddress = async (id: number) => {
 </template>
 
 <style scoped>
-/* ── HEREDADO ── */
+/* ── GENERAL ── */
 .premium-sidebar {
   background: #F4EDE6;
   padding: 2.5rem;
@@ -257,6 +334,10 @@ const deleteAddress = async (id: number) => {
   gap: 1.25rem;
 }
 
+.sidebar-section-header {
+  margin-bottom: 0.5rem;
+}
+
 .sidebar-title {
   font-size: 1.4rem;
   font-weight: 700;
@@ -265,14 +346,104 @@ const deleteAddress = async (id: number) => {
   letter-spacing: -0.5px;
 }
 
+.sidebar-subtitle {
+  font-size: 0.85rem;
+  color: #6d5d5d;
+  margin: 0.3rem 0 0;
+  line-height: 1.4;
+}
+
+/* ── NUEVO PHOTO EDITOR ── */
+.profile-photo-section {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem 0;
+}
+
+.photo-container {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid #fff;
+  box-shadow: 0 4px 12px rgba(139, 49, 52, 0.15);
+  flex-shrink: 0;
+}
+
+.main-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.photo-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 0.3s ease;
+}
+
+.photo-container:hover .photo-overlay {
+  opacity: 1;
+}
+
+.photo-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.photo-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #2f2f2f;
+}
+
+.photo-hint {
+  font-size: 0.75rem;
+  color: #9a8880;
+  margin: 0;
+}
+
 .sidebar-form {
   display: flex;
   flex-direction: column;
-  gap: 1.1rem;
+  gap: 1.2rem;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.field-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #4a3f3f;
+  margin-left: 0.5rem;
+}
+
+.field-info {
+  font-size: 0.75rem;
+  color: #9a8880;
+  font-style: italic;
+  margin-left: 0.5rem;
 }
 
 .btn-save-profile {
   width: 100%;
+  margin-top: 0.5rem;
+  box-shadow: 0 10px 20px rgba(139, 49, 52, 0.15);
+  transition: all 0.3s ease;
 }
 
 .profile-msg {
@@ -284,6 +455,13 @@ const deleteAddress = async (id: number) => {
 }
 
 .profile-msg.error { color: #c0392b; }
+
+/* Bloqueo de Input */
+.input-group.locked {
+  opacity: 0.85;
+  opacity: 0.8;
+  cursor: not-allowed;
+}
 
 /* ── ADDRESSES ── */
 .addresses-section {
@@ -415,12 +593,38 @@ const deleteAddress = async (id: number) => {
 .addr-new-form {
   display: flex;
   flex-direction: column;
-  gap: .7rem;
+  gap: 1rem;
   padding: 1rem;
   border-radius: 14px;
   background: white;
   border: 1px dashed #c9a8a8;
   animation: fadeDown .25s ease;
+}
+
+.form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.form-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #2f2f2f;
+}
+
+.input-help {
+  font-size: 0.75rem;
+  color: #9a8880;
+}
+
+.addr-select {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238b3134' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1em;
 }
 
 @keyframes fadeDown {

@@ -25,7 +25,16 @@ const handleSubmit = async () => {
       password: password.value
     })
 
-    router.push('/home') // Redirige a la página de inicio después del login exitoso
+    // Redirección basada en el ID de Rol
+    const userRole = authStore.user?.rol
+
+    if (userRole === 2) {
+      router.push('/empleado')
+    } else if (userRole === 3) {
+      router.push('/admin')
+    } else {
+      router.push('/home')
+    }
   } catch (err: any) {
     error.value = err.message || 'Credenciales incorrectas. Inténtalo de nuevo.'
   } finally {
@@ -49,7 +58,7 @@ const handleSubmit = async () => {
         </template>
       </BaseInput>
       <div class="forgot-link">
-        <a href="#">¿Olvidaste tu contraseña?</a>
+        <RouterLink to="/forgot-password">¿Olvidaste tu contraseña?</RouterLink>
       </div>
     </div>
 

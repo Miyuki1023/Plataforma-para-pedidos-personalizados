@@ -30,7 +30,7 @@ onMounted(async () => {
     <section class="profile-hero-banner">
       <ProfileHeader
         :name="authStore.user?.usuario || 'Invitado'"
-        image="/user.jpg"
+        :image="authStore.user?.foto_perfil || '/user.jpg'"
       />
     </section>
 
@@ -39,8 +39,10 @@ onMounted(async () => {
       <div class="profile-sidebar-wrapper">
         <ProfileSidebar
           :name="authStore.user?.usuario || ''"
+          :lastName="authStore.user?.apellido || ''"
           :phone="authStore.user?.telefono || ''"
           :email="authStore.user?.email || ''"
+          :fotoPerfil="authStore.user?.foto_perfil || ''"
           address="Sin dirección registrada"
         />
       </div>

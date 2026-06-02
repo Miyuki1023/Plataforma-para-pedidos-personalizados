@@ -42,12 +42,86 @@ const deliveryPrice = 10
 const total        = computed(() => subtotal.value + deliveryPrice)
 
 /* ── MODAL PAGO ── */
+const orderHistoryKey = 'orderHistory'
+interface Order {
+  id: string
+  date: string
+  items: any[]
+  subtotal: number
+  delivery: number
+  total: number
+  method: string
+  code: string
+  address: string
+  receipt: string
+}
+
+const lastOrder = ref<Order | null>(null)
 const showPayModal   = ref(false)
 const payMethod      = ref<'yape' | 'plin' | null>(null)
 const yapeCode       = ref('')
 const payLoading     = ref(false)
 const paySuccess     = ref(false)
 const payError       = ref('')
+
+const formatCurrency = (value: number) =>
+  value.toLocaleString('es-PE', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })
+
+const saveOrder = (order: Order) => {
+  const current = JSON.parse(localStorage.getItem(orderHistoryKey) || '[]')
+  current.unshift(order)
+  localStorage.setItem(orderHistoryKey, JSON.stringify(current))
+}
+
+const generateReceiptText = (order: Order) => {
+  const lines = [
+    'BOLETA DE COMPRA - Vainilla y Miel',
+    '----------------------------------------',
+    `Pedido: ${order.id}`,
+    `Fecha: ${order.date}`,
+    `Método: ${order.method}`,
+    `Código: ${order.code}`,
+    `Dirección / día: ${order.address}`,
+    '----------------------------------------',
+    'Productos:'
+  ]
+
+  order.items.forEach((item, index) => {
+    lines.push(
+      `${index + 1}. ${item.name} x${item.quantity || 1} - S/ ${formatCurrency(item.price)}`
+    )
+  })
+
+  lines.push('----------------------------------------')
+  lines.push(`Subtotal: S/ ${formatCurrency(order.subtotal)}`)
+  lines.push(`Envío: S/ ${formatCurrency(order.delivery)}`)
+  lines.push(`Total: S/ ${formatCurrency(order.total)}`)
+  lines.push('Gracias por tu compra. Disfruta tu postre!')
+
+  return lines.join('\n')
+}
+
+const downloadReceipt = (order: Order | null) => {
+  if (!order) return
+  const blob = new Blob([order.receipt], { type: 'text/plain;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `Boleta-${order.id}.txt`
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(url)
+}
+
+const normalizePayCodeInput = (event: Event) => {
+  const input = event.target as HTMLInputElement
+  input.value = input.value.replace(/\D/g, '').slice(0, 4)
+  yapeCode.value = input.value
+}
 
 const openPayModal = () => {
   if (cartItems.value.length === 0) return
@@ -56,6 +130,7 @@ const openPayModal = () => {
   yapeCode.value     = ''
   payError.value     = ''
   paySuccess.value   = false
+  lastOrder.value    = null
 }
 
 const closePayModal = () => {
@@ -75,14 +150,29 @@ const confirmPay = async () => {
   }
   payLoading.value = true
   try {
-    // Aquí iría la llamada real al endpoint de pagos:
-    // await apiService.post('/payments/process', {
-    //   method: payMethod.value,
-    //   code: yapeCode.value,
-    //   orderId: ...,
-    //   addressId: selectedAddressId.value
-    // })
-    await new Promise(r => setTimeout(r, 1800)) // simulación
+    await new Promise(r => setTimeout(r, 1400))
+    const orderId = `PED-${Date.now()}`
+    const orderDate = new Date().toLocaleString('es-PE', {
+      dateStyle: 'medium',
+      timeStyle: 'short'
+    })
+
+    const order: Order = {
+      id: orderId,
+      date: orderDate,
+      items: [...cartItems.value],
+      subtotal: subtotal.value,
+      delivery: deliveryPrice,
+      total: total.value,
+      method: payMethod.value,
+      code: yapeCode.value,
+      address: selectedDay.value || 'Pendiente',
+      receipt: ''
+    }
+
+    order.receipt = generateReceiptText(order)
+    saveOrder(order)
+    lastOrder.value = order
     paySuccess.value = true
     localStorage.removeItem('cartProduct')
     cartItems.value  = []
@@ -202,7 +292,8 @@ const confirmPay = async () => {
             <div class="pay-code-wrapper">
               <label class="pay-code-label">Código de {{ payMethod === 'yape' ? 'Yape' : 'Plin' }}</label>
               <input
-                v-model="yapeCode"
+                :value="yapeCode"
+                @input="normalizePayCodeInput"
                 type="text"
                 maxlength="4"
                 inputmode="numeric"
@@ -230,315 +321,3 @@ const confirmPay = async () => {
     </div>
   </Teleport>
 </template>
-
-<style scoped>
-.resume-section {
-  display: grid;
-  grid-template-columns: 1.4fr .8fr;
-  gap: 3rem;
-  padding: 4rem 6%;
-  background: #fdfaf7;
-}
-
-.resume-left {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-}
-
-.resume-header {
-  display: flex;
-  flex-direction: column;
-  gap: .7rem;
-}
-
-.resume-title {
-  font-size: clamp(2rem, 4vw, 3rem);
-  font-weight: 900;
-  color: #1f1f1f;
-}
-
-.resume-subtitle {
-  max-width: 520px;
-  line-height: 1.7;
-  color: #666;
-}
-
-.resume-right {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  position: sticky;
-  top: 120px;
-  height: fit-content;
-}
-
-.finish-btn { width: 100%; }
-
-@media (max-width: 1100px) {
-  .resume-section { grid-template-columns: 1fr; }
-  .resume-right   { position: static; }
-}
-@media (max-width: 768px) {
-  .resume-section { padding: 2rem 1rem; }
-}
-
-/* ════════════════════════
-   MODAL DE PAGO
-════════════════════════ */
-.pay-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.48);
-  backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1200;
-  padding: 1rem;
-}
-
-.pay-modal {
-  width: min(92%, 420px);
-  background: white;
-  border-radius: 28px;
-  padding: 2.2rem;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 1.4rem;
-  animation: modalPop .3s cubic-bezier(.34,1.56,.64,1);
-  box-shadow: 0 30px 60px rgba(0,0,0,.18);
-}
-
-@keyframes modalPop {
-  from { opacity: 0; transform: scale(.88) translateY(12px); }
-  to   { opacity: 1; transform: scale(1) translateY(0); }
-}
-
-.pay-close {
-  position: absolute;
-  top: 1rem;
-  right: 1.2rem;
-  border: none;
-  background: none;
-  font-size: 1.7rem;
-  cursor: pointer;
-  color: #999;
-  transition: color .2s;
-}
-.pay-close:hover { color: #333; }
-.pay-close:disabled { opacity: .4; cursor: not-allowed; }
-
-/* HEADER */
-.pay-header {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: .5rem;
-}
-
-.pay-icon {
-  width: 64px;
-  height: 64px;
-  border-radius: 20px;
-  background: linear-gradient(135deg, #8b3134, #c94752);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.8rem;
-  margin-bottom: .3rem;
-}
-
-.pay-title {
-  font-size: 1.4rem;
-  font-weight: 800;
-  color: #2f2f2f;
-  margin: 0;
-}
-
-.pay-subtitle {
-  font-size: .9rem;
-  color: #857871;
-  line-height: 1.55;
-  margin: 0;
-  max-width: 300px;
-}
-
-/* MÉTODOS */
-.pay-methods {
-  display: flex;
-  gap: .9rem;
-}
-
-.pay-method-btn {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: .55rem;
-  padding: 1.1rem .8rem;
-  border: 2px solid #ead8c8;
-  border-radius: 16px;
-  background: #fdf8f5;
-  cursor: pointer;
-  font-weight: 700;
-  font-size: .9rem;
-  color: #2f2f2f;
-  transition: .22s ease;
-}
-
-.pay-method-btn.active {
-  border-color: #8b3134;
-  background: rgba(139,49,52,.05);
-  box-shadow: 0 8px 20px rgba(139,49,52,.1);
-}
-
-.pay-method-btn:hover:not(.active) {
-  border-color: #c9a8a8;
-  transform: translateY(-2px);
-}
-
-.pay-method-logo {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.3rem;
-  font-weight: 900;
-  color: white;
-}
-
-.yape-logo { background: linear-gradient(135deg, #6c1bc4, #9b3af0); }
-.plin-logo  { background: linear-gradient(135deg, #0081c8, #00b4d8); }
-
-/* PASOS */
-.pay-steps {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  animation: fadeDown .25s ease;
-}
-
-@keyframes fadeDown {
-  from { opacity: 0; transform: translateY(-6px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-.pay-instructions {
-  margin: 0;
-  padding: 0 0 0 1.2rem;
-  display: flex;
-  flex-direction: column;
-  gap: .4rem;
-}
-
-.pay-instructions li {
-  font-size: .88rem;
-  color: #5a4a4a;
-  line-height: 1.5;
-}
-
-/* CÓDIGO */
-.pay-code-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: .5rem;
-}
-
-.pay-code-label {
-  font-size: .82rem;
-  font-weight: 700;
-  color: #8b3134;
-  letter-spacing: .05em;
-  text-transform: uppercase;
-}
-
-.pay-code-input {
-  width: 100%;
-  text-align: center;
-  letter-spacing: 12px;
-  font-size: 2rem;
-  font-weight: 900;
-  padding: .9rem;
-  border: 2px solid #ead8c8;
-  border-radius: 14px;
-  outline: none;
-  background: #fdf8f5;
-  color: #2f2f2f;
-  transition: border-color .2s;
-}
-
-.pay-code-input:focus { border-color: #8b3134; }
-
-.pay-code-hint {
-  font-size: .75rem;
-  color: #9a8880;
-  text-align: center;
-  margin: 0;
-  line-height: 1.5;
-}
-
-/* ERROR */
-.pay-error {
-  font-size: .84rem;
-  color: #c0392b;
-  text-align: center;
-  margin: 0;
-  font-weight: 600;
-}
-
-/* BOTÓN PRINCIPAL */
-.pay-action-btn {
-  width: 100%;
-  padding: 1rem;
-  border: none;
-  border-radius: 14px;
-  background: #8b3134;
-  color: white;
-  font-size: 1rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: .22s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 52px;
-}
-
-.pay-action-btn:hover:not(:disabled) {
-  background: #721f22;
-  transform: translateY(-1px);
-  box-shadow: 0 10px 22px rgba(139,49,52,.2);
-}
-
-.pay-action-btn:disabled { opacity: .6; cursor: not-allowed; }
-
-.pay-action-btn--success { background: #2e7d32; }
-.pay-action-btn--success:hover:not(:disabled) {
-  background: #1b5e20;
-  box-shadow: 0 10px 22px rgba(46,125,50,.2);
-}
-
-/* SUCCESS */
-.pay-success-icon {
-  font-size: 3.5rem;
-  text-align: center;
-}
-
-/* SPINNER */
-.btn-spinner {
-  width: 20px;
-  height: 20px;
-  border: 2.5px solid rgba(255,255,255,.35);
-  border-top-color: white;
-  border-radius: 50%;
-  animation: spin .7s linear infinite;
-  display: inline-block;
-}
-
-@keyframes spin { to { transform: rotate(360deg); } }
-</style>

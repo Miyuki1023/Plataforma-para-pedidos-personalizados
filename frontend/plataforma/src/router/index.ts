@@ -14,6 +14,14 @@ import ProductProfileView from '../views/ProductProfileView.vue'
 import ResumendeCompraView from '../views/ResumendeCompraView.vue'
 import PerfilUserView from '../views/PerfilUserView.vue'
 import SobreNosotrosView from '../views/SobreNosotrosView.vue'
+import VerificationView from '../components/molecules/VerifyAccountForm.vue'
+import ForgotPasswordView from '../components/molecules/ForgotPasswordForm.vue'
+import EmployeeDashboardView   from '../views/EmployeeDashboardView.vue'
+import EmployeeOrdersView      from '../views/EmployeeOrdersView.vue'
+import EmployeeProductsView    from '../views/EmployeeProductsView.vue'
+import AdminDashboardView from '../views/AdminDashboardView.vue'
+import AdminProductsView from '../views/AdminProductsView.vue'
+import AdminUsersView from '../views/AdminUsersView.vue'
 
 const router = createRouter({
 
@@ -83,6 +91,24 @@ const router = createRouter({
       name: 'sobre-nosotros',
       component: SobreNosotrosView
     },
+    {
+      path: '/verify',
+      name: 'verify',
+      component: VerificationView
+    },
+    {
+      path: '/forgot-password',
+      name: 'forgot-password',
+      component: ForgotPasswordView
+    },
+    { path: '/register', name: 'register', component: RegisterView },
+    { path: '/empleado',           name: 'employee-dashboard', component: EmployeeDashboardView },
+    { path: '/empleado/ordenes',   name: 'employee-orders',    component: EmployeeOrdersView },
+    { path: '/empleado/productos', name: 'employee-products',  component: EmployeeProductsView },
+    { path: '/admin', name: 'admin-dashboard', component: AdminDashboardView },
+    { path: '/admin/productos', name: 'admin-products', component: AdminProductsView },
+    { path: '/admin/usuarios', name: 'admin-users', component: AdminUsersView },
+
 
     /* 404 */
     {

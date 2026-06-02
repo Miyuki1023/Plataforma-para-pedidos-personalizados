@@ -2,16 +2,29 @@ const pool = require('../config/db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { addToBlacklist } = require('../middlewares/auth');
+const emailService = require('./email.service');
 
-exports.register = async ({ usuario, email, password, rol = 1, fecha_nacimiento, sexo, telefono }) => {
+exports.register = async ({
+  usuario,
+  email,
+  password,
+  apellido,
+  rol = 1,
+  fecha_nacimiento,
+  sexo,
+  telefono,
+  isVerified = false
+}) => {
 
   if (!usuario || !email || !password) {
     throw new Error('Faltan campos');
   }
 
+  const cleanEmail = email.toLowerCase().trim();
+
   const exists = await pool.query(
     'SELECT 1 FROM usuario WHERE email=$1 OR usuario=$2',
-    [email, usuario]
+    [cleanEmail, usuario]
   );
 
   if (exists.rows.length > 0) {
@@ -20,14 +33,143 @@ exports.register = async ({ usuario, email, password, rol = 1, fecha_nacimiento,
 
   const hashed = await bcrypt.hash(password, 10);
 
-  const result = await pool.query(
-    `INSERT INTO usuario (usuario, email, password, id_rol, fecha_nacimiento, sexo, telefono)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)
-     RETURNING id, usuario, email, id_rol, fecha_nacimiento, sexo, telefono`,
-    [usuario, email, hashed, rol, fecha_nacimiento, sexo, telefono]
+  const verificationCode = isVerified ? null : Math.floor(
+    100000 + Math.random() * 900000
+  ).toString();
+
+  const verificationExpires = isVerified ? null : new Date(
+    Date.now() + 15 * 60 * 1000
   );
 
-  return result.rows[0];
+  try {
+
+    const result = await pool.query(
+      `INSERT INTO usuario (
+        usuario,
+        apellido,
+        foto_perfil,
+        email,
+        password,
+        id_rol,
+        fecha_nacimiento,
+        sexo,
+        telefono,
+        verification_code,
+        verified,
+        verification_expires
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      RETURNING
+        id,
+        usuario,
+        apellido,
+        foto_perfil,
+        email,
+        id_rol,
+        verified`,
+      [
+        usuario,
+        apellido,
+        null, // O podrías pasar una imagen por defecto
+        cleanEmail,
+        hashed,
+        rol,
+        fecha_nacimiento,
+        sexo,
+        telefono,
+        verificationCode,
+        isVerified,
+        verificationExpires
+      ]
+    );
+
+    // Enviamos el correo solo si NO está verificado desde el inicio
+    if (!isVerified) {
+      await emailService.sendVerificationEmail(
+        cleanEmail,
+        verificationCode
+      );
+    }
+
+    return result.rows[0];
+  } catch (error) {
+    console.error(error);
+    // Propagamos el mensaje de error real de la base de datos o uno más preciso
+    throw error;
+  }
+};
+
+//CONFIRMA SI LA CUENTA YA ESTA VERIFICADA
+exports.verifyAccount = async (email, code) => {
+
+  if (!email || !code) {
+    throw new Error('Email y código requeridos');
+  }
+
+  const cleanEmail = email.toLowerCase().trim();
+
+  const result = await pool.query(
+    `SELECT id, verification_code, verification_expires, verified
+     FROM usuario
+     WHERE email = $1`,
+    [cleanEmail]
+  );
+
+  if (result.rows.length === 0) {
+    throw new Error('Usuario no encontrado');
+  }
+
+  const user = result.rows[0];
+
+  if (user.verified) {
+    throw new Error('La cuenta ya está verificada');
+  }
+
+  if (user.verification_code !== code) {
+    throw new Error('Código incorrecto');
+  }
+
+  if (new Date() > user.verification_expires) {
+    throw new Error('Código expirado');
+  }
+
+  await pool.query(
+    `UPDATE usuario
+     SET verified = true,
+         verification_code = NULL,
+         verification_expires = NULL
+     WHERE email = $1`,
+    [cleanEmail]
+  );
+
+  return {
+    message: 'Cuenta verificada correctamente'
+  };
+};
+
+exports.resendVerification = async (email) => {
+  if (!email) throw new Error('Email requerido');
+  const cleanEmail = email.toLowerCase().trim();
+
+  const result = await pool.query(
+    'SELECT verified FROM usuario WHERE email = $1',
+    [cleanEmail]
+  );
+
+  if (result.rows.length === 0) throw new Error('Usuario no encontrado');
+  if (result.rows[0].verified) throw new Error('La cuenta ya está verificada');
+
+  const newCode = Math.floor(100000 + Math.random() * 900000).toString();
+  const newExpires = new Date(Date.now() + 15 * 60 * 1000);
+
+  await pool.query(
+    'UPDATE usuario SET verification_code = $1, verification_expires = $2 WHERE email = $3',
+    [newCode, newExpires, cleanEmail]
+  );
+
+  await emailService.sendVerificationEmail(cleanEmail, newCode);
+
+  return { message: 'Nuevo código enviado' };
 };
 
 exports.login = async ({ email, password }) => {
@@ -47,7 +189,15 @@ exports.login = async ({ email, password }) => {
 
   const user = result.rows[0];
 
-  const valid = await bcrypt.compare(password, user.password);
+  // VALIDAR SI LA CUENTA ESTÁ VERIFICADA
+  if (!user.verified) {
+    throw new Error('Cuenta no verificada');
+  }
+
+  const valid = await bcrypt.compare(
+    password,
+    user.password
+  );
 
   if (!valid) {
     throw new Error('Credenciales inválidas');
@@ -64,13 +214,16 @@ exports.login = async ({ email, password }) => {
     user: {
       id: user.id,
       usuario: user.usuario,
+      apellido: user.apellido,
+      foto_perfil: user.foto_perfil,
       email: user.email,
       rol: user.id_rol
     }
   };
+
 };
 
-exports.adminRegister = async ({ usuario, email, password, rol, fecha_nacimiento, sexo, telefono }, adminId) => {
+exports.adminRegister = async ({ usuario, apellido, email, password, rol, fecha_nacimiento, sexo, telefono }, adminId) => {
   // Validate that the admin is creating the user
   if (!adminId) {
     throw new Error('Solo administradores pueden crear usuarios');
@@ -93,7 +246,7 @@ exports.adminRegister = async ({ usuario, email, password, rol, fecha_nacimiento
   }
 
   // Register the user with the specified role and optional fields
-  return await this.register({ usuario, email, password, rol, fecha_nacimiento, sexo, telefono });
+  return await this.register({ usuario, apellido, email, password, rol, fecha_nacimiento, sexo, telefono, isVerified: true });
 };
 
 exports.logout = async (token) => {
@@ -104,4 +257,94 @@ exports.logout = async (token) => {
   addToBlacklist(token);
 
   return { message: 'Sesión cerrada exitosamente' };
+};
+
+
+//recuperar contraseña
+exports.forgotPassword = async (email) => {
+  const cleanEmail = email.toLowerCase().trim();
+
+  const result = await pool.query(
+    'SELECT id, email FROM usuario WHERE email = $1',
+    [cleanEmail]
+  );
+
+  if (result.rows.length === 0) {
+    throw new Error('Usuario no encontrado');
+  }
+
+  const resetCode = Math.floor(
+    100000 + Math.random() * 900000
+  ).toString();
+
+  const resetExpires = new Date(
+    Date.now() + 10 * 60 * 1000
+  );
+
+  await pool.query(
+    `UPDATE usuario
+     SET reset_code = $1,
+         reset_expires = $2
+     WHERE email = $3`,
+    [resetCode, resetExpires, cleanEmail]
+  );
+
+  await emailService.sendResetPasswordEmail(
+    cleanEmail,
+    resetCode
+  );
+
+  return {
+    message: 'Código enviado al correo'
+  };
+};
+
+exports.changePassword = async (
+  email,
+  code,
+  newPassword
+) => {
+  const cleanEmail = email.toLowerCase().trim();
+
+  const result = await pool.query(
+    `SELECT
+        reset_code,
+        reset_expires
+     FROM usuario
+     WHERE email = $1`,
+    [cleanEmail]
+  );
+
+  if (result.rows.length === 0) {
+    throw new Error('Usuario no encontrado');
+  }
+
+  const user = result.rows[0];
+
+  if (user.reset_code !== code) {
+    throw new Error('Código incorrecto');
+  }
+
+  if (new Date() > user.reset_expires) {
+    throw new Error('Código expirado');
+  }
+
+  const hashedPassword =
+    await bcrypt.hash(newPassword, 10);
+
+  await pool.query(
+    `UPDATE usuario
+     SET password = $1,
+         reset_code = NULL,
+         reset_expires = NULL
+     WHERE email = $2`,
+    [hashedPassword, cleanEmail]
+  );
+
+  // Enviar confirmación de éxito
+  await emailService.sendPasswordChangedEmail(cleanEmail);
+
+  return {
+    message: 'Contraseña actualizada correctamente'
+  };
 };

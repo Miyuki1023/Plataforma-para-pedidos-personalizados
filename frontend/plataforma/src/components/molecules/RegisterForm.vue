@@ -5,11 +5,12 @@ import BaseInput from '../atoms/BaseInput.vue'
 import BaseButton from '../atoms/BaseButton.vue'
 import BaseCheckbox from '../atoms/BaseCheckbox.vue'
 import { useAuthStore } from '../../stores/auth'
-
 const username = ref('')
+const lastName = ref('')
 const email = ref('')
 const password = ref('')
 const phone = ref('')
+const sexo = ref('M')
 const birthdate = ref('')
 const acceptPolicy = ref(false)
 const loading = ref(false)
@@ -33,9 +34,10 @@ const handleSubmit = async () => {
   try {
     const signupData: any = {
       usuario: username.value,
+      apellido: lastName.value,
       email: email.value,
       password: password.value,
-      sexo: 'M' // Valor por defecto requerido por el backend
+      sexo: sexo.value
     }
 
     // Solo enviamos estos campos si tienen contenido real para evitar errores de validación por strings vacíos
@@ -46,7 +48,8 @@ const handleSubmit = async () => {
 
     await authStore.register(signupData)
 
-    router.push('/login')
+    // Aseguramos que la navegación ocurra hacia verify
+    await router.push({ path: '/verify', query: { email: email.value } })
   } catch (err: any) {
     console.error('Error detallado del registro:', err.response?.data);
     
@@ -76,6 +79,18 @@ const handleSubmit = async () => {
       </template>
     </BaseInput>
 
+    <!-- Apellido -->
+    <BaseInput v-model="lastName" type="text" placeholder="Apellido">
+      <template #icon>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="1.8"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="8" r="4"/>
+          <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+        </svg>
+      </template>
+    </BaseInput>
+
     <!-- Email -->
     <BaseInput v-model="email" type="email" placeholder="usua@gmail.com">
       <template #icon>
@@ -87,6 +102,36 @@ const handleSubmit = async () => {
         </svg>
       </template>
     </BaseInput>
+
+  <!-- Sexo -->
+<BaseInput
+  v-model="sexo"
+  type="select"
+  :options="[
+    { label: 'Masculino', value: 'M' },
+    { label: 'Femenino', value: 'F' },
+    { label: 'Otro', value: 'O' }
+  ]"
+>
+  <template #icon>
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.8"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    >
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 12v9" />
+      <path d="M9 18h6" />
+    </svg>
+  </template>
+</BaseInput>
+
+     
 
     <!-- Phone -->
     <BaseInput v-model="phone" type="tel" placeholder="999 999 999">
@@ -144,3 +189,32 @@ const handleSubmit = async () => {
 
   </form>
 </template>
+
+<style scoped>
+.gender-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 1rem;
+}
+.gender-icon {
+  position: absolute;
+  left: 1rem;
+  color: #9e8080;
+  pointer-events: none;
+  z-index: 1;
+}
+.gender-select {
+  width: 100%;
+  padding: 12px 12px 12px 42px;
+  border: 1.5px solid #eee;
+  border-radius: 12px;
+  background: #fcfcfc;
+  font-family: 'Lato', sans-serif;
+  font-size: 0.9rem;
+  color: #2a1a1a;
+  appearance: none;
+  cursor: pointer;
+}
+</style>

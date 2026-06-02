@@ -4,6 +4,7 @@ import BaseIcon from '../atoms/BaseIcon.vue'
 defineProps<{
   name: string
   text: string
+  avatar: string
   stars?: number
   active?: boolean
 }>()
@@ -17,9 +18,13 @@ defineProps<{
   >
 
     <!-- AVATAR -->
-    <div class="testi-avatar">
-      {{ name.charAt(0) }}
-    </div>
+   <div class="testi-avatar">
+  <img
+    :src="avatar"
+    :alt="name"
+    class="testi-avatar-image"
+  />
+</div>
 
     <!-- NAME -->
     <h4 class="testi-name">

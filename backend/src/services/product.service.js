@@ -5,10 +5,13 @@ exports.getProducts = async () => {
     SELECT 
       id,
       nombre,
+      descripcion,
       precio,
       categoria,
       disponible,
       imagen_url,
+      badge,
+      subtitulo,
       stock
     FROM producto
     WHERE disponible = true

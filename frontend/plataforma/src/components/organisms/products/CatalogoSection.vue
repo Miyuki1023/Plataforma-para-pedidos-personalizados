@@ -361,39 +361,3 @@ const changePage = (page: number) => {
   </section>
 
 </template>
-
-<style scoped>
-/* Estilos para el feedback visual del carrito */
-.cart-feedback-toast {
-  position: fixed;
-  bottom: 30px;
-  right: 30px;
-  background-color: var(--primary, #af3439);
-  color: white;
-  padding: 1rem 2rem;
-  border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-  z-index: 1000;
-  font-weight: 600;
-  animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-@keyframes slideUp {
-  from { transform: translateY(100px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
-.loading-state, .error-state {
-  text-align: center;
-  padding: 4rem;
-  color: var(--text-p);
-  font-size: 1.2rem;
-}
-
-.no-results {
-  grid-column: 1 / -1;
-  text-align: center;
-  padding: 2rem;
-  color: #888;
-}
-</style>

@@ -20,8 +20,7 @@ const sendCode = async () => {
   loading.value = true
   error.value = ''
   try {
-    // Endpoint para solicitar el código de reseteo
-    await apiService.post('/auth/request-reset-code', { email: authStore.user?.email })
+    await apiService.post('/auth/forgot-password', { email: authStore.user?.email })
     step.value = 2
   } catch (err: any) {
     error.value = err.message || 'Error al enviar el código.'
@@ -31,21 +30,10 @@ const sendCode = async () => {
 }
 
 const verifyCode = async () => {
-  if (verificationCode.value.length === 4) {
-    loading.value = true
-    error.value = ''
-    try {
-      // Endpoint para validar que el código de 4 dígitos es correcto
-      await apiService.post('/auth/verify-reset-code', { 
-        email: authStore.user?.email, 
-        code: verificationCode.value 
-      })
-      step.value = 3
-    } catch (err: any) {
-      error.value = 'Código incorrecto o expirado.'
-    } finally {
-      loading.value = false
-    }
+  if (verificationCode.value.length === 6) {
+    step.value = 3
+  } else {
+    error.value = 'El código debe tener 6 dígitos.'
   }
 }
 
@@ -62,9 +50,10 @@ const savePassword = async () => {
     }
     loading.value = true
     try {
-      // Usamos la función del store para actualizar el perfil en la DB
-      await authStore.updateProfile({ 
-        password: newPassword.value 
+      await apiService.post('/auth/change-password', {
+        email: authStore.user?.email,
+        code: verificationCode.value,
+        newPassword: newPassword.value
       })
 
       alert('Contraseña actualizada correctamente')

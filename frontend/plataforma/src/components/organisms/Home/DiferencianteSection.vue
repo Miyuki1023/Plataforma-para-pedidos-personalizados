@@ -1,68 +1,93 @@
 <script setup lang="ts">
-import BaseIcon from '../../atoms/BaseIcon.vue'
-
+ 
 const differentials = [
   {
+    number: '01',
     title: 'Personalización a tu gusto',
-    desc: 'Crea tu combinación ideal: sabor, relleno y acabado.'
+    desc: 'Crea tu combinación ideal: sabor, relleno, acabado y mensaje. Cada detalle es tuyo.',
+    icon: 'heart'
   },
   {
+    number: '02',
     title: 'Ingredientes seleccionados de calidad',
-    desc: 'Frescos, naturales y seleccionados.'
+    desc: 'Usamos productos frescos, naturales y de temporada. Sin conservantes, sin concesiones.',
+    icon: 'heart'
   },
   {
-    title: 'Atención cercana',
-    desc: 'Te acompañamos en cada detalle.'
+    number: '03',
+    title: 'Atención cercana y personalizada',
+    desc: 'Te acompañamos desde el pedido hasta la entrega. Tu satisfacción es nuestra prioridad.',
+    icon: 'heart'
   }
 ]
 </script>
-
+ 
 <template>
   <section class="diff-section">
-    <div class="">
-
-      <span class="section-eyebrow">
-        LO QUE NOS HACE ÚNICOS
+ 
+    <!-- ── COLUMNA IZQUIERDA: TEXTO ── -->
+    <div class="diff-content">
+ 
+      <!-- Eyebrow -->
+      <span class="section-eyebrow ds-eyebrow">
+        Lo que nos hace únicos
       </span>
-
-      <h2 class="diff-title">
-        Diferenciante
-        <br />
-        Crea un postre a tu medida
+ 
+      <!-- Título -->
+      <h2 class="diff-title ">
+        Postres hechos<br />
+        <span>a tu medida</span>
       </h2>
+     
+      <br>
 
-      <ul class="diff-list">
+ 
+      <!-- Subtítulo -->
+      <p class="ds-subtitle">
+        No fabricamos en serie. Cada pedido es una creación nueva, pensada para ti y para la ocasión que merece celebrarse.
+      </p>
+ 
+      <!-- Lista de diferenciales -->
+      <ul class="diff-list ds-list">
         <li
-          v-for="d in differentials"
+          v-for="(d) in differentials"
           :key="d.title"
-          class="diff-item"
+          class="diff-item ds-item"
         >
-          <div class="diff-check">
-            <BaseIcon
-              name="heart"
-              :size="14"
-              color="var(--primary)"
-            />
+          <!-- Número + ícono -->
+          <div class="diff-check ds-check">
+            <span class="ds-check-number">{{ d.number }}</span>
           </div>
-
-          <div>
-            <p class="diff-item-title">
-              {{ d.title }}
-            </p>
-
-            <p class="diff-item-desc">
-              {{ d.desc }}
-            </p>
+ 
+          <!-- Texto -->
+          <div class="ds-item-body">
+            <p class="diff-item-title">{{ d.title }}</p>
+            <p class="diff-item-desc">{{ d.desc }}</p>
           </div>
         </li>
       </ul>
+ 
+     
     </div>
-
-    <div class="diff-image">
+ 
+    <!-- ── COLUMNA DERECHA: IMAGEN ── -->
+    <div class="diff-image ds-img-col">
+ 
+      
+ 
+       <div class="diff-image-wrapper">
       <img
         src="../../../assets/diff_img.png"
-        alt="Torta decorada"
+        alt="Torta decorada personalizada"
+        class="diff-image"
       />
     </div>
+ 
+      
+ 
+      <!-- Decoración: círculo punteado -->
+      <div class="ds-deco-ring" aria-hidden="true" />
+    </div>
+ 
   </section>
 </template>

@@ -11,6 +11,30 @@ const allProducts = ref<any[]>([])
 const loading = ref(true)
 const currentIndex = ref(0)
 
+const buildMetaTags = (item: any) => {
+  const tags = [] as string[]
+  const label = (value: any, prefix: string) => {
+    if (!value) return null
+    if (Array.isArray(value)) return `${prefix}: ${value.join(', ')}`
+    return `${prefix}: ${String(value)}`
+  }
+
+  const sizeTag = label(item.tamano || item.size || item.sizeSelected, 'Tamaño')
+  const toppingsTag = label(item.toppings || item.ingredientes || item.adicionales, 'Toppings')
+  const messageTag = label(item.mensaje || item.message || item.customMessage, 'Mensaje')
+  const extrasTag = label(item.extras || item.addOns || item.extrasSelected, 'Extras')
+  const variationTag = label(item.variacion || item.variation || item.variant, 'Variación')
+
+  if (sizeTag) tags.push(sizeTag)
+  if (variationTag) tags.push(variationTag)
+  if (toppingsTag) tags.push(toppingsTag)
+  if (extrasTag) tags.push(extrasTag)
+  if (messageTag) tags.push(messageTag)
+  if (item.categoria || item.category) tags.push(String(item.categoria || item.category).toUpperCase())
+
+  return tags.slice(0, 3)
+}
+
 /* FIX PRINCIPAL: fetchProducts ahora se llama en onMounted */
 const fetchProducts = async () => {
   try {
@@ -29,7 +53,8 @@ const fetchProducts = async () => {
         description: p.descripcion || p.description,
         category: String(p.categoria || p.category || 'OTROS').toUpperCase(),
         image: finalImg,
-        imageUrl: finalImg
+        imageUrl: finalImg,
+        metaTags: buildMetaTags(p)
       }
     })
   } catch (err) {

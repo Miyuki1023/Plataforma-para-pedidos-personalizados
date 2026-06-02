@@ -15,6 +15,7 @@ interface Props {
   image?: string
   category?: string
   isNew?: boolean
+  metaTags?: string[]
 }
 
 const props = defineProps<Props>()
@@ -84,6 +85,10 @@ const toggleFavorite = () => {
       <p class="card-desc">
         {{ description }}
       </p>
+
+      <div v-if="metaTags?.length" class="card-tags">
+        <span v-for="tag in metaTags" :key="tag" class="card-tag">{{ tag }}</span>
+      </div>
 
       <p class="card-price">
         S/{{ price }}
