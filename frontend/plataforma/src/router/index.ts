@@ -5,6 +5,9 @@ import HomeView from '../views/HomeView.vue'
 import EmployeeDashboardView   from '../views/EmployeeDashboardView.vue'
 import EmployeeOrdersView      from '../views/EmployeeOrdersView.vue'
 import EmployeeProductsView    from '../views/EmployeeProductsView.vue'
+import AdminDashboardView from '../views/AdminDashboardView.vue'
+import AdminProductsView from '../views/AdminProductsView.vue'
+import AdminUsersView from '../views/AdminUsersView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -16,6 +19,9 @@ const router = createRouter({
     { path: '/empleado',           name: 'employee-dashboard', component: EmployeeDashboardView },
     { path: '/empleado/ordenes',   name: 'employee-orders',    component: EmployeeOrdersView },
     { path: '/empleado/productos', name: 'employee-products',  component: EmployeeProductsView },
+    { path: '/admin', name: 'admin-dashboard', component: AdminDashboardView },
+    { path: '/admin/productos', name: 'admin-products', component: AdminProductsView },
+    { path: '/admin/usuarios', name: 'admin-users', component: AdminUsersView },
   ]
 })
 
