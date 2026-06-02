@@ -10,10 +10,11 @@ defineProps<{
     stockLabel: string
     stockType: 'ok' | 'low' | 'out'
     price: string
+    available: boolean
   }[]
 }>()
 
-const toggles = ref<Record<number, boolean>>({ 1: true, 2: true, 3: false })
+defineEmits(['toggle-availability'])
 </script>
 
 <template>
@@ -55,8 +56,8 @@ const toggles = ref<Record<number, boolean>>({ 1: true, 2: true, 3: false })
           <td>
             <button
               class="toggle"
-              :class="{ 'toggle--on': toggles[item.id] }"
-              @click="toggles[item.id] = !toggles[item.id]"
+              :class="{ 'toggle--on': item.available }"
+              @click="$emit('toggle-availability', item)"
             >
               <span class="toggle-thumb" />
             </button>

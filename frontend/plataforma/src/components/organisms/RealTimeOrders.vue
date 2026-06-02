@@ -9,6 +9,8 @@ defineProps<{
     statusType: 'process' | 'done' | 'delivered'
   }[]
 }>()
+
+defineEmits(['download'])
 </script>
 
 <template>
@@ -40,7 +42,7 @@ defineProps<{
       </div>
     </div>
 
-    <button class="btn-download">
+    <button class="btn-download" @click="$emit('download')">
       <span class="material-symbols-outlined" style="font-size:15px">download</span>
       Download Report (.CSV)
     </button>
