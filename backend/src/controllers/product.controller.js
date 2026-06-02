@@ -90,6 +90,10 @@ exports.updateProduct = async (req, res) => {
     const id = parseInt(req.params.id);
     const updateData = req.body;
 
+    // Log para depuración en consola del servidor
+    console.log(`Intentando actualizar producto ID: ${id}`);
+    console.log('Datos recibidos:', updateData);
+
     if (isNaN(id)) {
       return res.status(400).json({ message: 'ID de producto inválido' });
     }
@@ -113,7 +117,7 @@ exports.updateProduct = async (req, res) => {
     }
 
     res.status(500).json({
-      message: 'Error al actualizar el producto'
+      message: `Error al actualizar producto ${id}: ${error.message}`
     });
   }
 };

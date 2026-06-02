@@ -3,17 +3,19 @@ const pool = require('../config/db');
 exports.getProducts = async () => {
   const result = await pool.query(`
     SELECT 
-      id,
-      nombre,
-      precio,
-      categoria,
-      disponible,
-      imagen_url,
-      stock,
-      descripcion
-    FROM producto
-    WHERE disponible = true
-    ORDER BY id ASC
+      p.id,
+      p.nombre,
+      p.precio,
+      p.categoria,
+      p.disponible,
+      p.imagen_url,
+      p.stock,
+      p.descripcion,
+      COALESCE(SUM(dp.cantidad), 0)::int as vendidos
+    FROM producto p
+    LEFT JOIN detalle_pedido dp ON p.id = dp.id_producto
+    GROUP BY p.id
+    ORDER BY p.disponible DESC, p.id ASC
   `);
 
   return result.rows;
@@ -176,17 +178,20 @@ exports.createProduct = async (nombre, precio, categoria, stock, imagenUrls = []
 };
 
 exports.updateProduct = async (id, updateData) => {
-  const { nombre, precio, categoria, stock, imagenUrls, disponible, descripcion } = updateData;
+  // Extraemos tanto imagenUrls (frontend) como imagen_url (db)
+  const { nombre, precio, categoria, stock, imagenUrls, imagen_url, disponible, descripcion } = updateData;
 
   // Validate imagen_url array if provided
-  let validImagenUrls = imagenUrls;
-  if (imagenUrls !== undefined) {
-    if (!Array.isArray(imagenUrls)) {
-      validImagenUrls = [imagenUrls];
+  let finalImages = imagenUrls !== undefined ? imagenUrls : imagen_url;
+  let validImagenUrls = finalImages;
+  
+  if (finalImages !== undefined) {
+    if (!Array.isArray(finalImages)) {
+      validImagenUrls = [finalImages];
     }
     
     // Ensure maximum 3 URLs
-    if (validImagenUrls.length > 3) {
+    if (validImagenUrls && validImagenUrls.length > 3) {
       throw new Error('Se permite un máximo de 3 URLs de imagen');
     }
 
@@ -223,7 +228,7 @@ exports.updateProduct = async (id, updateData) => {
     paramCounter++;
   }
 
-  if (imagenUrls !== undefined) {
+  if (finalImages !== undefined) {
     updateFields.push(`imagen_url = $${paramCounter}`);
     values.push(validImagenUrls);
     paramCounter++;
@@ -235,6 +240,7 @@ exports.updateProduct = async (id, updateData) => {
     paramCounter++;
   }
 
+  // Permitir actualizar descripción incluso si viene como string vacío
   if (descripcion !== undefined) {
     updateFields.push(`descripcion = $${paramCounter}`);
     values.push(descripcion);
@@ -253,6 +259,10 @@ exports.updateProduct = async (id, updateData) => {
     WHERE id = $${paramCounter}
     RETURNING id, nombre, precio, categoria, disponible, imagen_url, stock, descripcion
   `;
+
+  // Log para verificar la consulta exacta que se envía a PostgreSQL
+  console.log('Ejecutando SQL:', query);
+  console.log('Con valores:', values);
 
   const result = await pool.query(query, values);
 

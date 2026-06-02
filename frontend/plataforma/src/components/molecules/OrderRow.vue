@@ -1,31 +1,68 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import BaseStatusButton from '../atoms/BaseStatusButton.vue'
 
 const props = defineProps<{
-  orderId: string
+  orderId: string | number
   pickup?: string
   delivery?: string
   customerName: string
-  items: string
-  image: string
-  status: 'pendiente' | 'en_proceso' | 'completado'
+  items?: string
+  image?: string
+  status: 'pendiente' | 'preparacion' | 'listo' | 'entregado' | 'cancelado'
   currentStep?: number
+  total?: number
 }>()
 
-const step = ref(props.currentStep ?? 0)
-// 0=iniciar, 1=proceso, 2=listo, 3=entregado
+const emit = defineEmits<{
+  (e: 'update-status', payload: { orderId: string | number; status: 'pendiente' | 'preparacion' | 'listo' | 'entregado' | 'cancelado' }): void
+  (e: 'view-details', orderId: string | number): void
+}>()
+
+const statusStepMap: Record<string, number> = {
+  pendiente: 0,
+  preparacion: 1,
+  listo: 2,
+  entregado: 3,
+  cancelado: 0,
+}
+
+const step = ref(props.currentStep ?? statusStepMap[props.status] ?? 0)
+
+watch(
+  () => props.status,
+  (value) => {
+    step.value = statusStepMap[value] ?? 0
+  }
+)
 
 const statusLabel: Record<string, { text: string; cls: string }> = {
-  pendiente:   { text: 'PENDIENTE',   cls: 'badge--pending' },
-  en_proceso:  { text: 'EN PROCESO',  cls: 'badge--process' },
-  completado:  { text: 'COMPLETADO',  cls: 'badge--done' },
+  pendiente:    { text: 'PENDIENTE',     cls: 'badge--pending' },
+  preparacion:  { text: 'PREPARACIÓN',   cls: 'badge--process' },
+  listo:        { text: 'LISTO',         cls: 'badge--process' },
+  entregado:    { text: 'ENTREGADO',     cls: 'badge--done' },
+  cancelado:    { text: 'CANCELADO',     cls: 'badge--pending' },
+}
+
+const imageUrl = computed(() => props.image || 'https://images.unsplash.com/photo-1506806732259-39c2d0268443?w=160&q=80')
+const itemSummary = computed(() => {
+  if (props.items) return props.items
+  if (props.total != null) return `Total: S/ ${props.total.toFixed(2)}`
+  return 'Pedido sin detalles'
+})
+
+function changeStatus(newStatus: typeof props.status) {
+  if (props.status === newStatus) {
+    return
+  }
+  step.value = statusStepMap[newStatus] ?? step.value
+  emit('update-status', { orderId: props.orderId, status: newStatus })
 }
 </script>
 
 <template>
-  <div class="order-row" :class="{ 'order-row--done': status === 'completado' }">
-    <img :src="image" :alt="customerName" class="order-img" />
+  <div class="order-row" :class="{ 'order-row--done': status === 'entregado' || status === 'cancelado' }">
+    <img :src="imageUrl" :alt="customerName" class="order-img" />
 
     <div class="order-body">
       <div class="order-meta">
@@ -37,39 +74,36 @@ const statusLabel: Record<string, { text: string; cls: string }> = {
         </span>
       </div>
 
-      <p class="order-customer" :class="{ 'order-customer--done': status === 'completado' }">
+      <p class="order-customer" :class="{ 'order-customer--done': status === 'entregado' || status === 'cancelado' }">
         {{ customerName }}
       </p>
-      <p class="order-items-text">{{ items }}</p>
+      <p class="order-items-text">{{ itemSummary }}</p>
 
-      <div v-if="status !== 'completado'" class="order-actions">
+      <div v-if="status !== 'entregado' && status !== 'cancelado'" class="order-actions">
         <BaseStatusButton
-          label="Iniciar"
+          v-if="status === 'pendiente'"
+          label="Iniciar Preparación"
           variant="iniciar"
-          :active="step === 0"
-          @click="step = 1"
+          :active="false"
+          @click="changeStatus('preparacion')"
         />
         <BaseStatusButton
-          label="Proceso"
+          v-if="status === 'preparacion'"
+          label="Marcar como Listo"
           variant="proceso"
-          :active="step >= 1"
-          @click="step = 2"
+          :active="false"
+          @click="changeStatus('listo')"
         />
         <BaseStatusButton
-          label="Listo para Entrega"
+          v-if="status === 'listo'"
+          label="Marcar Entregado"
           variant="listo"
-          :active="step >= 2"
-          @click="step = 3"
-        />
-        <BaseStatusButton
-          label="Entregado"
-          variant="entregado"
-          :active="step >= 3"
-          @click="step = 3"
+          :active="false"
+          @click="changeStatus('entregado')"
         />
       </div>
 
-      <a v-else href="#" class="ver-boleta">Ver detalles de boleta</a>
+      <a href="#" class="ver-boleta" @click.prevent="$emit('view-details', orderId)">Ver detalles de boleta</a>
     </div>
   </div>
 </template>

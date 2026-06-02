@@ -1,42 +1,102 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, defineProps, ref, watch } from 'vue'
+
+const props = defineProps<{
+  busyDates?: string[]
+}>()
+
+const emit = defineEmits<{
+  (e: 'update:selectedDate', value: string | null): void
+}>()
 
 const today = new Date()
-const selectedDay = ref(14)
+const selectedDay = ref<number | null>(today.getDate())
 const currentMonth = ref(today.getMonth())
 const currentYear = ref(today.getFullYear())
 
 const monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
 const dayNames = ['LUN','MAR','MIÉ','JUE','VIE','SÁB','DOM']
+const todayMonth = today.getMonth()
+const todayYear = today.getFullYear()
 
-// Dias con eventos
-const busyDays: Record<number, 'alta' | 'dot' | 'selected'> = {
-  3:  'dot',
-  4:  'alta',
-  5:  'dot',
-  7:  'selected',
-}
+const busyDateCounts = computed(() => {
+  const map = new Map<string, number>()
+  props.busyDates?.forEach((date) => {
+    const normalized = String(date).slice(0, 10)
+    if (!normalized) return
+    map.set(normalized, (map.get(normalized) ?? 0) + 1)
+  })
+  return map
+})
+
+const daysInMonth = computed(() => getDaysInMonth(currentMonth.value, currentYear.value))
+const firstDay = computed(() => getFirstDayOfMonth(currentMonth.value, currentYear.value))
+const calendarCells = computed(() =>
+  Array.from({ length: 35 }, (_, i) => {
+    const day = i - firstDay.value + 1
+    if (day > 0 && day <= daysInMonth.value) {
+      const date = new Date(currentYear.value, currentMonth.value, day)
+      return {
+        day,
+        iso: date.toISOString().slice(0, 10),
+        count: busyDateCounts.value.get(date.toISOString().slice(0, 10)) ?? 0,
+      }
+    }
+    return { day: null, iso: null, count: 0 }
+  })
+)
+
+const selectedDate = computed(() => {
+  if (!selectedDay.value) return null
+  return new Date(currentYear.value, currentMonth.value, selectedDay.value)
+})
+
+watch(selectedDate, (value) => {
+  emit('update:selectedDate', value ? value.toISOString().slice(0, 10) : null)
+})
 
 function getDaysInMonth(month: number, year: number) {
   return new Date(year, month + 1, 0).getDate()
 }
 
 function getFirstDayOfMonth(month: number, year: number) {
-  // 0=Sun → convert to Mon-based
   const d = new Date(year, month, 1).getDay()
   return d === 0 ? 6 : d - 1
 }
 
-const daysInMonth = getDaysInMonth(currentMonth.value, currentYear.value)
-const firstDay    = getFirstDayOfMonth(currentMonth.value, currentYear.value)
+function prevMonth() {
+  if (currentMonth.value === 0) {
+    currentMonth.value = 11
+    currentYear.value--
+  } else {
+    currentMonth.value--
+  }
+  if (selectedDay.value && selectedDay.value > daysInMonth.value) {
+    selectedDay.value = daysInMonth.value
+  }
+}
 
-const calendarCells = Array.from({ length: 35 }, (_, i) => {
-  const day = i - firstDay + 1
-  return day > 0 && day <= daysInMonth ? day : null
-})
+function nextMonth() {
+  if (currentMonth.value === 11) {
+    currentMonth.value = 0
+    currentYear.value++
+  } else {
+    currentMonth.value++
+  }
+  if (selectedDay.value && selectedDay.value > daysInMonth.value) {
+    selectedDay.value = daysInMonth.value
+  }
+}
 
-function prevMonth() { if (currentMonth.value === 0) { currentMonth.value = 11; currentYear.value-- } else currentMonth.value-- }
-function nextMonth() { if (currentMonth.value === 11) { currentMonth.value = 0; currentYear.value++ } else currentMonth.value++ }
+function selectDay(day: number) {
+  selectedDay.value = day
+}
+
+function selectToday() {
+  currentMonth.value = todayMonth
+  currentYear.value = todayYear
+  selectedDay.value = today.getDate()
+}
 </script>
 
 <template>
@@ -47,7 +107,7 @@ function nextMonth() { if (currentMonth.value === 11) { currentMonth.value = 0; 
         <button class="cal-nav-btn" @click="prevMonth">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
         </button>
-        <button class="cal-today-btn">Hoy</button>
+        <button class="cal-today-btn" @click="selectToday">Hoy</button>
         <button class="cal-nav-btn" @click="nextMonth">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
         </button>
@@ -58,21 +118,21 @@ function nextMonth() { if (currentMonth.value === 11) { currentMonth.value = 0; 
       <div v-for="d in dayNames" :key="d" class="cal-day-name">{{ d }}</div>
 
       <button
-        v-for="(day, i) in calendarCells"
+        v-for="(cell, i) in calendarCells"
         :key="i"
         class="cal-cell"
         :class="{
-          'cal-cell--empty':    !day,
-          'cal-cell--selected': day === selectedDay,
-          'cal-cell--alta':     day !== null && busyDays[day] === 'alta',
-          'cal-cell--dot':      day !== null && busyDays[day] === 'dot',
-          'cal-cell--today':    day === today.getDate() && currentMonth === today.getMonth(),
+          'cal-cell--empty':    !cell.day,
+          'cal-cell--selected': cell.day === selectedDay,
+          'cal-cell--alta':     cell.day !== null && cell.count > 1,
+          'cal-cell--dot':      cell.day !== null && cell.count > 0,
+          'cal-cell--today':    cell.day === today.getDate() && currentMonth === today.getMonth(),
         }"
-        :disabled="!day"
-        @click="day && (selectedDay = day)"
+        :disabled="!cell.day"
+        @click="cell.day && selectDay(cell.day)"
       >
-        <span v-if="day" class="day-num">{{ day }}</span>
-        <span v-if="day && busyDays[day] === 'alta'" class="day-tag">ALTA<br>CARGA</span>
+        <span v-if="cell.day" class="day-num">{{ cell.day }}</span>
+        <span v-if="cell.day && cell.count > 1" class="day-tag">ALTA<br>CARGA</span>
       </button>
     </div>
   </div>

@@ -1,74 +1,176 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
+import ProductCreateModal from "./ProductCreateModal.vue";
+import ProductEditModal from "./ProductEditModal.vue";
+import api from "../../lib/api";
 
-const products = ref([
-  {
-    id: 1,
-    name: "Tarta de Ganache Intenso",
-    sku: "SKU:CROC-001",
-    category: "Tortas",
-    stock: 42,
-    stockType: "ok",
-    price: "S/50",
-    active: true,
-    img: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=80&q=80",
-  },
-  {
-    id: 2,
-    name: "Croissant de Mantequilla",
-    sku: "SKU:BAK-042",
-    category: "Pastelería Salada",
-    stock: 8,
-    stockType: "low",
-    price: "S/50",
-    active: true,
-    img: "https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=80&q=80",
-  },
-  {
-    id: 3,
-    name: "Tartaleta de Frutas de Estación",
-    sku: "SKU:FRUT-109",
-    category: "Cheesecakes",
-    stock: 5,
-    stockType: "low",
-    price: "S/50",
-    active: true,
-    img: "https://images.unsplash.com/photo-1464349095431-e9a21285b5f3?w=80&q=80",
-  },
-  {
-    id: 4,
-    name: "Red Velvet Editorial",
-    sku: "SKU:REDV-88",
-    category: "Tortas",
-    stock: 0,
-    stockType: "out",
-    price: "S/50",
-    active: false,
-    img: "https://images.unsplash.com/photo-1586985289688-ca3cf47d3e6e?w=80&q=80",
-  },
-]);
+interface Product {
+  id: number;
+  nombre: string;
+  precio: number;
+  categoria: string;
+  stock: number;
+  descripcion?: string;
+  imagen_url?: string[];
+  vendidos?: number;
+  disponible?: boolean;
+}
 
+const products = ref<Product[]>([]);
 const selected = ref<number[]>([]);
 const currentPage = ref(1);
-const totalItems = 128;
-const soldPercent = 84;
+const loading = ref(false);
+const error = ref("");
+
+// Modal states
+const isCreateModalOpen = ref(false);
+const isEditModalOpen = ref(false);
+const selectedProductForEdit = ref<Product | null>(null);
+
+const ITEMS_PER_PAGE = 8;
+
+const totalItems = computed(() => products.value.length);
+const totalPages = computed(() => Math.ceil(totalItems.value / ITEMS_PER_PAGE));
 
 const allSelected = computed(
   () =>
     products.value.length > 0 &&
-    selected.value.length === products.value.length,
+    selected.value.length === products.value.length
 );
+
 function toggleAll() {
   selected.value = allSelected.value ? [] : products.value.map((p) => p.id);
 }
+
 function toggleRow(id: number) {
   selected.value = selected.value.includes(id)
     ? selected.value.filter((s) => s !== id)
     : [...selected.value, id];
 }
+
 const totalStock = computed(() =>
-  products.value.reduce((s, p) => s + p.stock, 0),
+  products.value.reduce((s, p) => s + p.stock, 0)
 );
+
+const totalSold = computed(() =>
+  products.value.reduce((s, p) => s + (p.vendidos || 0), 0)
+);
+
+const soldPercent = computed(() => {
+  const sold = totalSold.value;
+  const stock = totalStock.value;
+  const total = sold + stock;
+  
+  if (total === 0) return 0;
+  return Math.round((sold / total) * 100);
+});
+
+// Fetch products from backend
+async function fetchProducts() {
+  loading.value = true;
+  error.value = "";
+  try {
+    const response = await api.get("/productos");
+    products.value = response.data || [];
+  } catch (err) {
+    console.error(err);
+    error.value = "Error al cargar productos";
+  } finally {
+    loading.value = false;
+  }
+}
+
+// Handle create product
+function handleOpenCreateModal() {
+  isCreateModalOpen.value = true;
+}
+
+function handleProductCreated(product: Product) {
+  products.value.push(product);
+  selected.value = [];
+}
+
+// Handle edit product
+function handleEditProduct() {
+  if (selected.value.length !== 1) {
+    error.value = "Selecciona un producto para editar";
+    return;
+  }
+  const productId = selected.value[0];
+  selectedProductForEdit.value = products.value.find((p) => p.id === productId) || null;
+  if (selectedProductForEdit.value) {
+    isEditModalOpen.value = true;
+  }
+}
+
+function handleProductUpdated(updatedProduct: Product) {
+  const index = products.value.findIndex((p) => p.id === updatedProduct.id);
+  if (index !== -1) {
+    products.value[index] = updatedProduct;
+  }
+  selected.value = [];
+}
+
+// Handle delete products
+async function handleDeleteProducts() {
+  if (selected.value.length === 0) return;
+  
+  if (!confirm(`¿Estás seguro de que deseas eliminar ${selected.value.length} producto(s)?`)) {
+    return;
+  }
+
+  loading.value = true;
+  error.value = "";
+  try {
+    for (const productId of selected.value) {
+      await api.delete(`/productos/${productId}`);
+    }
+    products.value = products.value.filter((p) => !selected.value.includes(p.id));
+    selected.value = [];
+  } catch (err: any) {
+    error.value = err.response?.data?.message || "Error al eliminar productos";
+  } finally {
+    loading.value = false;
+  }
+}
+
+// Handle toggle product availability
+async function handleToggleProduct(product: Product) {
+  try {
+    const response = await api.put(`/productos/${product.id}`, {
+      disponible: !product.disponible
+    });
+    const index = products.value.findIndex((p) => p.id === product.id);
+    if (index !== -1) {
+      products.value[index] = response.data?.product || products.value[index];
+    }
+  } catch (err: any) {
+    error.value = err.response?.data?.message || "Error al actualizar producto";
+  }
+}
+
+// Computed for display
+const displayProducts = computed(() => {
+  const start = (currentPage.value - 1) * ITEMS_PER_PAGE;
+  const end = start + ITEMS_PER_PAGE;
+
+  return products.value
+    .slice(start, end)
+    .map((p) => ({
+      ...p,
+      sku: `SKU:${p.id}`,
+      stockType: p.stock > 10 ? "ok" : p.stock > 0 ? "low" : "out",
+      price: `S/${Number(p.precio).toFixed(2)}`,
+      img: Array.isArray(p.imagen_url) && p.imagen_url.length > 0
+        ? p.imagen_url[0]
+        : "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=80&q=80",
+      active: p.disponible !== false
+    }));
+});
+
+onMounted(() => {
+  fetchProducts();
+});
 </script>
 
 <template>
@@ -106,16 +208,24 @@ const totalStock = computed(() =>
     <!-- ── Toolbar ── -->
     <div class="toolbar">
       <div class="toolbar-left">
-        <button class="btn-primary">
+        <button class="btn-primary" @click="handleOpenCreateModal">
           <span class="material-symbols-rounded">add</span>
           Nueva producto
         </button>
-        <button class="btn-secondary">
+        <button 
+          class="btn-secondary"
+          :disabled="selected.length !== 1"
+          @click="handleEditProduct"
+        >
           <span class="material-symbols-rounded">edit</span>
           Editar
         </button>
       </div>
-      <button class="btn-danger" :disabled="selected.length === 0">
+      <button 
+        class="btn-danger" 
+        :disabled="selected.length === 0"
+        @click="handleDeleteProducts"
+      >
         <span class="material-symbols-rounded">delete</span>
         Eliminar
       </button>
@@ -146,7 +256,7 @@ const totalStock = computed(() =>
         </thead>
         <tbody>
           <tr
-            v-for="p in products"
+            v-for="p in displayProducts"
             :key="p.id"
             class="prod-row"
             :class="{ 'prod-row--selected': selected.includes(p.id) }"
@@ -164,15 +274,15 @@ const totalStock = computed(() =>
             </td>
             <td>
               <div class="prod-cell">
-                <img :src="p.img" :alt="p.name" class="prod-img" />
+                <img :src="p.img" :alt="p.nombre" class="prod-img" />
                 <div>
-                  <p class="prod-name">{{ p.name }}</p>
+                  <p class="prod-name">{{ p.nombre }}</p>
                   <p class="prod-sku">{{ p.sku }}</p>
                 </div>
               </div>
             </td>
             <td>
-              <span class="category-pill">{{ p.category }}</span>
+              <span class="category-pill">{{ p.categoria }}</span>
             </td>
             <td>
               <span class="stock-badge" :class="`stock--${p.stockType}`">
@@ -184,7 +294,7 @@ const totalStock = computed(() =>
               <button
                 class="toggle"
                 :class="{ 'toggle--on': p.active }"
-                @click="p.active = !p.active"
+                @click="handleToggleProduct(p)"
               >
                 <span class="toggle-thumb" />
               </button>
@@ -196,7 +306,7 @@ const totalStock = computed(() =>
       <!-- Pagination -->
       <div class="table-footer">
         <span class="table-count"
-          >Mostrando {{ products.length }} de {{ totalItems }} creaciones</span
+          >Mostrando {{ displayProducts.length }} de {{ totalItems }} creaciones</span
         >
         <div class="pagination">
           <button
@@ -208,17 +318,24 @@ const totalStock = computed(() =>
               >chevron_left</span
             >
           </button>
+          
           <button
-            v-for="n in 3"
+            v-for="n in totalPages"
             :key="n"
+            v-show="n >= currentPage - 1 && n <= currentPage + 1"
             class="page-btn"
             :class="{ 'page-btn--active': currentPage === n }"
             @click="currentPage = n"
           >
             {{ n }}
           </button>
-          <span class="page-ellipsis">...</span>
-          <button class="page-btn" @click="currentPage++">
+
+          <span v-if="totalPages > currentPage + 1" class="page-ellipsis">...</span>
+
+          <button 
+            class="page-btn" 
+            :disabled="currentPage === totalPages || totalPages === 0"
+            @click="currentPage++">
             <span class="material-symbols-rounded" style="font-size: 14px"
               >chevron_right</span
             >
@@ -252,6 +369,19 @@ const totalStock = computed(() =>
       </div>
     </div>
   </main>
+
+  <!-- Modales -->
+  <ProductCreateModal 
+    :is-open="isCreateModalOpen"
+    @close="isCreateModalOpen = false"
+    @created="handleProductCreated"
+  />
+  <ProductEditModal 
+    :is-open="isEditModalOpen"
+    :product="selectedProductForEdit"
+    @close="isEditModalOpen = false"
+    @updated="handleProductUpdated"
+  />
 </template>
 
 <style scoped>
