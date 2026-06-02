@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import AdminSidebar from '../components/organisms/Employe/AdminSidebar.vue'
 import AppTopBar from '../components/organisms/Employe/AppTopBar.vue'
 import { apiService } from '../modules/service/api.service'
@@ -8,12 +8,16 @@ import { useAuthStore } from '../stores/auth'
 const authStore = useAuthStore()
 const currentPage = ref(1)
 const perPage = 8
+const filterRole = ref('all')
+const filterStatus = ref('all')
 const users = ref<any[]>([])
 const loading = ref(false)
 const error = ref('')
 
 // Modal para nuevo empleado
 const isModalOpen = ref(false)
+const isEditing = ref(false)
+const editUserId = ref<number | null>(null)
 const saving = ref(false)
 const newEmployee = ref({
   usuario: '',
@@ -26,10 +30,16 @@ const newEmployee = ref({
   fecha_nacimiento: ''
 })
 
+// Resetear página al filtrar
+watch([filterRole, filterStatus], () => {
+  currentPage.value = 1
+})
+
 const fetchUsers = async () => {
   loading.value = true
   try {
     const data = await apiService.get('/admin/users')
+    error.value = ""
     users.value = Array.isArray(data) ? data : (data.users || [])
   } catch (err: any) {
     error.value = "No se pudieron cargar los usuarios"
@@ -41,63 +51,113 @@ const fetchUsers = async () => {
 const handleToggleStatus = async (user: any) => {
   try {
     const newStatus = !user.activo
-    await apiService.patch(`/admin/users/${user.id}/status`, { activate: newStatus })
+    const endpoint = newStatus ? 'activate' : 'deactivate'
+    // Usamos PUT y la ruta correcta definida en admin.routes.js
+    await apiService.put(`/admin/users/${user.id}/${endpoint}`)
     user.activo = newStatus
   } catch (err) {
     alert("Error al cambiar el estado del usuario")
   }
 }
 
-const handleCreateEmployee = async () => {
-  if (!newEmployee.value.usuario || !newEmployee.value.email || !newEmployee.value.password) {
+const openCreateModal = () => {
+  isEditing.value = false
+  editUserId.value = null
+  newEmployee.value = { 
+    usuario: '', apellido: '', email: '', password: '', 
+    rol: 2, sexo: 'M', telefono: '', fecha_nacimiento: '' 
+  }
+  isModalOpen.value = true
+}
+
+const openEditModal = (user: any) => {
+  isEditing.value = true
+  editUserId.value = user.id
+  newEmployee.value = {
+    usuario: user.usuario,
+    apellido: user.apellido || '',
+    email: user.email,
+    password: '', // Vacío para no cambiarla a menos que se escriba
+    rol: Number(user.id_rol),
+    sexo: user.sexo || 'M',
+    telefono: user.telefono || '',
+    fecha_nacimiento: user.fecha_nacimiento ? user.fecha_nacimiento.split('T')[0] : ''
+  }
+  isModalOpen.value = true
+}
+
+const handleSaveEmployee = async () => {
+  if (!newEmployee.value.usuario || !newEmployee.value.email || (!isEditing.value && !newEmployee.value.password)) {
     alert("Por favor completa los campos obligatorios")
     return
   }
   
   saving.value = true
   try {
-    // Aseguramos que el endpoint sea consistente con el GET que sí encuentra el controlador
-    await apiService.post('/admin/users', newEmployee.value)
+    if (isEditing.value && editUserId.value) {
+      await apiService.put(`/admin/users/${editUserId.value}`, newEmployee.value)
+    } else {
+      await apiService.post('/admin/users', newEmployee.value)
+    }
     await fetchUsers() // Recargar lista
     isModalOpen.value = false
-    // Reset form
-    newEmployee.value = { usuario: '', apellido: '', email: '', password: '', rol: 2, sexo: 'M', telefono: '', fecha_nacimiento: '' }
   } catch (err: any) {
-    alert(err.message || "Error al registrar empleado")
+    alert(err.message || "Error al guardar el usuario")
   } finally {
     saving.value = false
   }
 }
 
-const summary = computed(() => [
-  { label: 'Activos',     value: `${users.value.filter(u => u.activo).length} Artesanos`, type: 'active' },
-  { label: 'En Descanso', value: `${users.value.filter(u => !u.activo).length} Cuentas`,    type: 'rest' },
-])
+const summary = computed(() => {
+  // Filtramos la lista para considerar únicamente a la "Plantilla" (Trabajadores y Admins)
+  // Excluimos a los clientes (Rol 1) para un resumen operativo real.
+  const staff = users.value.filter(u => Number(u.id_rol) === 2 || Number(u.id_rol) === 3)
+  
+  const activeStaff = staff.filter(u => u.activo).length
+  const inactiveStaff = staff.filter(u => !u.activo).length
+  const adminCount = staff.filter(u => Number(u.id_rol) === 3).length
+  const bakerCount = staff.filter(u => Number(u.id_rol) === 2).length
 
-const totalItems = computed(() => users.value.length)
+  return [
+    { label: 'Personal Activo', value: `${activeStaff} Artesanos`, type: 'active' },
+    { label: 'En Descanso',     value: `${inactiveStaff} Cuentas`,   type: 'rest' },
+    { label: 'Reposteros',      value: `${bakerCount} Cocina`,      type: 'staff' },
+    { label: 'Administradores',  value: `${adminCount} Gestión`,    type: 'admin' },
+  ]
+})
+
+const filteredUsers = computed(() => {
+  return users.value.filter(u => {
+    const roleMatch = filterRole.value === 'all' || Number(u.id_rol) === Number(filterRole.value)
+    const statusMatch = filterStatus.value === 'all' || 
+                       (filterStatus.value === 'active' ? u.activo : !u.activo)
+    return roleMatch && statusMatch
+  })
+})
+
+const totalItems = computed(() => filteredUsers.value.length)
 const totalPages = computed(() => Math.ceil(totalItems.value / perPage))
 
 const displayUsers = computed(() => {
   const start = (currentPage.value - 1) * perPage
   const end = start + perPage
   
-  return users.value.slice(start, end).map(u => {
+  return filteredUsers.value.slice(start, end).map(u => {
     // Mapeo estético de roles
     let specialty = 'Cliente'
     let icon = 'person'
     
-    if (u.id_rol === 2) {
+    if (Number(u.id_rol) === 2) {
       specialty = 'Repostero'
       icon = 'cake'
-    } else if (u.id_rol === 3) {
+    } else if (Number(u.id_rol) === 3) {
       specialty = 'Admin'
       icon = 'admin_panel_settings'
     }
 
     return {
       ...u,
-      // Cambiamos a una forma más segura de obtener el nombre por si 'apellido' es el problema
-      name: u.usuario + (u.apellido ? ` ${u.apellido}` : (u.apellido ? ` ${u.apellido}` : '')),
+      name: `${u.usuario} ${u.apellido || ''}`.trim(),
       email: u.email,
       specialty,
       specialtyIcon: icon,
@@ -113,7 +173,17 @@ function avatarColor(id: number) {
   return colors[id % colors.length]
 }
 
-onMounted(fetchUsers)
+let pollInterval: any = null
+
+onMounted(() => {
+  fetchUsers()
+  // Simulación de "tiempo real" mediante polling cada 30 segundos
+  pollInterval = setInterval(fetchUsers, 30000)
+})
+
+onUnmounted(() => {
+  if (pollInterval) clearInterval(pollInterval)
+})
 </script>
 
 <template>
@@ -140,7 +210,7 @@ onMounted(fetchUsers)
             <span class="material-symbols-outlined watermark-icon">grain</span>
           </div>
 
-          <button class="btn-new-employee" @click="isModalOpen = true">
+          <button class="btn-new-employee" @click="openCreateModal">
             <span class="material-symbols-outlined">person_add</span>
             Nuevo Empleado
           </button>
@@ -169,16 +239,50 @@ onMounted(fetchUsers)
           <!-- Users table -->
           <div class="users-table-wrapper">
 
+            <!-- Filtros de tabla -->
+            <div class="table-filters">
+              <div class="filter-group">
+                <label>Rol:</label>
+                <select v-model="filterRole">
+                  <option value="all">Todos los Roles</option>
+                  <option value="1">Clientes</option>
+                  <option value="2">Trabajadores</option>
+                  <option value="3">Administradores</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label>Estado:</label>
+                <select v-model="filterStatus">
+                  <option value="all">Todos</option>
+                  <option value="active">Activos</option>
+                  <option value="inactive">Desactivados</option>
+                </select>
+              </div>
+              <span class="filter-results">{{ totalItems }} resultados encontrados</span>
+            </div>
+
             <!-- Table header -->
             <div class="table-header-row">
               <span class="th">TRABAJADORES</span>
               <span class="th">ESPECIALIDAD</span>
               <span class="th">TELÉFONO</span>
+              <span class="th">ACCIONES</span>
               <span class="th">ESTADO</span>
             </div>
 
             <!-- User rows -->
             <div class="user-rows">
+              <div v-if="loading" class="table-message">
+                <p>Cargando artesanos...</p>
+              </div>
+              <div v-else-if="error" class="table-message error">
+                <p>{{ error }}</p>
+                <button @click="fetchUsers" class="btn-retry">Reintentar</button>
+              </div>
+              <div v-else-if="displayUsers.length === 0" class="table-message">
+                <p>No se encontraron usuarios con los filtros seleccionados.</p>
+              </div>
+
               <div
                 v-for="user in displayUsers"
                 :key="user.id"
@@ -214,6 +318,11 @@ onMounted(fetchUsers)
 
                 <!-- Phone -->
                 <span class="user-phone">{{ user.phone }}</span>
+
+                <!-- Edit Button -->
+                <button class="btn-edit" @click="openEditModal(user)" title="Editar usuario">
+                  <span class="material-symbols-outlined">edit_square</span>
+                </button>
 
                 <!-- Toggle -->
                 <button
@@ -265,11 +374,11 @@ onMounted(fetchUsers)
     <div v-if="isModalOpen" class="modal-overlay" @click.self="isModalOpen = false">
       <div class="modal-content">
         <div class="modal-header">
-          <h2 class="modal-title">Registrar Nuevo Empleado</h2>
+          <h2 class="modal-title">{{ isEditing ? 'Editar Usuario' : 'Registrar Nuevo Empleado' }}</h2>
           <button class="close-btn" @click="isModalOpen = false">✕</button>
         </div>
         
-        <form @submit.prevent="handleCreateEmployee" class="modal-body">
+        <form @submit.prevent="handleSaveEmployee" class="modal-body">
           <div class="form-grid">
             <div class="form-group">
               <label>Usuario *</label>
@@ -284,7 +393,7 @@ onMounted(fetchUsers)
               <input v-model="newEmployee.email" type="email" placeholder="correo@ejemplo.com" />
             </div>
             <div class="form-group">
-              <label>Contraseña *</label>
+              <label>{{ isEditing ? 'Nueva Contraseña (opcional)' : 'Contraseña *' }}</label>
               <input v-model="newEmployee.password" type="password" placeholder="••••••••" />
             </div>
             <div class="form-group">
@@ -302,13 +411,20 @@ onMounted(fetchUsers)
               <label>Fecha de Nacimiento</label>
               <input v-model="newEmployee.fecha_nacimiento" type="date" />
             </div>
+            <div class="form-group">
+              <label>Rol de acceso *</label>
+              <select v-model="newEmployee.rol" class="rol-select">
+                <option :value="2">Trabajador (Repostero)</option>
+                <option :value="3">Administrador (Acceso total)</option>
+              </select>
+            </div>
           </div>
-          <p class="role-notice">Este usuario será registrado con el <strong>Rol de Trabajador (ID: 2)</strong>.</p>
 
           <div class="modal-footer">
+            <p class="role-hint">El usuario podrá acceder al panel administrativo según su rol.</p>
             <button type="button" class="btn-cancel" @click="isModalOpen = false">Cancelar</button>
             <button type="submit" class="btn-save" :disabled="saving">
-              {{ saving ? 'Registrando...' : 'Confirmar Registro' }}
+              {{ saving ? 'Guardando...' : (isEditing ? 'Guardar Cambios' : 'Confirmar Registro') }}
             </button>
           </div>
         </form>
@@ -424,15 +540,41 @@ onMounted(fetchUsers)
 }
 .summary-badge--active { background: #e6f4ee; color: #2e7d52; }
 .summary-badge--rest   { background: #f5ece4; color: #8b1a2e; }
+.summary-badge--staff  { background: #e8f0fe; color: #1a73e8; }
+.summary-badge--admin  { background: #fef0e0; color: #7c4a10; }
 
 /* ── Users table ── */
 .users-table-wrapper {
   display: flex; flex-direction: column; gap: 0;
 }
 
+/* ── Table Filters ── */
+.table-filters {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0 1rem 1.5rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid #f5ece4;
+}
+.filter-group { display: flex; align-items: center; gap: 0.6rem; }
+.filter-group label { font-size: 0.8rem; font-weight: 700; color: #7c5730; }
+.filter-group select {
+  padding: 0.4rem 0.8rem;
+  border: 1px solid #e8d5c0;
+  border-radius: 8px;
+  background: #fff;
+  font-family: 'Lato', sans-serif;
+  font-size: 0.8rem;
+  color: #6b5050;
+}
+.filter-results {
+  margin-left: auto; font-size: 0.75rem; color: #9e8080; font-style: italic;
+}
+
 .table-header-row {
   display: grid;
-  grid-template-columns: 2fr 1.2fr 1fr 80px;
+  grid-template-columns: 2fr 1.2fr 1fr 40px 80px;
   padding: 0 1rem 0.6rem;
   gap: 1rem;
 }
@@ -448,7 +590,7 @@ onMounted(fetchUsers)
 
 .user-row {
   display: grid;
-  grid-template-columns: 2fr 1.2fr 1fr 80px;
+  grid-template-columns: 2fr 1.2fr 1fr 40px 80px;
   align-items: center;
   gap: 1rem;
   padding: 1rem 1rem;
@@ -521,6 +663,19 @@ onMounted(fetchUsers)
   white-space: nowrap;
 }
 
+/* Edit Button */
+.btn-edit {
+  background: none; border: none;
+  color: #9e8080; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: color 0.2s;
+}
+.btn-edit:hover { color: #8b1a2e; }
+.btn-edit .material-symbols-outlined {
+  font-size: 20px !important;
+  font-variation-settings: 'FILL' 0, 'wght' 400;
+}
+
 /* Toggle */
 .toggle {
   width: 36px; height: 20px;
@@ -537,6 +692,10 @@ onMounted(fetchUsers)
   transition: transform 0.25s; display: block;
 }
 .toggle--on .toggle-thumb { transform: translateX(16px); }
+
+.table-message { padding: 3rem; text-align: center; color: #9e8080; font-style: italic; }
+.table-message.error { color: #8b1a2e; }
+.btn-retry { margin-top: 1rem; padding: 0.5rem 1rem; background: #8b1a2e; color: #fff; border: none; border-radius: 8px; cursor: pointer; }
 
 /* ── Table footer ── */
 .table-footer {
@@ -604,8 +763,12 @@ onMounted(fetchUsers)
   margin-top: 1.25rem; font-size: 0.75rem; color: #9e8080;
   padding: 0.75rem; background: #f9f9f9; border-radius: 10px; border-left: 3px solid #e8c07a;
 }
+.rol-select { background-color: #fff9f0 !important; border-color: #e8c07a !important; font-weight: 700; color: #7c4a10; }
+
 .modal-footer {
-  padding: 1.25rem; display: flex; justify-content: flex-end; gap: 0.75rem;
+  padding: 1.25rem;
+  display: flex; align-items: center;
+  justify-content: flex-end; gap: 0.75rem;
   background: #fafafa; border-top: 1px solid #eee;
 }
 .btn-cancel {
@@ -617,6 +780,7 @@ onMounted(fetchUsers)
   border-radius: 8px; font-weight: 600; cursor: pointer; color: #fff;
 }
 .btn-save:disabled { opacity: 0.6; cursor: not-allowed; }
+.role-hint { margin-right: auto; font-size: 0.7rem; color: #9e8080; max-width: 180px; text-align: left; }
 
 /* ── Responsive ── */
 @media (max-width: 900px) {

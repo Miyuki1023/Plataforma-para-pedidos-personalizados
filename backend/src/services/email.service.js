@@ -122,27 +122,25 @@ exports.sendVerificationEmail = async (to, code) => {
   }
 };
 
-exports.sendPasswordResetEmail = async (to, code) => {
-  try {
-    await transporter.sendMail({
-      from: `"Vainilla y Miel" <${process.env.EMAIL_USER}>`,
-      to,
-      subject: 'Cambio de contraseña',
-      text: `Tu código para cambiar contraseña es: ${code}`
-    });
-  } catch (error) {
-    console.error('Error enviando email de reset:', error.message);
-    throw error;
-  }
-};
-
 exports.sendResetPasswordEmail = async (to, code) => {
   try {
     await transporter.sendMail({
       from: `"Vainilla y Miel" <${process.env.EMAIL_USER}>`,
       to,
       subject: 'Recuperación de contraseña',
-      text: `Tu código para recuperar tu contraseña es: ${code}`
+      text: `Tu código para recuperar tu contraseña es: ${code}`,
+      html: `
+      <div style="font-family: Arial, sans-serif; background:#f8f5f2; padding:40px 20px;">
+        <div style="max-width:600px; margin:auto; background:#ffffff; border-radius:16px; padding:40px; box-shadow:0 4px 20px rgba(0,0,0,.08);">
+          <h1 style="color:#d89c5f; text-align:center;">🍰 Vainilla y Miel</h1>
+          <h2 style="color:#333; text-align:center;">Recuperación de contraseña</h2>
+          <p style="color:#666; font-size:16px; line-height:1.6; text-align:center;">Has solicitado restablecer tu contraseña. Utiliza el siguiente código:</p>
+          <div style="text-align:center; margin:30px 0;">
+            <span style="display:inline-block; background:#fff4e6; border:2px dashed #d89c5f; color:#d89c5f; font-size:32px; font-weight:bold; letter-spacing:8px; padding:18px 30px; border-radius:12px;">${code}</span>
+          </div>
+          <p style="color:#999; font-size:12px; text-align:center;">Si no solicitaste este cambio, puedes ignorar este correo. El código expirará en 10 minutos.</p>
+        </div>
+      </div>`
     });
   } catch (error) {
     console.error('Error enviando email de recuperación:', error.message);

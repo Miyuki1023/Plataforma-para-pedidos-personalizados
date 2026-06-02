@@ -76,7 +76,7 @@ const logout = async () => {
           <span v-else class="material-symbols-outlined user-avatar-icon">person</span>
           <div class="user-info">
             <span class="user-name">{{ authStore.user?.usuario }} {{ authStore.user?.apellido }}</span>
-            <span class="user-role">{{ authStore.user?.rol === 3 ? 'Administrador' : 'Empleado' }}</span>
+            <span class="user-role">{{ authStore.user?.id_rol === 3 ? 'Administrador' : 'Empleado' }}</span>
           </div>
           <span class="material-symbols-outlined arrow-icon">expand_less</span>
         </div>

@@ -10,11 +10,13 @@ const {
   adminRegisterValidation
 } = require('../validators/auth.validator');
 
+
 router.post(
   '/register',
   registerValidation,
   validate,
-  authController.register
+  authController.register,
+  authController.verifyAccount
 );
 
 router.post(

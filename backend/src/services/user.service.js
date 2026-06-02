@@ -4,7 +4,7 @@ const bcrypt = require('bcrypt');
 exports.getUserProfile = async (userId) => {
   // Obtener perfil completo del usuario
   const result = await pool.query(
-    `SELECT id, usuario, apellido, foto_perfil, email, fecha_nacimiento, sexo, telefono, id_rol, activo, fecha_registro 
+    `SELECT id, usuario, apellidos AS apellido, foto_perfil, email, fecha_nacimiento, sexo, telefono, id_rol, activo, fecha_registro 
      FROM usuario
      WHERE id = $1 AND activo = true`,
     [userId]
@@ -18,7 +18,7 @@ exports.getUserProfile = async (userId) => {
 };
 
 exports.updateUserProfile = async (userId, updateData) => {
-  const { usuario, apellido, foto_perfil, email, password, fecha_nacimiento, sexo, telefono } = updateData;
+  const { usuario, apellido, foto_perfil, email, password, fecha_nacimiento, sexo, telefono, id_rol } = updateData;
 
   // Construir consulta de actualización dinámica basada en campos proporcionados
   const updates = [];
@@ -40,7 +40,7 @@ exports.updateUserProfile = async (userId, updateData) => {
   }
 
   if (apellido !== undefined) {
-    updates.push(`apellido = $${paramCount}`);
+    updates.push(`apellidos = $${paramCount}`);
     values.push(apellido);
     paramCount++;
   }
@@ -89,6 +89,12 @@ exports.updateUserProfile = async (userId, updateData) => {
     paramCount++;
   }
 
+  if (id_rol !== undefined) {
+    updates.push(`id_rol = $${paramCount}`);
+    values.push(id_rol);
+    paramCount++;
+  }
+
 
   if (updates.length === 0) {
     throw new Error('No se proporcionaron campos para actualizar');
@@ -101,7 +107,7 @@ exports.updateUserProfile = async (userId, updateData) => {
     UPDATE usuario
     SET ${updates.join(', ')}
     WHERE id = $${paramCount}
-    RETURNING id, usuario, apellido, foto_perfil, email, fecha_nacimiento, sexo, telefono, id_rol
+    RETURNING id, usuario, apellidos AS apellido, foto_perfil, email, fecha_nacimiento, sexo, telefono, id_rol
   `;
 
   const result = await pool.query(query, values);

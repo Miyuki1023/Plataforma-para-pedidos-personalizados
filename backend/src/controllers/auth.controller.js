@@ -53,14 +53,14 @@ exports.adminRegister = async (req, res) => {
       user: {
         id: user.id,
         usuario: user.usuario,
-        email: user.email,
-        rol: user.id_rol
+        email: user.email, 
+        id_rol: user.id_rol // Cambiado de 'rol' a 'id_rol'
       }
     });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
-  };
+};
 
 exports.verifyAccount = async (req, res) => {
 
@@ -97,7 +97,6 @@ exports.verifyAccount = async (req, res) => {
   }
 
 };
-
 exports.resendVerification = async (req, res) => {
   try {
     const { email } = req.body;
@@ -158,5 +157,6 @@ exports.changePassword = async (req, res) => {
     });
 
   }
+
 
 };

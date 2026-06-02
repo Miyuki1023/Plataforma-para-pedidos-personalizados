@@ -42,11 +42,10 @@ exports.register = async ({
   );
 
   try {
-
     const result = await pool.query(
       `INSERT INTO usuario (
         usuario,
-        apellido,
+        apellidos,
         foto_perfil,
         email,
         password,
@@ -62,7 +61,7 @@ exports.register = async ({
       RETURNING
         id,
         usuario,
-        apellido,
+        apellidos AS apellido,
         foto_perfil,
         email,
         id_rol,
@@ -92,14 +91,13 @@ exports.register = async ({
     }
 
     return result.rows[0];
+
   } catch (error) {
-    console.error(error);
-    // Propagamos el mensaje de error real de la base de datos o uno más preciso
+    console.error('Error en register:', error);
     throw error;
   }
 };
 
-//CONFIRMA SI LA CUENTA YA ESTA VERIFICADA
 exports.verifyAccount = async (email, code) => {
 
   if (!email || !code) {
@@ -214,10 +212,10 @@ exports.login = async ({ email, password }) => {
     user: {
       id: user.id,
       usuario: user.usuario,
-      apellido: user.apellido,
+      apellido: user.apellidos, // Usar 'apellidos' de la DB
       foto_perfil: user.foto_perfil,
       email: user.email,
-      rol: user.id_rol
+      id_rol: user.id_rol // Cambiado de 'rol' a 'id_rol'
     }
   };
 
