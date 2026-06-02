@@ -93,7 +93,14 @@ function normalizeOrder(order: any): OrderItem {
 
 const orderDates = computed(() =>
   orders.value
-    .map((order) => order.fecha_creacion.slice(0, 10))
+    .map((order) => {
+      const d = new Date(order.fecha_creacion)
+      if (isNaN(d.getTime())) return null
+      const y = d.getFullYear()
+      const m = String(d.getMonth() + 1).padStart(2, '0')
+      const day = String(d.getDate()).padStart(2, '0')
+      return `${y}-${m}-${day}`
+    })
     .filter((date) => Boolean(date))
 )
 
