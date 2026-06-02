@@ -1,6 +1,16 @@
 const jwt = require('jsonwebtoken');
 
 module.exports = (req, res, next) => {
+  // Desarrollo: permitir bypass de autenticación para pruebas locales.
+  // Configura BYPASS_AUTH=true en tu .env para entrar forzado en la sección de empleado.
+  if (process.env.NODE_ENV !== 'production' && process.env.BYPASS_AUTH === 'true') {
+    req.user = {
+      id: 1,
+      rol: 2 // 2 = empleado, permite acceder a la sección de pedidos de empleado
+    };
+    return next();
+  }
+
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {

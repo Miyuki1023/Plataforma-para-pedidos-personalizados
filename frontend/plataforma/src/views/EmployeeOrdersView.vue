@@ -1,46 +1,219 @@
 <script setup lang="ts">
+import { computed, onMounted, ref } from 'vue'
 import EmployeeSidebar from '../components/organisms/EmployeeSidebar.vue'
 import AppTopBar from '../components/organisms/AppTopBar.vue'
 import OrderStatCard from '../components/molecules/OrderStatCard.vue'
 import MiniCalendar from '../components/molecules/MiniCalendar.vue'
 import OrderRow from '../components/molecules/OrderRow.vue'
+import OrderDetailModal from '../components/organisms/OrderDetailModal.vue'
+import api from '../lib/api'
 
-const stats = [
-  { label: 'INICIAR',    value: 12, note: '+2 recibidos hoy', variant: 'default',  watermark: '📋' },
-  { label: 'EN PROCESO', value: '05', note: 'Capacidad al 50%', variant: 'active',   watermark: '⚙️' },
-  { label: 'FINALIZADO', value: '08', note: 'Próxima ruta: 15:00', variant: 'warning',  watermark: '✓' },
-  { label: 'ENTREGADO',  value: 24, note: 'Meta diaria: 30', variant: 'neutral',  watermark: '🚚' },
+type OrderStatus = 'pendiente' | 'preparacion' | 'listo' | 'entregado' | 'cancelado'
+
+type OrderItem = {
+  id_pedido: number
+  cliente_nombre: string
+  trabajador_nombre?: string
+  fecha_creacion: string
+  direccion_manual?: string
+  total: number
+  estado_pedido: OrderStatus
+}
+
+const orders = ref<OrderItem[]>([])
+const loading = ref(false)
+const errorMessage = ref('')
+const selectedStatus = ref<'all' | OrderStatus>('all')
+const selectedDate = ref<string | null>(null)
+const isModalOpen = ref(false)
+const selectedOrderDetails = ref<any>(null)
+
+const statusTabs = [
+  { label: 'Todos', value: 'all' },
+  { label: 'Pendientes', value: 'pendiente' },
+  { label: 'Preparación', value: 'preparacion' },
+  { label: 'Listos', value: 'listo' },
+  { label: 'Entregados', value: 'entregado' },
 ]
 
-const orders = [
-  {
-    orderId: '#4529',
-    pickup: '14:30PM',
-    customerName: 'Clara Montes',
-    items: '1x Torta de Frutos Rojos (Mediana), 12x Macarons de Vainilla',
-    image: 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=160&q=80',
-    status: 'pendiente' as const,
-    currentStep: 0,
-  },
-  {
-    orderId: '#4530',
-    delivery: '16:00PM',
-    customerName: 'Roberto Gómez',
-    items: '24x Galletas Artesanales, 1x Pan de Canela Familiar',
-    image: 'https://images.unsplash.com/photo-1499636136210-6f4ee915583e?w=160&q=80',
-    status: 'en_proceso' as const,
-    currentStep: 1,
-  },
-  {
-    orderId: '#4525',
-    delivery: 'Entregado 10:45AM',
-    customerName: 'Elena Ruiz',
-    items: '1x Torta Sacher Personalizada (Sin Gluten)',
-    image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=160&q=80',
-    status: 'completado' as const,
-    currentStep: 3,
-  },
-]
+const statusCounts = computed(() => ({
+  pendiente: orders.value.filter((order) => order.estado_pedido === 'pendiente').length,
+  preparacion: orders.value.filter((order) => order.estado_pedido === 'preparacion').length,
+  listo: orders.value.filter((order) => order.estado_pedido === 'listo').length,
+  entregado: orders.value.filter((order) => order.estado_pedido === 'entregado').length,
+  cancelado: orders.value.filter((order) => order.estado_pedido === 'cancelado').length,
+}))
+
+const stats = computed(() => [
+  { label: 'PENDIENTES', value: statusCounts.value.pendiente, note: 'Pedidos nuevos pendientes', variant: 'default', watermark: '📋' },
+  { label: 'PREPARACIÓN', value: statusCounts.value.preparacion, note: 'En proceso en cocina', variant: 'active', watermark: '⚙️' },
+  { label: 'LISTOS', value: statusCounts.value.listo, note: 'Preparados para entrega', variant: 'warning', watermark: '✓' },
+  { label: 'ENTREGADOS', value: statusCounts.value.entregado, note: 'Entregas completadas', variant: 'neutral', watermark: '🚚' },
+])
+
+const visibleOrders = computed(() => {
+  return orders.value.filter((order) => {
+    return selectedStatus.value === 'all' || order.estado_pedido === selectedStatus.value
+  })
+})
+
+function formatDate(dateString: string) {
+  try {
+    return new Intl.DateTimeFormat('es-PE', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(new Date(dateString))
+  } catch {
+    return dateString
+  }
+}
+
+function normalizeStatus(status: string): OrderStatus {
+  const value = String(status).toLowerCase()
+  if (value === 'preparando' || value === 'preparacion') return 'preparacion'
+  if (value === 'pendiente') return 'pendiente'
+  if (value === 'listo') return 'listo'
+  if (value === 'entregado') return 'entregado'
+  if (value === 'cancelado') return 'cancelado'
+  return 'pendiente'
+}
+
+function normalizeOrder(order: any): OrderItem {
+  return {
+    ...order,
+    id_pedido: Number(order.id_pedido),
+    total: Number(order.total) || 0,
+    estado_pedido: normalizeStatus(order.estado_pedido),
+    fecha_creacion: String(order.fecha_creacion),
+  }
+}
+
+const orderDates = computed(() =>
+  orders.value
+    .map((order) => order.fecha_creacion.slice(0, 10))
+    .filter((date) => Boolean(date))
+)
+
+function mapOrder(order: OrderItem) {
+  return {
+    orderId: `#${order.id_pedido}`,
+    customerName: order.cliente_nombre,
+    items: `Total: S/ ${order.total.toFixed(2)}`,
+    image: 'https://images.unsplash.com/photo-1506806732259-39c2d0268443?w=160&q=80',
+    status: order.estado_pedido,
+    currentStep: order.estado_pedido === 'pendiente' ? 0 : order.estado_pedido === 'preparacion' ? 1 : order.estado_pedido === 'listo' ? 2 : 3,
+    pickup: formatDate(order.fecha_creacion),
+    delivery: order.direccion_manual || undefined,
+    total: order.total,
+  }
+}
+
+const mappedOrders = computed(() => visibleOrders.value.map(mapOrder))
+
+async function fetchOrders() {
+  loading.value = true
+  errorMessage.value = ''
+
+  try {
+    const params: Record<string, string> = {}
+    if (selectedStatus.value !== 'all') {
+      params.estado_pedido = selectedStatus.value
+    }
+    if (selectedDate.value) {
+      params.fecha_inicio = selectedDate.value
+      params.fecha_fin = selectedDate.value
+    }
+
+    const response = await api.get('/orders', { params })
+    orders.value = Array.isArray(response.data?.orders)
+      ? response.data.orders.map(normalizeOrder)
+      : []
+  } catch (error) {
+    console.error(error)
+    const err = error as any
+    if (err?.response?.status === 401) {
+      errorMessage.value = 'No estás autenticado. Inicia sesión para ver los pedidos o agrega un token válido.'
+    } else {
+      errorMessage.value = 'No se pudieron cargar los pedidos. Vuelve a intentar.'
+    }
+    orders.value = []
+  } finally {
+    loading.value = false
+  }
+}
+
+function handleStatusTabChange(value: typeof statusTabs[number]['value']) {
+  selectedStatus.value = value as typeof selectedStatus.value
+  fetchOrders()
+}
+
+function handleCalendarSelect(date: string | null) {
+  selectedDate.value = date
+  fetchOrders()
+}
+
+async function handleUpdateStatus(payload: { orderId: string | number; status: OrderStatus }) {
+  try {
+    const orderId = String(payload.orderId).replace('#', '')
+    await api.patch(`/orders/${orderId}/status`, {
+      estado_pedido: payload.status
+    })
+
+    const order = orders.value.find((item) => item.id_pedido === Number(orderId))
+    if (order) {
+      order.estado_pedido = payload.status
+    }
+  } catch (error) {
+    console.error(error)
+    errorMessage.value = 'No se pudo actualizar el estado del pedido.'
+  }
+}
+
+async function handleViewDetails(orderId: string | number) {
+  try {
+    const id = String(orderId).replace('#', '')
+    const response = await api.get(`/orders/${id}`)
+    const orderData = response.data?.order
+    if (orderData) {
+      // Normalizar datos numéricos
+      selectedOrderDetails.value = {
+        ...orderData,
+        id_pedido: Number(orderData.id_pedido),
+        total: Number(orderData.total) || 0,
+        detalle_pedido: Array.isArray(orderData.detalle_pedido)
+          ? orderData.detalle_pedido.map((item: any) => ({
+              ...item,
+              cantidad: Number(item.cantidad),
+              subtotal: Number(item.subtotal),
+              precio: Number(item.precio),
+              opciones: Array.isArray(item.opciones)
+                ? item.opciones.map((op: any) => ({
+                    ...op,
+                    precio_adicional: Number(op.precio_adicional) || 0
+                  }))
+                : []
+            }))
+          : []
+      }
+      isModalOpen.value = true
+    }
+  } catch (error) {
+    console.error(error)
+    errorMessage.value = 'No se pudieron cargar los detalles del pedido.'
+  }
+}
+
+function handleCloseModal() {
+  isModalOpen.value = false
+  selectedOrderDetails.value = null
+}
+
+onMounted(() => {
+  fetchOrders()
+})
 </script>
 
 <template>
@@ -75,10 +248,11 @@ const orders = [
         <div class="orders-header">
           <div>
             <h2 class="orders-title">Pedidos de Hoy</h2>
-            <p class="orders-subtitle">Mostrando 12 pedidos activos priorizados por entrega</p>
+            <p class="orders-subtitle">Mostrando {{ visibleOrders.length }} pedidos activos{{ selectedDate ? ` en ${selectedDate}` : '' }}</p>
+            <p v-if="selectedDate" class="orders-date-filter">Filtrando por fecha: {{ selectedDate }}</p>
           </div>
           <div class="orders-actions">
-            <button class="btn-organize">
+            <button class="btn-organize" type="button" @click="fetchOrders">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
                 <line x1="8" y1="6" x2="21" y2="6"/>
                 <line x1="8" y1="12" x2="21" y2="12"/>
@@ -87,31 +261,50 @@ const orders = [
                 <line x1="3" y1="12" x2="3.01" y2="12"/>
                 <line x1="3" y1="18" x2="3.01" y2="18"/>
               </svg>
-              Organizar Envíos
+              Actualizar pedidos
             </button>
             <div class="filter-tabs">
-              <button class="filter-tab active">Todos</button>
-              <button class="filter-tab">Urgentes</button>
-              <button class="filter-tab">Personalizados</button>
+              <button
+                v-for="tab in statusTabs"
+                :key="tab.value"
+                type="button"
+                class="filter-tab"
+                :class="{ 'active': selectedStatus === tab.value }"
+                @click="handleStatusTabChange(tab.value)"
+              >
+                {{ tab.label }}
+              </button>
             </div>
           </div>
         </div>
 
+        <div v-if="errorMessage" class="orders-error-message">
+          <p>{{ errorMessage }}</p>
+        </div>
+
         <!-- Calendar -->
-        <MiniCalendar />
+        <MiniCalendar :busy-dates="orderDates" @update:selectedDate="handleCalendarSelect" />
 
         <!-- Order list -->
         <div class="order-list">
           <OrderRow
-            v-for="order in orders"
+            v-if="!loading"
+            v-for="order in mappedOrders"
             :key="order.orderId"
             v-bind="order"
+            @update-status="handleUpdateStatus"
+            @view-details="handleViewDetails"
           />
+          <p v-if="!loading && mappedOrders.length === 0" class="no-orders-text">No hay pedidos para mostrar.</p>
+          <p v-if="loading" class="no-orders-text">Cargando pedidos...</p>
         </div>
 
       </main>
     </div>
   </div>
+
+  <!-- Modal de detalles -->
+  <OrderDetailModal :order="selectedOrderDetails" :is-open="isModalOpen" @close="handleCloseModal" />
 </template>
 
 <style scoped>
