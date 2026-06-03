@@ -4,7 +4,7 @@ import { RouterLink, useRoute } from "vue-router";
 const route = useRoute();
 
 const navItems = [
-  { id: "analytics", label: "Analytics", icon: "analytics", to: "/empleado" },
+  { id: "analytics", label: "Análisis", icon: "analytics", to: "/empleado" },
   {
     id: "orders",
     label: "Órdenes",
