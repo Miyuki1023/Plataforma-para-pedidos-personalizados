@@ -42,27 +42,28 @@ exports.getProductById = async (req, res) => {
 
 exports.createProduct = async (req, res) => {
   try {
-    const { nombre, precio, categoria, stock, imagenUrls, descripcion } = req.body;
+    let { nombre, precio, categoria, stock, imagenUrls, descripcion } = req.body;
 
     // Validar campos requeridos
-    if (!nombre || precio === undefined || !categoria || stock === undefined) {
+    if (!nombre || precio === undefined || precio === null || !categoria || stock === undefined || stock === null) {
       return res.status(400).json({
         message: 'Los campos nombre, precio, categoria y stock son requeridos'
       });
     }
 
-    // Validar tipos de datos
-    if (typeof nombre !== 'string' || typeof precio !== 'number' || typeof stock !== 'number') {
-      return res.status(400).json({
-        message: 'Los tipos de datos son inválidos'
-      });
+    // Convertir a números para soportar strings y decimales (permitir 0)
+    const finalPrecio = Number(precio);
+    const finalStock = Number(stock);
+
+    if (isNaN(finalPrecio) || isNaN(finalStock)) {
+      return res.status(400).json({ message: 'El precio y el stock deben ser valores numéricos' });
     }
 
     const product = await productService.createProduct(
       nombre,
-      precio,
+      finalPrecio,
       categoria,
-      stock,
+      finalStock,
       imagenUrls,
       descripcion
     );
@@ -89,6 +90,17 @@ exports.updateProduct = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const updateData = req.body;
+
+    // Asegurar que los campos numéricos sean tratados como tales (permitir decimales y 0)
+    if (updateData.precio !== undefined && updateData.precio !== null) {
+      updateData.precio = Number(updateData.precio);
+      if (isNaN(updateData.precio)) return res.status(400).json({ message: 'El precio debe ser un valor numérico' });
+    }
+
+    if (updateData.stock !== undefined && updateData.stock !== null) {
+      updateData.stock = Number(updateData.stock);
+      if (isNaN(updateData.stock)) return res.status(400).json({ message: 'El stock debe ser un valor numérico' });
+    }
 
     // Log para depuración en consola del servidor
     console.log(`Intentando actualizar producto ID: ${id}`);
@@ -186,18 +198,16 @@ exports.createProductOption = async (req, res) => {
       return res.status(400).json({ message: 'El nombre de la opción es requerido' });
     }
 
-    if (precio_adicional === undefined || precio_adicional === null) {
-      return res.status(400).json({ message: 'El precio adicional es requerido' });
-    }
+    const finalPrecio = parseFloat(precio_adicional);
 
-    if (typeof precio_adicional !== 'number') {
-      return res.status(400).json({ message: 'El precio adicional debe ser un número' });
+    if (isNaN(finalPrecio)) {
+      return res.status(400).json({ message: 'El precio adicional es requerido y debe ser un valor numérico' });
     }
 
     const option = await productService.createProductOption(
       productId,
       nombre,
-      precio_adicional
+      finalPrecio
     );
 
     res.status(201).json({
@@ -235,18 +245,16 @@ exports.updateProductOption = async (req, res) => {
       return res.status(400).json({ message: 'El nombre de la opción es requerido' });
     }
 
-    if (precio_adicional === undefined || precio_adicional === null) {
-      return res.status(400).json({ message: 'El precio adicional es requerido' });
-    }
+    const finalPrecio = parseFloat(precio_adicional);
 
-    if (typeof precio_adicional !== 'number') {
-      return res.status(400).json({ message: 'El precio adicional debe ser un número' });
+    if (isNaN(finalPrecio)) {
+      return res.status(400).json({ message: 'El precio adicional es requerido y debe ser un valor numérico' });
     }
 
     const option = await productService.updateProductOption(
       optionId,
       nombre,
-      precio_adicional
+      finalPrecio
     );
 
     res.json({

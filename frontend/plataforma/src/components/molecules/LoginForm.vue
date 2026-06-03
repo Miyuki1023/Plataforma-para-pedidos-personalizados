@@ -9,6 +9,7 @@ const password = ref('')
 const loading = ref(false)
 const error = ref('')
 
+
 const handleSubmit = async () => {
   error.value = ''
   if (!email.value || !password.value) {
@@ -17,11 +18,23 @@ const handleSubmit = async () => {
   }
   loading.value = true
   try {
-    // TODO: reemplazar con tu llamada al backend
-    await new Promise(r => setTimeout(r, 1200))
-    console.log('Login:', { email: email.value })
-  } catch {
-    error.value = 'Credenciales incorrectas. Inténtalo de nuevo.'
+    await authStore.login({
+      email: email.value,
+      password: password.value
+    })
+
+    // Redirección basada en el ID de Rol
+    const userRole = authStore.user?.id_rol
+
+    if (userRole === 2) {
+      router.push('/empleado')
+    } else if (userRole === 3) {
+      router.push('/admin')
+    } else {
+      router.push('/home')
+    }
+  } catch (err: any) {
+    error.value = err.message || 'Credenciales incorrectas. Inténtalo de nuevo.'
   } finally {
     loading.value = false
   }
@@ -48,7 +61,7 @@ const handleSubmit = async () => {
     </div>
 
     <div class="field-group">
-      <BaseInput v-model="password" type="password" placeholder="••••••••••••••">
+        <BaseInput v-model="password" type="password" placeholder="••••••••••••••">
         <template #icon>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
             stroke="currentColor" stroke-width="1.8"

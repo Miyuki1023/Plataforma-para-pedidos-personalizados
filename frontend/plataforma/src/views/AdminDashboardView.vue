@@ -75,10 +75,10 @@ const fetchDashboardData = async (filters: any = {}) => {
     // 1. Lista de pedidos recientes (siempre visibles)
     const recentRaw = recentOrdersRes.data?.orders || []
     orders.value = recentRaw.map((o: any) => ({
-      id: `#ORD-${o.id}`,
+      id: `#ORD-${o.id_pedido || o.id}`,
       amount: `S/ ${Number(o.total).toFixed(2)}`,
       time: formatRelativeTime(o.fecha_creacion),
-      items: o.usuario || 'Cliente Invitado',
+      items: o.cliente_nombre || o.usuario || 'Cliente Invitado',
       status: o.estado_pedido?.toUpperCase() || 'PROCESO',
       statusType: o.estado_pedido === 'entregado' ? 'delivered' : (o.estado_pedido === 'finalizado' ? 'done' : 'process')
     }))
