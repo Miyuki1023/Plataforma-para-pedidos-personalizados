@@ -1,86 +1,209 @@
 <script setup lang="ts">
-defineProps<{
-  image: string
+import { computed } from 'vue'
+import BaseBadge from '../atoms/BaseBadge.vue'
+import FavoriteIcon from '../atoms/FavoriteIcon.vue'
+import { useFavoritesStore } from '../../stores/favorites'
+
+export type ImageSource = string | string[] | null | undefined
+
+interface Props {
+  id: string | number
+  nombre: string
+  subtitulo?: string
+  descripcion?: string
+  imagen_url?: ImageSource
+  precio?: number | string
+  categoria?: string
+  disponible?: boolean
   badge?: string
-  title: string
-  subtitle: string
-  desc:string
-}>()
+
+  stock?: number
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  subtitulo: '',
+  descripcion: '',
+  imagen_url: '',
+  precio: 0,
+  badge: '',
+  categoria: '',
+  disponible: true,
+  stock: 0
+})
+
+const favStore = useFavoritesStore()
+
+const placeholderImage =
+  'https://via.placeholder.com/400x300?text=Sin+Imagen'
+
+/* PRODUCT ROUTE */
+const productId = computed(() =>
+  String(props.id).replace(/^id:/, '').trim()
+)
+
+const productRoute = computed(() =>
+  `/producto/${productId.value}`
+)
+
+/* IMAGE */
+const displayImage = computed(() => {
+  const source = props.imagen_url
+
+  if (Array.isArray(source)) {
+    const firstValid = source.find(
+      (item) => typeof item === 'string' && item.trim()
+    )
+
+    return firstValid?.trim() || placeholderImage
+  }
+
+  if (typeof source === 'string' && source.trim()) {
+    return source.trim()
+  }
+
+  return placeholderImage
+})
+
+/* PRICE */
+const displayPrice = computed(() => {
+  const rawPrice =
+    typeof props.precio === 'string'
+      ? Number(props.precio.replace(',', '.'))
+      : Number(props.precio)
+
+  if (!Number.isFinite(rawPrice)) {
+    return '0.00'
+  }
+
+  return rawPrice.toLocaleString('es-PE', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })
+})
+
+/* FAVORITES */
+const toggleFavorite = () => {
+  favStore.toggleFavorite(props)
+}
+
+/* TEXTS */
+const displaySubtitle = computed(() =>
+  props.subtitulo?.trim() || ''
+)
+
+const displayDescription = computed(() =>
+  props.descripcion?.trim() ||
+  'Descripción no disponible.'
+)
+
+const displayCategory = computed(() =>
+  props.categoria?.trim() || ''
+)
+
+
 </script>
 
 <template>
-  <div class="promo-card">
+  <article
+    class="promo-card"
+    role="group"
+    :aria-label="`Producto ${props.nombre}`"
+  >
+
+    <!-- IMAGE -->
     <div class="promo-image-wrapper">
-      <img :src="image" :alt="title" class="promo-image" />
-      <span v-if="badge" class="promo-badge">{{ badge }}</span>
+
+      <img
+        :src="displayImage"
+        :alt="`Imagen de ${props.nombre}`"
+        class="promo-image"
+        loading="lazy"
+      />
+
+      <!-- BADGES -->
+      <div class="promo-image-badges">
+
+        <!-- PROMO BADGE -->
+        <BaseBadge
+          variant="promo"
+        >
+          {{ props.badge }}
+        </BaseBadge>
+
+        <!-- FAVORITE -->
+        <FavoriteIcon
+          :active="favStore.isFavorite(props.id)"
+          @click.stop="toggleFavorite"
+          style="cursor: pointer"
+        />
+
+
+      </div>
+
     </div>
+
+    <!-- CONTENT -->
     <div class="promo-body">
-      <h4 class="promo-title">{{ title }}</h4>
-      <p class="promo-subtitle">{{ subtitle }}</p>
-      <p class="promo-description">{{ desc }}</p>
-      <a href="#" class="promo-link">Ver detalles</a>
+
+      <div class="promo-texts">
+
+        <span class="card-category">
+          {{ displayCategory }}
+        </span>
+
+        <h3 class="promo-title">
+          {{ props.nombre }}
+        </h3>
+
+        <p
+          v-if="displaySubtitle"
+          class="promo-subtitle"
+        >
+          {{ displaySubtitle }}
+        </p>
+
+        <p class="promo-description">
+          {{ displayDescription }}
+        </p>
+
+      </div>
+
+      <!-- FOOTER -->
+      <div class="promo-meta">
+
+        <p
+          class="promo-price"
+          aria-label="Precio"
+        >
+          S/ {{ displayPrice }}
+        </p>
+
+        <router-link
+          :to="productRoute"
+          class="promo-link"
+          :aria-label="`Ver detalles del producto ${props.nombre}`"
+        >
+          Ver detalles
+
+          <svg
+            class="promo-link-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M5 12h14" />
+            <path d="M13 5l7 7-7 7" />
+          </svg>
+
+        </router-link>
+
+      </div>
+
     </div>
-  </div>
+
+  </article>
 </template>
-
-<style scoped>
-.promo-card {
-  background: #fff;
-  border-radius: 35px;
-  overflow: hidden;
-  border: 2px solid #E89A3C;
-  transition: box-shadow 0.2s;
-}
-.promo-card:hover { box-shadow: 0 6px 24px rgba(139,26,46,0.10); }
-
-.promo-image-wrapper {
-  position: relative;
-  height: 250px;
-  overflow: hidden;
-}
-.promo-image { width: 100%; height: 100%; object-fit: cover; }
-.promo-badge {
-  position: absolute;
-  top: 1.5rem; left: 1.5rem;
-  background: #8b1a2e;
-  color: #fff;
-  font-family: 'Lato', sans-serif;
-  font-size: 0.78rem;
-  font-weight: 700;
-  padding: 0.25rem 0.65rem;
-  border-radius: 40px;
-  width: 4.5rem;
-}
-
-.promo-body { padding: 2rem 3rem 2rem;
-  text-align: start;  
-}
-.promo-title {
-  font-family: 'Lato', sans-serif;
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: #7A1F26;
-  margin: 0 0 0.1rem;
-}
-.promo-subtitle {
-  font-family: 'Lato-Bold', sans-serif;
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: #000000;
-  margin: 0 0 0.1rem;
-}
-.promo-description {
-  font-family: 'Lato', sans-serif;
-  font-size: 0.7rem;
-  color: #9e8080;
-  margin: 0 0 1rem;
-}
-.promo-link {
-  font-family: 'Lato-Bold', sans-serif;
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: #8b1a2e;
-  text-decoration: none;
-}
-.promo-link:hover { text-decoration: underline; }
-</style>

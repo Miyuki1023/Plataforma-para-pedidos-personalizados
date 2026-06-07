@@ -3,8 +3,8 @@ const pool = require('../config/db');
 exports.getUserAddresses = async (userId) => {
   // Obtener todas las direcciones del usuario con información del distrito
   const result = await pool.query(
-    `SELECT d.id, d.id_usuario, d.direccion, d.referencia, d.id_distrito,
-            d.nombre_direccion, d.fecha_creacion, dist.distrito
+    `SELECT d.id, d.id_usuario, d.calle AS direccion, d.referencia, d.id_distrito,
+            d.ciudad AS nombre_direccion, d.is_default, dist.nombre AS distrito_nombre
      FROM direccion d
      INNER JOIN distrito dist ON d.id_distrito = dist.id
      WHERE d.id_usuario = $1
@@ -18,8 +18,8 @@ exports.getUserAddresses = async (userId) => {
 exports.getAddressById = async (userId, addressId) => {
   // Obtener dirección específica del usuario
   const result = await pool.query(
-    `SELECT d.id, d.id_usuario, d.direccion, d.referencia, d.id_distrito,
-            d.nombre_direccion, d.fecha_creacion, dist.distrito
+    `SELECT d.id, d.id_usuario, d.calle AS direccion, d.referencia, d.id_distrito,
+            d.ciudad AS nombre_direccion, d.is_default, dist.nombre AS distrito_nombre
      FROM direccion d
      INNER JOIN distrito dist ON d.id_distrito = dist.id
      WHERE d.id = $1 AND d.id_usuario = $2`,
@@ -34,12 +34,12 @@ exports.getAddressById = async (userId, addressId) => {
 };
 
 exports.createAddress = async (userId, addressData) => {
-  const { direccion, referencia, id_distrito, nombre_direccion } = addressData;
+  const { direccion, referencia, id_distrito, nombre_direccion, is_default } = addressData;
 
   // Verificar que el distrito existe
   const districtCheck = await pool.query(
     'SELECT id FROM distrito WHERE id = $1',
-    [id_distrito]
+    [id_distrito || 1] // Usamos 1 como default si no viene
   );
 
   if (districtCheck.rows.length === 0) {
@@ -47,14 +47,22 @@ exports.createAddress = async (userId, addressData) => {
   }
 
   const result = await pool.query(
-    `INSERT INTO direccion (id_usuario, direccion, referencia, id_distrito, nombre_direccion)
-     VALUES ($1, $2, $3, $4, $5)
-     RETURNING id, id_usuario, direccion, referencia, id_distrito, nombre_direccion, fecha_creacion`,
-    [userId, direccion, referencia, id_distrito, nombre_direccion]
+    `INSERT INTO direccion (id_usuario, calle, referencia, id_distrito, ciudad, is_default)
+     VALUES ($1, $2, $3, $4, $5, $6)
+     RETURNING id, id_usuario, calle AS direccion, referencia, id_distrito, ciudad AS nombre_direccion, fecha_creacion, is_default`,
+    [userId, direccion, referencia, id_distrito || 1, nombre_direccion, is_default || false]
   );
 
+  // Si esta será la dirección principal, desmarcar las otras del usuario
+  if (is_default) {
+    await pool.query(
+      'UPDATE direccion SET is_default = false WHERE id_usuario = $1 AND id != $2',
+      [userId, result.rows[0].id]
+    );
+  }
+
   // Obtener la dirección creada con el nombre del distrito
-  return await this.getAddressById(userId, result.rows[0].id);
+  return await exports.getAddressById(userId, result.rows[0].id);
 };
 
 exports.updateAddress = async (userId, addressId, addressData) => {
@@ -88,7 +96,7 @@ exports.updateAddress = async (userId, addressId, addressData) => {
   let paramCount = 1;
 
   if (direccion !== undefined) {
-    updates.push(`direccion = $${paramCount}`);
+    updates.push(`calle = $${paramCount}`);
     values.push(direccion);
     paramCount++;
   }
@@ -106,7 +114,7 @@ exports.updateAddress = async (userId, addressId, addressData) => {
   }
 
   if (nombre_direccion !== undefined) {
-    updates.push(`nombre_direccion = $${paramCount}`);
+    updates.push(`ciudad = $${paramCount}`);
     values.push(nombre_direccion);
     paramCount++;
   }
@@ -128,12 +136,12 @@ exports.updateAddress = async (userId, addressId, addressData) => {
   await pool.query(query, values);
 
   // Retornar dirección actualizada
-  return await this.getAddressById(userId, addressId);
+  return await exports.getAddressById(userId, addressId);
 };
-
 exports.deleteAddress = async (userId, addressId) => {
   const result = await pool.query(
-    'DELETE FROM direccion WHERE id = $1 AND id_usuario = $2 RETURNING id, nombre_direccion',
+    // ✅ "ciudad" es el nombre real de la columna
+    'DELETE FROM direccion WHERE id = $1 AND id_usuario = $2 RETURNING id, ciudad',
     [addressId, userId]
   );
 
@@ -143,14 +151,14 @@ exports.deleteAddress = async (userId, addressId) => {
 
   return {
     id: result.rows[0].id,
-    nombre_direccion: result.rows[0].nombre_direccion,
-    message: `Dirección "${result.rows[0].nombre_direccion}" eliminada exitosamente`
+    nombre_direccion: result.rows[0].ciudad,  // ✅ mapeamos al nombre del frontend
+    message: `Dirección eliminada exitosamente`
   };
 };
 
 exports.getDistricts = async () => {
   const result = await pool.query(
-    'SELECT id, distrito FROM distrito ORDER BY distrito ASC'
+    'SELECT id, nombre AS distrito FROM distrito ORDER BY nombre ASC'
   );
 
   return result.rows;

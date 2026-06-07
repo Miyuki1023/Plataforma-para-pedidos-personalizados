@@ -8,11 +8,12 @@ exports.getAllUsers = async (req, res) => {
       users: users.map(user => ({
         id: user.id,
         usuario: user.usuario,
+        apellido: user.apellido,
         email: user.email,
         fecha_nacimiento: user.fecha_nacimiento,
         sexo: user.sexo,
         telefono: user.telefono,
-        rol: user.id_rol,
+        id_rol: user.id_rol, // Cambiado de 'rol' a 'id_rol'
         activo: user.activo,
         fecha_registro: user.fecha_registro
       }))
@@ -36,11 +37,12 @@ exports.getUserById = async (req, res) => {
       user: {
         id: user.id,
         usuario: user.usuario,
+        apellido: user.apellido,
         email: user.email,
         fecha_nacimiento: user.fecha_nacimiento,
         sexo: user.sexo,
         telefono: user.telefono,
-        rol: user.id_rol,
+        id_rol: user.id_rol, // Cambiado de 'rol' a 'id_rol'
         activo: user.activo,
         fecha_registro: user.fecha_registro
       }
@@ -70,13 +72,33 @@ exports.updateUserRole = async (req, res) => {
       user: {
         id: result.user.id,
         usuario: result.user.usuario,
-        email: result.user.email,
-        rol: result.user.id_rol
+        email: result.user.email, 
+        id_rol: result.user.id_rol // Cambiado de 'rol' a 'id_rol'
       },
       changes: {
         previousRole: result.previousRole,
         newRole: result.newRole
       }
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+exports.updateUser = async (req, res) => {
+  try {
+    const adminId = req.user.id;
+    const targetUserId = parseInt(req.params.id);
+    const userData = req.body;
+
+    if (isNaN(targetUserId)) {
+      return res.status(400).json({ message: 'ID de usuario inválido' });
+    }
+
+    const user = await adminService.updateUser(adminId, targetUserId, userData);
+    res.json({
+      message: 'Usuario actualizado exitosamente',
+      user
     });
   } catch (error) {
     res.status(400).json({ message: error.message });

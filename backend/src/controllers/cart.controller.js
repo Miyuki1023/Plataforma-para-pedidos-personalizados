@@ -61,15 +61,3 @@ exports.removeItem = async (req, res) => {
   }
 };
 
-exports.syncCart = async (req, res) => {
-  try {
-    const data = await cartService.syncCart({
-      userId: req.user.id,
-      items: req.body.items
-    });
-
-    res.json(data);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};

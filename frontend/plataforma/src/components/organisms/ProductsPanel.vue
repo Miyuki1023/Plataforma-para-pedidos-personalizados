@@ -18,6 +18,7 @@ interface Product {
 }
 
 const products = ref<Product[]>([]);
+const selected = ref<number[]>([]);
 const currentPage = ref(1);
 const loading = ref(false);
 const error = ref("");
@@ -33,6 +34,22 @@ const ITEMS_PER_PAGE = 8;
 
 const totalItems = computed(() => products.value.length);
 const totalPages = computed(() => Math.ceil(totalItems.value / ITEMS_PER_PAGE));
+
+const allSelected = computed(
+  () =>
+    products.value.length > 0 &&
+    selected.value.length === products.value.length
+);
+
+function toggleAll() {
+  selected.value = allSelected.value ? [] : products.value.map((p) => p.id);
+}
+
+function toggleRow(id: number) {
+  selected.value = selected.value.includes(id)
+    ? selected.value.filter((s) => s !== id)
+    : [...selected.value, id];
+}
 
 const totalStock = computed(() =>
   products.value.reduce((s, p) => s + p.stock, 0)
@@ -57,7 +74,7 @@ async function fetchProducts() {
   error.value = "";
   try {
     const response = await api.get("/productos");
-    products.value = response.data || [];
+    products.value = response || [];
   } catch (err) {
     console.error(err);
     error.value = "Error al cargar productos";
@@ -73,12 +90,20 @@ function handleOpenCreateModal() {
 
 function handleProductCreated(product: Product) {
   products.value.push(product);
+  selected.value = [];
 }
 
 // Handle edit product
-function handleEditProduct(product: Product) {
-  selectedProductForEdit.value = product;
-  isEditModalOpen.value = true;
+function handleEditProduct() {
+  if (selected.value.length !== 1) {
+    error.value = "Selecciona un producto para editar";
+    return;
+  }
+  const productId = selected.value[0];
+  selectedProductForEdit.value = products.value.find((p) => p.id === productId) || null;
+  if (selectedProductForEdit.value) {
+    isEditModalOpen.value = true;
+  }
 }
 
 function handleProductUpdated(updatedProduct: Product) {
@@ -86,19 +111,25 @@ function handleProductUpdated(updatedProduct: Product) {
   if (index !== -1) {
     products.value[index] = updatedProduct;
   }
+  selected.value = [];
 }
 
 // Handle delete products
-async function handleDeleteProduct(productId: number) {
-  if (!confirm(`¿Estás seguro de que deseas eliminar este producto?`)) {
+async function handleDeleteProducts() {
+  if (selected.value.length === 0) return;
+  
+  if (!confirm(`¿Estás seguro de que deseas eliminar ${selected.value.length} producto(s)?`)) {
     return;
   }
 
   loading.value = true;
   error.value = "";
   try {
-    await api.delete(`/productos/${productId}`);
-    products.value = products.value.filter((p) => p.id !== productId);
+    for (const productId of selected.value) {
+      await api.delete(`/productos/${productId}`);
+    }
+    products.value = products.value.filter((p) => !selected.value.includes(p.id));
+    selected.value = [];
   } catch (err: any) {
     error.value = err.response?.data?.message || "Error al eliminar productos";
   } finally {
@@ -114,7 +145,7 @@ async function handleToggleProduct(product: Product) {
     });
     const index = products.value.findIndex((p) => p.id === product.id);
     if (index !== -1) {
-      products.value[index] = response.data?.product || products.value[index];
+      products.value[index] = response?.product || products.value[index];
     }
   } catch (err: any) {
     error.value = err.response?.data?.message || "Error al actualizar producto";
@@ -192,7 +223,23 @@ onMounted(() => {
           <span class="material-symbols-rounded">shopping_cart</span>
           Nueva venta
         </button>
+        <button 
+          class="btn-secondary"
+          :disabled="selected.length !== 1"
+          @click="handleEditProduct"
+        >
+          <span class="material-symbols-rounded">edit</span>
+          Editar
+        </button>
       </div>
+      <button 
+        class="btn-danger" 
+        :disabled="selected.length === 0"
+        @click="handleDeleteProducts"
+      >
+        <span class="material-symbols-rounded">delete</span>
+        Eliminar
+      </button>
     </div>
 
     <!-- ── Table ── -->
@@ -200,11 +247,21 @@ onMounted(() => {
       <table class="prod-table">
         <thead>
           <tr>
+            <th class="th-check">
+              <label class="check-wrap">
+                <input
+                  type="checkbox"
+                  :checked="allSelected"
+                  @change="toggleAll"
+                  class="checkbox-input"
+                />
+                <span class="checkbox-custom" aria-hidden="true"></span>
+              </label>
+            </th>
             <th>PRODUCTO</th>
             <th>CATEGORÍA</th>
             <th>STOCK</th>
             <th>PRECIO</th>
-            <th class="text-center">GESTIÓN</th>
             <th>ESTADO</th>
           </tr>
         </thead>
@@ -213,7 +270,19 @@ onMounted(() => {
             v-for="p in displayProducts"
             :key="p.id"
             class="prod-row"
+            :class="{ 'prod-row--selected': selected.includes(p.id) }"
           >
+            <td>
+              <label class="check-wrap">
+                <input
+                  type="checkbox"
+                  :checked="selected.includes(p.id)"
+                  @change="toggleRow(p.id)"
+                  class="checkbox-input"
+                />
+                <span class="checkbox-custom" aria-hidden="true"></span>
+              </label>
+            </td>
             <td>
               <div class="prod-cell">
                 <img :src="p.img" :alt="p.nombre" class="prod-img" />
@@ -232,16 +301,6 @@ onMounted(() => {
               </span>
             </td>
             <td class="price-cell">{{ p.price }}</td>
-            <td>
-              <div style="display: flex; gap: 0.5rem; justify-content: center;">
-                <button class="page-btn" @click="handleEditProduct(p)" title="Editar">
-                  <span class="material-symbols-rounded" style="font-size: 16px;">edit</span>
-                </button>
-                <button class="page-btn" style="color: #9b1c1c;" @click="handleDeleteProduct(p.id)" title="Eliminar">
-                  <span class="material-symbols-rounded" style="font-size: 16px;">delete</span>
-                </button>
-              </div>
-            </td>
             <td>
               <button
                 class="toggle"

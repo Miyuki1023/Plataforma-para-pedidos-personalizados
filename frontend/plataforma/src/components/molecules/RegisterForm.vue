@@ -1,15 +1,21 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { RouterLink, useRouter } from 'vue-router'
 import BaseInput from '../atoms/BaseInput.vue'
 import BaseButton from '../atoms/BaseButton.vue'
 import BaseCheckbox from '../atoms/BaseCheckbox.vue'
-
+import { useAuthStore } from '../../stores/auth'
 const username = ref('')
 const email = ref('')
 const password = ref('')
+const phone = ref('')
+const sexo = ref('M')
+const birthdate = ref('')
 const acceptPolicy = ref(false)
 const loading = ref(false)
 const error = ref('')
+const router = useRouter()
+const authStore = useAuthStore()
 
 const handleSubmit = async () => {
   error.value = ''
@@ -25,11 +31,31 @@ const handleSubmit = async () => {
 
   loading.value = true
   try {
-    // TODO: reemplazar con tu llamada al backend
-    await new Promise(r => setTimeout(r, 1200))
-    console.log('Registro:', { username: username.value, email: email.value })
-  } catch {
-    error.value = 'Ocurrió un error. Inténtalo de nuevo.'
+    const signupData: any = {
+      usuario: username.value,
+      email: email.value,
+      password: password.value,
+      sexo: sexo.value
+    }
+
+    // Solo enviamos estos campos si tienen contenido real para evitar errores de validación por strings vacíos
+    if (phone.value.trim()) signupData.telefono = phone.value;
+    if (birthdate.value) signupData.fecha_nacimiento = birthdate.value;
+
+    console.log('Enviando datos de registro:', signupData);
+
+    await authStore.register(signupData)
+
+    // Aseguramos que la navegación ocurra hacia verify
+    await router.push({ path: '/verify', query: { email: email.value } })
+  } catch (err: any) {
+    console.error('Error detallado del registro:', err.response?.data);
+    
+    // Intentamos extraer el mensaje específico de express-validator si existe
+    const backendErrors = err.response?.data?.errors;
+    error.value = Array.isArray(backendErrors) 
+      ? backendErrors[0].msg 
+      : (err.message || 'Error al registrarse. Revisa los requisitos.');
   } finally {
     loading.value = false
   }
@@ -37,7 +63,7 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <form class="register-form" @submit.prevent="handleSubmit" novalidate>
+  <form class="form-L-R" @submit.prevent="handleSubmit" novalidate>
 
     <!-- Username -->
     <BaseInput v-model="username" type="text" placeholder="Nombre de usuario">
@@ -63,6 +89,57 @@ const handleSubmit = async () => {
       </template>
     </BaseInput>
 
+  <!-- Sexo -->
+<BaseInput
+  v-model="sexo"
+  type="select"
+  :options="[
+    { label: 'Masculino', value: 'M' },
+    { label: 'Femenino', value: 'F' },
+    { label: 'Otro', value: 'O' }
+  ]"
+>
+  <template #icon>
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.8"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    >
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 12v9" />
+      <path d="M9 18h6" />
+    </svg>
+  </template>
+</BaseInput>
+
+     
+
+    <!-- Phone -->
+    <BaseInput v-model="phone" type="tel" placeholder="999 999 999">
+      <template #icon>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l2.19-1.3a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+        </svg>
+      </template>
+    </BaseInput>
+
+    <!-- Birthdate -->
+    <BaseInput v-model="birthdate" type="date" placeholder="Fecha de nacimiento">
+      <template #icon>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/>
+          <line x1="8" y1="2" x2="8" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+      </template>
+    </BaseInput>
+
     <!-- Password -->
     <BaseInput v-model="password" type="password" placeholder="Password">
       <template #icon>
@@ -76,7 +153,7 @@ const handleSubmit = async () => {
     </BaseInput>
 
     <!-- Policy -->
-    <BaseCheckbox v-model="acceptPolicy">
+    <BaseCheckbox v-model="acceptPolicy" class="center">
       Estoy de acuerdo con la
       <a href="#">política de privacidad</a>.
     </BaseCheckbox>
@@ -85,7 +162,7 @@ const handleSubmit = async () => {
     <p v-if="error" class="form-error">{{ error }}</p>
 
     <!-- Submit -->
-    <BaseButton class="w-half" type="submit" :disabled="loading">
+    <BaseButton type="submit" :disabled="loading">
       <span v-if="!loading">Registrar</span>
       <span v-else class="spinner" />
     </BaseButton>
@@ -93,60 +170,37 @@ const handleSubmit = async () => {
     <!-- Login link -->
     <p class="login-text">
       Ya tiene una cuenta?&nbsp;
-      <a href="/login">Inicia Sesión</a>
+      <RouterLink to="/login">Inicia Sesión</RouterLink>
     </p>
 
   </form>
 </template>
 
 <style scoped>
-.register-form {
+.gender-field {
+  position: relative;
   display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  align-items: center;
   width: 100%;
+  margin-bottom: 1rem;
 }
-
-.form-error {
+.gender-icon {
+  position: absolute;
+  left: 1rem;
+  color: #9e8080;
+  pointer-events: none;
+  z-index: 1;
+}
+.gender-select {
+  width: 100%;
+  padding: 12px 12px 12px 42px;
+  border: 1.5px solid #eee;
+  border-radius: 12px;
+  background: #fcfcfc;
   font-family: 'Lato', sans-serif;
-  font-size: 0.83rem;
-  color: #c0392b;
-  text-align: center;
-  margin: 0;
+  font-size: 0.9rem;
+  color: #2a1a1a;
+  appearance: none;
+  cursor: pointer;
 }
-
-.login-text {
-  font-family: 'Lato', sans-serif;
-  font-size: 0.88rem;
-  color: #6b5050;
-  text-align: center;
-  margin: 0;
-}
-
-.login-text a {
-  color: #8b1a2e;
-  font-weight: 700;
-  text-decoration: none;
-  transition: opacity 0.2s;
-}
-
-.login-text a:hover {
-  opacity: 0.7;
-}
-
-.spinner {
-  display: inline-block;
-  width: 18px;
-  height: 18px;
-  border: 2px solid rgba(255,255,255,0.4);
-  border-top-color: #fff;
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.w-half { width: 50%; align-self: center; }
 </style>

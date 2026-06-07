@@ -12,6 +12,9 @@ exports.register = async (req, res) => {
         id: user.id,
         usuario: user.usuario,
         email: user.email,
+        telefono: user.telefono,
+        fecha_nacimiento: user.fecha_nacimiento,
+        sexo: user.sexo,
         rol: user.id_rol
       }
     });
@@ -53,14 +56,14 @@ exports.adminRegister = async (req, res) => {
       user: {
         id: user.id,
         usuario: user.usuario,
-        email: user.email,
-        rol: user.id_rol
+        email: user.email, 
+        id_rol: user.id_rol // Cambiado de 'rol' a 'id_rol'
       }
     });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
-  };
+};
 
 exports.verifyAccount = async (req, res) => {
 
@@ -97,6 +100,15 @@ exports.verifyAccount = async (req, res) => {
   }
 
 };
+exports.resendVerification = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const result = await authService.resendVerification(email);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
 
 //TEMA DE CAMBIAR CONTRA
 exports.forgotPassword = async (req, res) => {
@@ -126,14 +138,17 @@ exports.changePassword = async (req, res) => {
 
   try {
 
+    const userId = req.user.id; // Del usuario autenticado
     const {
       email,
       code,
       newPassword
     } = req.body;
 
+    // Validar que el email pertenece al usuario autenticado
     const result =
       await authService.changePassword(
+        userId,
         email,
         code,
         newPassword
@@ -148,5 +163,6 @@ exports.changePassword = async (req, res) => {
     });
 
   }
+
 
 };

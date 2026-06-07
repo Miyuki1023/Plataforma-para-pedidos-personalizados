@@ -1,16 +1,12 @@
 const jwt = require('jsonwebtoken');
 
 module.exports = (req, res, next) => {
+  // Log para ver TODAS las peticiones que intentan entrar a rutas protegidas
+  console.log(`[AUTH] Solicitud entrante: ${req.method} ${req.originalUrl}`);
+
   // Desarrollo: permitir bypass de autenticación para pruebas locales.
   // Configura BYPASS_AUTH=true en tu .env para entrar forzado en la sección de empleado.
-  const rawBypass = process.env.BYPASS_AUTH;
-  const isBypassActive = rawBypass === 'true' || rawBypass === true || String(rawBypass).trim().toLowerCase() === 'true';
-  
-  console.log(`[AUTH-WORKER] Solicitud: ${req.method} ${req.originalUrl}`);
-  console.log(`[AUTH-WORKER] BYPASS_AUTH en .env: "${rawBypass}" -> Activo: ${isBypassActive}`);
-
-  if (isBypassActive) {
-    console.log(`[AUTH-WORKER] Aplicando Bypass para usuario ID 1 (Admin)`);
+  if (process.env.BYPASS_AUTH === 'true') {
     req.user = {
       id: 1,
       rol: 3 // 3 = Administrador, da acceso total a todas las rutas (Admin, Empleado, Cliente)

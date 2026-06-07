@@ -6,22 +6,25 @@ const emailService = require('./email.service');
 
 exports.register = async ({
   usuario,
+  apellido,
   email,
   password,
   rol = 1,
   fecha_nacimiento,
   sexo,
   telefono,
-  verified = false
+  isVerified = false
 }) => {
 
   if (!usuario || !email || !password) {
     throw new Error('Faltan campos');
   }
 
+  const cleanEmail = email.toLowerCase().trim();
+
   const exists = await pool.query(
     'SELECT 1 FROM usuario WHERE email=$1 OR usuario=$2',
-    [email, usuario]
+    [cleanEmail, usuario]
   );
 
   if (exists.rows.length > 0) {
@@ -30,28 +33,19 @@ exports.register = async ({
 
   const hashed = await bcrypt.hash(password, 10);
 
-  const verificationCode = Math.floor(
+  const verificationCode = isVerified ? null : Math.floor(
     100000 + Math.random() * 900000
   ).toString();
 
-  const verificationExpires = new Date(
-    Date.now() + 10 * 60 * 1000
+  const verificationExpires = isVerified ? null : new Date(
+    Date.now() + 15 * 60 * 1000
   );
 
-  const isBypass = String(process.env.BYPASS_AUTH).trim().toLowerCase() === 'true';
-
   try {
-    // Saltar envío de correo si estamos en modo Bypass o si el usuario ya viene verificado (por un admin)
-    if (!isBypass && !verified) {
-      await emailService.sendVerificationEmail(
-        email,
-        verificationCode
-      );
-    }
-
     const result = await pool.query(
       `INSERT INTO usuario (
         usuario,
+        apellido,
         email,
         password,
         id_rol,
@@ -62,55 +56,58 @@ exports.register = async ({
         verified,
         verification_expires
       )
-      VALUES (
-        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10
-      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       RETURNING
         id,
         usuario,
+        apellido,
         email,
         id_rol,
         verified`,
       [
         usuario,
-        email,
+        apellido,
+        cleanEmail,
         hashed,
         rol,
         fecha_nacimiento,
         sexo,
         telefono,
         verificationCode,
-        isBypass || verified,
+        isVerified,
         verificationExpires
       ]
     );
 
+    // Enviamos el correo solo si NO está verificado desde el inicio
+    if (!isVerified) {
+      await emailService.sendVerificationEmail(
+        cleanEmail,
+        verificationCode
+      );
+    }
+
     return result.rows[0];
 
   } catch (error) {
-
-    console.error(error);
-
-    throw new Error(
-      'No se pudo enviar el correo de verificación'
-    );
-
+    console.error('Error en register:', error);
+    throw error;
   }
-
 };
 
-//CONFIRMA SI LA CUENTA YA ESTA VERIFICADA
 exports.verifyAccount = async (email, code) => {
 
   if (!email || !code) {
     throw new Error('Email y código requeridos');
   }
 
+  const cleanEmail = email.toLowerCase().trim();
+
   const result = await pool.query(
     `SELECT id, verification_code, verification_expires, verified
      FROM usuario
      WHERE email = $1`,
-    [email]
+    [cleanEmail]
   );
 
   if (result.rows.length === 0) {
@@ -137,12 +134,37 @@ exports.verifyAccount = async (email, code) => {
          verification_code = NULL,
          verification_expires = NULL
      WHERE email = $1`,
-    [email]
+    [cleanEmail]
   );
 
   return {
     message: 'Cuenta verificada correctamente'
   };
+};
+
+exports.resendVerification = async (email) => {
+  if (!email) throw new Error('Email requerido');
+  const cleanEmail = email.toLowerCase().trim();
+
+  const result = await pool.query(
+    'SELECT verified FROM usuario WHERE email = $1',
+    [cleanEmail]
+  );
+
+  if (result.rows.length === 0) throw new Error('Usuario no encontrado');
+  if (result.rows[0].verified) throw new Error('La cuenta ya está verificada');
+
+  const newCode = Math.floor(100000 + Math.random() * 900000).toString();
+  const newExpires = new Date(Date.now() + 15 * 60 * 1000);
+
+  await pool.query(
+    'UPDATE usuario SET verification_code = $1, verification_expires = $2 WHERE email = $3',
+    [newCode, newExpires, cleanEmail]
+  );
+
+  await emailService.sendVerificationEmail(cleanEmail, newCode);
+
+  return { message: 'Nuevo código enviado' };
 };
 
 exports.login = async ({ email, password }) => {
@@ -183,18 +205,23 @@ exports.login = async ({ email, password }) => {
   );
 
   return {
-    token,
-    user: {
-      id: user.id,
-      usuario: user.usuario,
-      email: user.email,
-      rol: user.id_rol
+     token,
+  user: {
+    id: user.id,
+    usuario: user.usuario,
+    email: user.email,
+    telefono: user.telefono,
+    sexo: user.sexo,
+    fecha_nacimiento: user.fecha_nacimiento,
+    apellido: user.apellido,
+    foto_perfil: user.foto_perfil,
+    id_rol: user.id_rol // Cambiado de 'rol' a 'id_rol'
     }
   };
 
 };
 
-exports.adminRegister = async ({ usuario, email, password, rol, fecha_nacimiento, sexo, telefono }, adminId) => {
+exports.adminRegister = async ({ usuario, apellido, email, password, rol, fecha_nacimiento, sexo, telefono }, adminId) => {
   // Validate that the admin is creating the user
   if (!adminId) {
     throw new Error('Solo administradores pueden crear usuarios');
@@ -206,23 +233,18 @@ exports.adminRegister = async ({ usuario, email, password, rol, fecha_nacimiento
     throw new Error('Rol inválido. Solo se puede crear usuarios con rol 2 (trabajador) o 3 (admin)');
   }
 
-  // Desarrollo: permitir bypass de autenticación para pruebas locales.
-  const isBypass = String(process.env.BYPASS_AUTH).trim().toLowerCase() === 'true';
+  // Check if the requester is an admin
+  const adminCheck = await pool.query(
+    'SELECT id_rol FROM usuario WHERE id = $1 AND activo = true',
+    [adminId]
+  );
 
-  if (!isBypass) {
-    // Check if the requester is an admin
-    const adminCheck = await pool.query(
-      'SELECT id_rol FROM usuario WHERE id = $1 AND activo = true',
-      [adminId]
-    );
-
-    if (adminCheck.rows.length === 0 || adminCheck.rows[0].id_rol !== 3) {
-      throw new Error('Solo administradores pueden crear usuarios con roles especiales');
-    }
+  if (adminCheck.rows.length === 0 || adminCheck.rows[0].id_rol !== 3) {
+    throw new Error('Solo administradores pueden crear usuarios con roles especiales');
   }
 
   // Register the user with the specified role and optional fields
-  return await this.register({ usuario, email, password, rol, fecha_nacimiento, sexo, telefono, verified: true });
+  return await exports.register({ usuario, apellido, email, password, rol, fecha_nacimiento, sexo, telefono, isVerified: true });
 };
 
 exports.logout = async (token) => {
@@ -238,10 +260,11 @@ exports.logout = async (token) => {
 
 //recuperar contraseña
 exports.forgotPassword = async (email) => {
+  const cleanEmail = email.toLowerCase().trim();
 
   const result = await pool.query(
     'SELECT id, email FROM usuario WHERE email = $1',
-    [email]
+    [cleanEmail]
   );
 
   if (result.rows.length === 0) {
@@ -261,11 +284,11 @@ exports.forgotPassword = async (email) => {
      SET reset_code = $1,
          reset_expires = $2
      WHERE email = $3`,
-    [resetCode, resetExpires, email]
+    [resetCode, resetExpires, cleanEmail]
   );
 
   await emailService.sendResetPasswordEmail(
-    email,
+    cleanEmail,
     resetCode
   );
 
@@ -274,23 +297,52 @@ exports.forgotPassword = async (email) => {
   };
 };
 
+exports.verifyResetCode = async (userId, email, code) => {
+  const cleanEmail = email.toLowerCase().trim();
+
+  const result = await pool.query(
+    `SELECT id, reset_code, reset_expires
+     FROM usuario
+     WHERE email = $1 AND id = $2`,
+    [cleanEmail, userId]
+  );
+
+  if (result.rows.length === 0) {
+    throw new Error('Usuario no encontrado o el correo no coincide con tu cuenta');
+  }
+
+  const user = result.rows[0];
+
+  if (!user.reset_code || user.reset_code !== code) {
+    throw new Error('El código de verificación es incorrecto');
+  }
+
+  if (new Date() > user.reset_expires) {
+    throw new Error('El código ha expirado. Solicita uno nuevo');
+  }
+
+  return {
+    message: 'Código verificado exitosamente'
+  };
+};
+
 exports.changePassword = async (
+  userId,
   email,
   code,
   newPassword
 ) => {
+  const cleanEmail = email.toLowerCase().trim();
 
   const result = await pool.query(
-    `SELECT
-        reset_code,
-        reset_expires
+    `SELECT id, reset_code, reset_expires
      FROM usuario
-     WHERE email = $1`,
-    [email]
+     WHERE email = $1 AND id = $2`,
+    [cleanEmail, userId]
   );
 
   if (result.rows.length === 0) {
-    throw new Error('Usuario no encontrado');
+    throw new Error('Usuario no encontrado o email no pertenece a tu cuenta');
   }
 
   const user = result.rows[0];
@@ -311,9 +363,12 @@ exports.changePassword = async (
      SET password = $1,
          reset_code = NULL,
          reset_expires = NULL
-     WHERE email = $2`,
-    [hashedPassword, email]
+     WHERE email = $2 AND id = $3`,
+    [hashedPassword, cleanEmail, userId]
   );
+
+  // Enviar confirmación de éxito
+  await emailService.sendPasswordChangedEmail(cleanEmail);
 
   return {
     message: 'Contraseña actualizada correctamente'

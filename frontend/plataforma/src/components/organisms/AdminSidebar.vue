@@ -1,8 +1,12 @@
 <script setup lang="ts">
+import { ref } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
+import { useAuthStore } from "../../stores/auth";
 
 const route = useRoute();
 const router = useRouter();
+const authStore = useAuthStore();
+const showUserMenu = ref(false);
 
 const navItems = [
   { id: "analytics", label: "Análisis",  icon: "analytics",    to: "/admin" },
@@ -10,10 +14,17 @@ const navItems = [
   { id: "users",     label: "Usuarios",  icon: "group",        to: "/admin/usuarios" },
 ];
 
-const handleLogout = () => {
-  localStorage.removeItem('token');
-  localStorage.removeItem('user');
-  router.push('/login');
+const toggleUserMenu = () => {
+  showUserMenu.value = !showUserMenu.value;
+};
+
+const logout = async () => {
+  try {
+    await authStore.logout();
+    router.push("/login");
+  } catch (error) {
+    console.error("Error al cerrar sesión:", error);
+  }
 };
 </script>
 
@@ -40,19 +51,32 @@ const handleLogout = () => {
         Nueva venta
       </button>
 
-      <div class="sidebar-user">
-        <img
-          src="https://i.pravatar.cc/40?img=47"
-          alt="Elena R."
-          class="user-avatar-img"
-        />
-        <div class="user-info">
-          <span class="user-name">Elena R.</span>
-          <span class="user-role">Bakery Owner</span>
+      <div class="sidebar-user-container">
+        <!-- Menú emergente de usuario -->
+        <transition name="pop-in">
+          <div v-if="showUserMenu" class="user-dropdown-menu">
+           
+            <button @click="logout" class="dropdown-item logout-btn">
+              <span class="material-symbols-outlined">logout</span>
+              Cerrar sesión
+            </button>
+          </div>
+        </transition>
+
+        <div class="sidebar-user" @click="toggleUserMenu" :class="{ 'is-active': showUserMenu }">
+          <img
+            v-if="authStore.user?.foto_perfil"
+            :src="authStore.user.foto_perfil"
+            :alt="authStore.user.usuario"
+            class="user-avatar-img"
+          />
+          <span v-else class="material-symbols-outlined user-avatar-icon">person</span>
+          <div class="user-info">
+            <span class="user-name">{{ authStore.user?.usuario }} {{ authStore.user?.apellido }}</span>
+            <span class="user-role">{{ authStore.user?.id_rol === 3 ? 'Administrador' : 'Empleado' }}</span>
+          </div>
+          <span class="material-symbols-outlined arrow-icon">expand_less</span>
         </div>
-        <button class="logout-mini-btn" @click="handleLogout" title="Cerrar sesión">
-          <span class="material-symbols-outlined">logout</span>
-        </button>
       </div>
     </div>
   </aside>
@@ -182,6 +206,10 @@ const handleLogout = () => {
   font-size: 0.8rem;
   font-weight: 700;
   color: #2a1a1a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 110px;
 }
 
 .user-role {
@@ -189,19 +217,68 @@ const handleLogout = () => {
   color: #9e8080;
 }
 
-.logout-mini-btn {
-  margin-left: auto;
-  background: transparent;
-  border: none;
-  color: #8b1a2e;
+.user-avatar-icon {
+  font-size: 32px !important;
+  color: #af3439;
+  flex-shrink: 0;
+}
+
+.sidebar-user-container {
+  position: relative;
+}
+
+.sidebar-user {
   cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.sidebar-user:hover, .sidebar-user.is-active {
+  background-color: #ffffff;
+}
+
+.arrow-icon {
+  margin-left: auto;
+  font-size: 1.2rem !important;
+  color: #9e8080;
+  transition: transform 0.3s ease;
+}
+
+.sidebar-user.is-active .arrow-icon {
+  transform: rotate(180deg);
+}
+
+.user-dropdown-menu {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 0;
+  right: 0;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(63, 0, 6, 0.12);
+  padding: 0.5rem;
+  z-index: 10;
+  border: 1px solid #f5ece4;
+}
+
+.dropdown-item {
   display: flex;
   align-items: center;
-  padding: 4px;
+  gap: 0.75rem;
+  padding: 0.65rem 0.85rem;
   border-radius: 8px;
+  font-size: 0.85rem;
+  color: #4a3f3f;
+  text-decoration: none;
+  width: 100%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
   transition: background 0.2s;
 }
-.logout-mini-btn:hover {
-  background: #fde8e8;
-}
+
+.dropdown-item:hover { background: #fdf6f0; }
+.dropdown-item.logout-btn { color: #af3439; }
+
+.pop-in-enter-active, .pop-in-leave-active { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+.pop-in-enter-from, .pop-in-leave-to { opacity: 0; transform: translateY(10px) scale(0.95); }
 </style>

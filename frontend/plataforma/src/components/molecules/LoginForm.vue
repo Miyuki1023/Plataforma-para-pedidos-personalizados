@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import BaseInput from '../atoms/BaseInput.vue'
 import BaseButton from '../atoms/BaseButton.vue'
+import { useAuthStore } from '../../stores/auth'
 
 const email = ref('')
 const password = ref('')
 const loading = ref(false)
 const error = ref('')
-
+const router = useRouter()
+const authStore = useAuthStore()
 
 const handleSubmit = async () => {
   error.value = ''
@@ -42,7 +44,7 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <form class="login-form" @submit.prevent="handleSubmit" novalidate>
+  <form class="form-L-R" @submit.prevent="handleSubmit" novalidate>
 
     <div class="field-group">
       <BaseInput v-model="email" type="email" placeholder="usua@gmail.com">
@@ -56,12 +58,12 @@ const handleSubmit = async () => {
         </template>
       </BaseInput>
       <div class="forgot-link">
-        <a href="#">¿Olvidaste tu contraseña?</a>
+        <RouterLink to="/forgot-password">¿Olvidaste tu contraseña?</RouterLink>
       </div>
     </div>
 
     <div class="field-group">
-        <BaseInput v-model="password" type="password" placeholder="••••••••••••••">
+      <BaseInput v-model="password" type="password" placeholder="••••••••••••••">
         <template #icon>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
             stroke="currentColor" stroke-width="1.8"
@@ -80,55 +82,10 @@ const handleSubmit = async () => {
       <RouterLink to="/register">¡Crea una ahora!</RouterLink>
     </p>
 
-    <BaseButton class="w-half" type="submit" :disabled="loading">
+    <BaseButton type="submit" :disabled="loading">
       <span v-if="!loading">Enviar</span>
       <span v-else class="spinner" />
     </BaseButton>
 
   </form>
 </template>
-
-<style scoped>
-.login-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  width: 100%;
-}
-.field-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-.forgot-link {
-  display: flex;
-  justify-content: flex-end;
-  padding-right: 0.25rem;
-}
-.forgot-link a,
-.register-text a {
-  font-family: 'Lato', sans-serif;
-  font-size: 0.82rem;
-  color: #8b1a2e;
-  text-decoration: none;
-  font-weight: 600;
-  transition: opacity 0.2s;
-}
-.forgot-link a:hover,
-.register-text a:hover { opacity: 0.7; }
-.register-text {
-  font-family: 'Lato', sans-serif;
-  font-size: 0.88rem;
-  color: #6b5050;
-  text-align: center;
-  margin: 0.25rem 0;
-}
-.form-error {
-  font-family: 'Lato', sans-serif;
-  font-size: 0.83rem;
-  color: #c0392b;
-  text-align: center;
-  margin: 0;
-}
-.w-half { width: 50%; align-self: center; }
-</style>

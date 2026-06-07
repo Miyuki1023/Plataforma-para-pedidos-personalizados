@@ -1,0 +1,1106 @@
+<script setup lang="ts">
+import { ref, computed, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import BaseButton from '../../atoms/BaseButton.vue'
+import BaseInput from '../../atoms/BaseInput.vue'
+import FavoriteIcon from '../../atoms/FavoriteIcon.vue'
+
+const props = defineProps<{
+  product: any
+}>()
+
+const router = useRouter()
+
+/* ─── CARRITO ─────────────────────────────────────────────── */
+const goToProduct = () => {
+  const cartProduct = {
+    id: props.product.id,
+    image: props.product.image,
+    name: props.product.name,
+    description: props.product.description,
+    size: selectedSize.value,
+    avoidIngredient: ingredient.value,
+    toppings: [
+      ...fruitToppings.value.filter(t => t.value).map(t => t.value),
+      ...creamToppings.value.filter(t => t.value).map(t => t.value)
+    ].filter(Boolean),
+    message: message.value,
+    quantity: quantity.value,
+    price: totalPrice.value
+  }
+  localStorage.setItem('cartProduct', JSON.stringify(cartProduct))
+  router.push({ name: 'carrito' })
+}
+
+/* ─── GALERÍA ─────────────────────────────────────────────── */
+const gallery = computed(() => [
+  props.product?.image,
+  props.product?.image,
+  props.product?.image
+])
+const activeImage = ref(props.product?.image)
+watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
+
+/* ─── TAMAÑO ──────────────────────────────────────────────── */
+const selectedSize = ref('Mediano') // default al más popular
+const sizes = [
+  { label: 'Pequeño', detail: '12 cm', price: 60 },
+  { label: 'Mediano', detail: '16 cm', price: 80, popular: true },
+  { label: 'Grande',  detail: '20 cm', price: 100 }
+]
+
+/* ─── INPUTS ──────────────────────────────────────────────── */
+const ingredient = ref('')
+const message    = ref('')
+
+/* ─── TOPPINGS DINÁMICOS ──────────────────────────────────── */
+/*
+  Cada topping es { id, value }.
+  Cuando el usuario elige en el ÚLTIMO slot → se añade uno nuevo vacío.
+  Si el nuevo total superaría MAX_TOPPINGS, no se añade.
+  Se puede eliminar cualquier slot.
+
+  Modal de selección grande:
+    - Al hacer clic en el botón "+" que aparece junto al slot vacío se abre
+      un modal que muestra todas las opciones como chips grandes.
+*/
+const MAX_TOPPINGS = 5
+
+type ToppingSlot = { id: number; value: string }
+
+const fruitOptions = ['Fresa', 'Arándanos', 'Mango', 'Maracuyá', 'Kiwi', 'Durazno']
+const creamOptions = ['Crema batida', 'Chocolate', 'Manjar', 'Nutella', 'Caramelo']
+
+const fruitToppings = ref<ToppingSlot[]>([{ id: 1, value: '' }])
+const creamToppings = ref<ToppingSlot[]>([{ id: 1, value: '' }])
+let nextFruitId = 2
+let nextCreamId = 2
+
+/* Modal */
+type ModalTarget = { array: ToppingSlot[]; options: string[]; extra: string; label: string } | null
+const modalOpen   = ref(false)
+const modalTarget = ref<ModalTarget>(null)
+const modalSlotId = ref<number | null>(null)
+
+const openModal = (
+  array: ToppingSlot[],
+  slotId: number,
+  options: string[],
+  extra: string,
+  label: string
+) => {
+  modalTarget.value = { array, options, extra, label }
+  modalSlotId.value = slotId
+  modalOpen.value   = true
+}
+
+const selectFromModal = (value: string) => {
+  if (!modalTarget.value || modalSlotId.value === null) return
+  const arr = modalTarget.value.array
+  const idx = arr.findIndex(t => t.id === modalSlotId.value)
+  if (idx === -1) return
+
+  arr[idx].value = value
+
+  // Si era el último slot y no llegamos al máximo → nuevo slot vacío
+  if (idx === arr.length - 1 && arr.length < MAX_TOPPINGS) {
+    const isFruit = modalTarget.value.options === fruitOptions
+    const newId = isFruit ? nextFruitId++ : nextCreamId++
+    arr.push({ id: newId, value: '' })
+  }
+
+  modalOpen.value = false
+}
+
+const removeTopping = (array: ToppingSlot[], id: number) => {
+  const idx = array.findIndex(t => t.id === id)
+  if (idx !== -1) {
+    array.splice(idx, 1)
+  }
+  // Siempre asegurar que haya al menos un slot vacío al final para agregar
+  if (array.length === 0 || array[array.length - 1].value !== '') {
+    const isFruit = array === fruitToppings.value
+    const newId = isFruit ? nextFruitId++ : nextCreamId++
+    array.push({ id: newId, value: '' })
+  }
+}
+
+/* ─── CANTIDAD ────────────────────────────────────────────── */
+const quantity = ref(1)
+const increaseQty = () => quantity.value++
+const decreaseQty = () => { if (quantity.value > 1) quantity.value-- }
+
+/* ─── PRECIO ──────────────────────────────────────────────── */
+const selectedSizePrice = computed(() =>
+  sizes.find(s => s.label === selectedSize.value)?.price || props.product?.price || 0
+)
+
+const toppingsPrice = computed(() => {
+  let t = 0
+  fruitToppings.value.forEach(s => { if (s.value) t += 5 })
+  creamToppings.value.forEach(s => { if (s.value) t += 8 })
+  if (message.value.trim()) t += 2
+  return t
+})
+
+const totalPrice = computed(() =>
+  (selectedSizePrice.value + toppingsPrice.value) * quantity.value
+)
+
+/* ─── HELPERS ─────────────────────────────────────────────── */
+const hasAnyTopping = computed(() =>
+  fruitToppings.value.some(t => t.value) ||
+  creamToppings.value.some(t => t.value)
+)
+
+// Opciones ya usadas (para deshabilitar duplicados en modal)
+const usedOptions = computed(() => {
+  if (!modalTarget.value) return new Set<string>()
+  return new Set(
+    modalTarget.value.array
+      .filter(t => t.id !== modalSlotId.value)
+      .map(t => t.value)
+  )
+})
+</script>
+
+<template>
+  <section class="product-profile">
+
+    <!-- ══════════════ GALERÍA ══════════════ -->
+    <div class="profile-gallery">
+      <div class="profile-image-wrapper">
+        <img :src="activeImage" :alt="props.product.name" class="profile-image" />
+
+        <span v-if="props.product.isNew" class="profile-badge">Nuevo ✨</span>
+
+        <FavoriteIcon class="profile-fav" />
+
+        <!-- Zoom hint -->
+        <div class="image-hint">Toca para zoom</div>
+      </div>
+
+      <div class="thumbs-row">
+        <button
+          v-for="(img, i) in gallery"
+          :key="i"
+          class="thumb-btn"
+          :class="{ active: activeImage === img }"
+          @click="activeImage = img"
+          :aria-label="`Ver imagen ${i + 1}`"
+        >
+          <img :src="img" class="thumb-image" />
+        </button>
+      </div>
+    </div>
+
+    <!-- ══════════════ CONTENIDO ══════════════ -->
+    <div class="profile-content">
+
+      <!-- ENCABEZADO -->
+      <div class="profile-top">
+        <div class="profile-top-row">
+          <span class="profile-category">{{ props.product.category }}</span>
+          <div class="profile-meta">
+            <span class="meta-chip">⭐ 4.9</span>
+            <span class="meta-chip">📦 +120 pedidos</span>
+            <span class="meta-chip">🚚 Entrega hoy</span>
+          </div>
+        </div>
+
+        <h1 class="profile-title">{{ props.product.name }}</h1>
+        <p class="profile-description">{{ props.product.description }}</p>
+
+        <div class="stock-alert">
+          <span class="stock-dot" />
+          Solo quedan <strong>4</strong> disponibles
+        </div>
+      </div>
+
+      <!-- TAMAÑO -->
+      <div class="profile-section">
+        <div class="section-header">
+          <h3 class="profile-subtitle">Tamaño</h3>
+          <span class="section-note">El mediano es el más pedido</span>
+        </div>
+
+        <div class="sizes-grid">
+          <button
+            v-for="size in sizes"
+            :key="size.label"
+            class="size-chip"
+            :class="{ active: selectedSize === size.label, popular: size.popular }"
+            @click="selectedSize = size.label"
+          >
+            <span v-if="size.popular" class="popular-badge">Popular</span>
+            <span class="size-name">{{ size.label }}</span>
+            <span class="size-detail">{{ size.detail }}</span>
+            <span class="size-price">S/{{ size.price }}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- EVITAR INGREDIENTE -->
+      <div class="profile-section">
+        <h3 class="profile-subtitle">¿Evitar algún ingrediente?</h3>
+        <BaseInput v-model="ingredient" placeholder="Ej: Naranja, nueces…" />
+      </div>
+
+      <!-- TOPPINGS -->
+      <div class="profile-section toppings-section">
+        <div class="section-header">
+          <h3 class="profile-subtitle">Personaliza tu torta</h3>
+          <span class="section-note">Hasta {{ MAX_TOPPINGS }} por tipo</span>
+        </div>
+
+        <!-- FRUTAS -->
+        <div class="topping-group">
+          <div class="topping-group-header">
+            <span class="topping-group-icon">🍓</span>
+            <span class="topping-group-label">Frutillas</span>
+            <span class="topping-group-price">+S/5 c/u</span>
+          </div>
+
+          <div class="topping-chips-row">
+            <!-- Chips de frutas ya seleccionadas -->
+            <div
+              v-for="topping in fruitToppings.filter(t => t.value)"
+              :key="topping.id"
+              class="topping-chip selected"
+            >
+              <span>{{ topping.value }}</span>
+              <button
+                class="topping-chip-remove"
+                @click="removeTopping(fruitToppings, topping.id)"
+                aria-label="Quitar topping"
+              >×</button>
+            </div>
+
+            <!-- Botón "+" para agregar (si no llegamos al máximo) -->
+            <button
+              v-if="fruitToppings.filter(t => t.value).length < MAX_TOPPINGS"
+              class="topping-add-btn"
+              @click="openModal(fruitToppings, fruitToppings.find(t => !t.value)?.id ?? -1, fruitOptions, '+S/5', 'Frutilla')"
+            >
+              <span class="add-icon">+</span>
+              <span>Agregar frutilla</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- RELLENOS -->
+        <div class="topping-group">
+          <div class="topping-group-header">
+            <span class="topping-group-icon">🍫</span>
+            <span class="topping-group-label">Rellenos extra</span>
+            <span class="topping-group-price">+S/8 c/u</span>
+          </div>
+
+          <div class="topping-chips-row">
+            <div
+              v-for="topping in creamToppings.filter(t => t.value)"
+              :key="topping.id"
+              class="topping-chip selected"
+            >
+              <span>{{ topping.value }}</span>
+              <button
+                class="topping-chip-remove"
+                @click="removeTopping(creamToppings, topping.id)"
+                aria-label="Quitar relleno"
+              >×</button>
+            </div>
+
+            <button
+              v-if="creamToppings.filter(t => t.value).length < MAX_TOPPINGS"
+              class="topping-add-btn"
+              @click="openModal(creamToppings, creamToppings.find(t => !t.value)?.id ?? -1, creamOptions, '+S/8', 'Relleno')"
+            >
+              <span class="add-icon">+</span>
+              <span>Agregar relleno</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- MENSAJE -->
+        <div class="topping-group">
+          <div class="topping-group-header">
+            <span class="topping-group-icon">💌</span>
+            <span class="topping-group-label">Mensaje en la torta</span>
+            <span class="topping-group-price">+S/2</span>
+          </div>
+          <BaseInput v-model="message" placeholder="Ej: ¡Feliz cumpleaños!" />
+        </div>
+      </div>
+
+      <!-- CANTIDAD -->
+      <div class="profile-section">
+        <h3 class="profile-subtitle">Cantidad</h3>
+        <div class="quantity-box">
+          <button class="qty-btn" @click="decreaseQty" :disabled="quantity <= 1">−</button>
+          <span class="qty-number">{{ quantity }}</span>
+          <button class="qty-btn" @click="increaseQty">+</button>
+        </div>
+      </div>
+
+      <!-- RESUMEN -->
+      <div class="summary-card">
+        <div class="summary-row">
+          <span>Tamaño</span>
+          <strong>{{ selectedSize }} — S/{{ selectedSizePrice }}</strong>
+        </div>
+        <div class="summary-row">
+          <span>Cantidad</span>
+          <strong>× {{ quantity }}</strong>
+        </div>
+        <div v-if="hasAnyTopping || message.trim()" class="summary-row">
+          <span>Personalización</span>
+          <strong>+S/{{ toppingsPrice }}</strong>
+        </div>
+        <div class="summary-divider" />
+        <div class="summary-row summary-total">
+          <span>Total</span>
+          <strong class="total-price">S/{{ totalPrice }}</strong>
+        </div>
+      </div>
+
+      <!-- CTA -->
+      <div class="profile-footer">
+        <p class="footer-note">🔒 Pago seguro · Entrega garantizada</p>
+        <BaseButton class="profile-button" @click="goToProduct">
+          🛒 Agregar al carrito
+        </BaseButton>
+      </div>
+    </div><!-- /profile-content -->
+  </section>
+
+  <!-- ══════════════ MODAL DE SELECCIÓN ══════════════ -->
+  <Teleport to="body">
+    <Transition name="modal-fade">
+      <div v-if="modalOpen" class="modal-overlay" @click.self="modalOpen = false">
+        <div class="modal-sheet" role="dialog" aria-modal="true">
+          <div class="modal-header">
+            <h3 class="modal-title">
+              Elige {{ modalTarget?.label }}
+              <span class="modal-price">{{ modalTarget?.extra }}</span>
+            </h3>
+            <button class="modal-close" @click="modalOpen = false" aria-label="Cerrar">×</button>
+          </div>
+
+          <div class="modal-options">
+            <button
+              v-for="opt in modalTarget?.options"
+              :key="opt"
+              class="modal-option"
+              :class="{ disabled: usedOptions.has(opt) }"
+              :disabled="usedOptions.has(opt)"
+              @click="selectFromModal(opt)"
+            >
+              <span class="option-name">{{ opt }}</span>
+              <span v-if="usedOptions.has(opt)" class="option-badge">Ya agregado</span>
+              <span v-else class="option-check">+</span>
+            </button>
+          </div>
+
+          <button class="modal-cancel" @click="modalOpen = false">Cancelar</button>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
+</template>
+<style scoped>
+
+/* ───────────────────────────────────────────────────────────
+   LAYOUT
+─────────────────────────────────────────────────────────── */
+.product-profile {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 40px 24px;
+  align-items: start;
+}
+
+@media (max-width: 768px) {
+  .product-profile {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    padding: 20px 16px;
+  }
+}
+
+/* ───────────────────────────────────────────────────────────
+   GALERÍA
+─────────────────────────────────────────────────────────── */
+.profile-gallery {
+  position: sticky;
+  top: 100px;
+  z-index: 1;
+}
+
+.profile-image-wrapper {
+  position: relative;
+  border-radius: 24px;
+  overflow: hidden;
+  background: var(--color-bg-soft, #fff5f9);
+  aspect-ratio: 1;
+}
+
+.profile-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.profile-image-wrapper:hover .profile-image {
+  transform: scale(1.04);
+}
+
+.profile-badge {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+
+  background: var(--primary, #c05080);
+  color: white;
+
+  font-size: 0.75rem;
+  font-weight: 700;
+
+  padding: 4px 12px;
+  border-radius: 20px;
+
+  letter-spacing: 0.05em;
+}
+
+.profile-fav {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+}
+
+.image-hint {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+
+  transform: translateX(-50%);
+
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.85);
+
+  background: rgba(0,0,0,0.35);
+
+  padding: 4px 12px;
+  border-radius: 20px;
+
+  pointer-events: none;
+
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.profile-image-wrapper:hover .image-hint {
+  opacity: 1;
+}
+
+.thumbs-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.thumb-btn {
+  flex: 1;
+  border-radius: 12px;
+  overflow: hidden;
+
+  border: 2px solid transparent;
+
+  cursor: pointer;
+
+  transition: border-color 0.2s;
+
+  background: none;
+  padding: 0;
+
+  aspect-ratio: 1;
+}
+
+.thumb-btn.active {
+  border-color: var(--primary, #c05080);
+}
+
+.thumb-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ───────────────────────────────────────────────────────────
+   CONTENIDO
+─────────────────────────────────────────────────────────── */
+.profile-content {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+/* ───────────────────────────────────────────────────────────
+   TITULOS
+─────────────────────────────────────────────────────────── */
+.profile-title {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--primary-dark, #4a0028);
+  line-height: 1.2;
+  margin-bottom: 10px;
+}
+
+.profile-description {
+  font-size: 0.95rem;
+  color: var(--text-muted, #666);
+  line-height: 1.6;
+}
+
+/* ───────────────────────────────────────────────────────────
+   SECCIONES
+─────────────────────────────────────────────────────────── */
+.profile-section {
+  border-top: 1px solid #f1e3ea;
+  padding-top: 24px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-bottom: 16px;
+}
+
+.profile-subtitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--primary-dark, #4a0028);
+}
+
+.section-note {
+  font-size: 0.78rem;
+  color: #999;
+}
+
+/* ───────────────────────────────────────────────────────────
+   TAMAÑOS
+─────────────────────────────────────────────────────────── */
+.sizes-grid {
+  display: flex;
+  gap: 12px;
+}
+
+.size-chip {
+  flex: 1;
+
+  position: relative;
+
+  border: 2px solid #eee;
+  background: white;
+
+  border-radius: 18px;
+
+  padding: 16px 10px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  gap: 4px;
+
+  cursor: pointer;
+
+  transition: all 0.2s ease;
+}
+
+.size-chip:hover {
+  border-color: var(--primary, #c05080);
+}
+
+.size-chip.active {
+  border-color: var(--primary, #c05080);
+  background: #fff2f7;
+}
+
+.size-chip.popular {
+  border-color: var(--primary, #c05080);
+}
+
+.popular-badge {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+
+  transform: translateX(-50%);
+
+  background: var(--primary, #c05080);
+  color: white;
+
+  font-size: 0.6rem;
+  font-weight: 700;
+
+  padding: 3px 10px;
+
+  border-radius: 999px;
+}
+
+.size-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.size-detail {
+  font-size: 0.72rem;
+  color: #999;
+}
+
+.size-price {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--primary, #c05080);
+}
+
+/* ───────────────────────────────────────────────────────────
+   TOPPINGS
+─────────────────────────────────────────────────────────── */
+.toppings-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.topping-group {
+  padding: 18px 0;
+  border-bottom: 1px dashed #f0dbe6;
+}
+
+.topping-group:last-child {
+  border-bottom: none;
+}
+
+.topping-group-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  margin-bottom: 14px;
+}
+
+.topping-group-icon {
+  font-size: 1.2rem;
+}
+
+.topping-group-label {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--primary-dark, #4a0028);
+
+  flex: 1;
+}
+
+.topping-group-price {
+  font-size: 0.75rem;
+  color: var(--primary, #c05080);
+
+  background: #fff0f5;
+
+  padding: 4px 10px;
+  border-radius: 999px;
+
+  font-weight: 700;
+}
+
+/* Chips */
+.topping-chips-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.topping-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  background: var(--primary, #c05080);
+  color: white;
+
+  padding: 8px 14px;
+
+  border-radius: 999px;
+
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.topping-chip-remove {
+  width: 20px;
+  height: 20px;
+
+  border: none;
+  border-radius: 50%;
+
+  background: rgba(255,255,255,0.2);
+  color: white;
+
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* BOTÓN AGREGAR */
+.topping-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 10px 18px;
+
+  border-radius: 999px;
+
+  border: 2px dashed var(--primary, #c05080);
+
+  background: #fff5f9;
+
+  color: var(--primary, #c05080);
+
+  font-size: 0.85rem;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition: all 0.2s ease;
+}
+
+.topping-add-btn:hover {
+  background: #ffe3ef;
+  transform: scale(1.03);
+}
+
+.add-icon {
+  width: 24px;
+  height: 24px;
+
+  border-radius: 50%;
+
+  background: var(--primary, #c05080);
+  color: white;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 1rem;
+}
+
+/* ───────────────────────────────────────────────────────────
+   CANTIDAD
+─────────────────────────────────────────────────────────── */
+.quantity-box {
+  display: inline-flex;
+  align-items: center;
+
+  border: 1px solid #eee;
+  border-radius: 14px;
+
+  overflow: hidden;
+}
+
+.qty-btn {
+  width: 46px;
+  height: 46px;
+
+  border: none;
+  background: white;
+
+  font-size: 1.3rem;
+  color: var(--primary, #c05080);
+
+  cursor: pointer;
+}
+
+.qty-number {
+  min-width: 46px;
+  text-align: center;
+  font-weight: 700;
+}
+
+/* ───────────────────────────────────────────────────────────
+   RESUMEN
+─────────────────────────────────────────────────────────── */
+.summary-card {
+  background: #faf5f8;
+
+  border-radius: 20px;
+
+  padding: 20px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+
+  font-size: 0.92rem;
+}
+
+.summary-divider {
+  height: 1px;
+  background: #ead5df;
+}
+
+.summary-total {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.total-price {
+  color: var(--primary, #c05080);
+  font-size: 1.4rem;
+}
+
+/* ───────────────────────────────────────────────────────────
+   FOOTER
+─────────────────────────────────────────────────────────── */
+.profile-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.footer-note {
+  text-align: center;
+  color: #999;
+  font-size: 0.8rem;
+}
+
+.profile-button {
+  width: 100%;
+}
+
+/* ───────────────────────────────────────────────────────────
+   MODAL
+─────────────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+
+  z-index: 99999;
+
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(6px);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 20px;
+}
+
+.modal-sheet {
+  position: relative;
+  z-index: 100000;
+
+  width: 100%;
+  max-width: 500px;
+
+  max-height: 85vh;
+  overflow-y: auto;
+
+  background: white;
+
+  border-radius: 28px;
+
+  padding: 28px;
+
+  box-shadow:
+    0 20px 60px rgba(0,0,0,0.25);
+
+  animation: modalUp .25s ease;
+}
+
+@keyframes modalUp {
+  from {
+    transform: translateY(25px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-bottom: 24px;
+}
+
+.modal-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.modal-price {
+  font-size: 0.75rem;
+
+  background: #fff0f5;
+  color: var(--primary, #c05080);
+
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.modal-close {
+  width: 34px;
+  height: 34px;
+
+  border: none;
+  border-radius: 50%;
+
+  background: #f4f4f4;
+
+  cursor: pointer;
+
+  font-size: 1.2rem;
+}
+
+/* Opciones */
+.modal-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+
+  margin-bottom: 20px;
+}
+
+.modal-option {
+  border: none;
+
+  background: #fff5f9;
+
+  padding: 18px 16px;
+
+  border-radius: 18px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  cursor: pointer;
+
+  transition: all 0.2s ease;
+}
+
+.modal-option:hover:not(.disabled) {
+  transform: translateY(-2px);
+  background: #ffe3ef;
+}
+
+.modal-option.disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.option-name {
+  font-weight: 600;
+}
+
+.option-check {
+  width: 28px;
+  height: 28px;
+
+  border-radius: 50%;
+
+  background: var(--primary, #c05080);
+  color: white;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.option-badge {
+  font-size: 0.72rem;
+
+  background: #eee;
+
+  padding: 4px 8px;
+  border-radius: 999px;
+}
+
+.modal-cancel {
+  width: 100%;
+
+  padding: 14px;
+
+  border-radius: 14px;
+
+  border: 1px solid #ddd;
+  background: white;
+
+  cursor: pointer;
+
+  font-weight: 600;
+}
+
+/* ───────────────────────────────────────────────────────────
+   TRANSICIÓN
+─────────────────────────────────────────────────────────── */
+.modal-fade-enter-active,
+.modal-fade-leave-active {
+  transition: opacity .25s;
+}
+
+.modal-fade-enter-from,
+.modal-fade-leave-to {
+  opacity: 0;
+}
+
+/* ───────────────────────────────────────────────────────────
+   RESPONSIVE
+─────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+
+  .profile-gallery {
+    position: relative;
+    top: unset;
+  }
+
+  .sizes-grid {
+    flex-direction: column;
+  }
+
+  .modal-options {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-sheet {
+    padding: 22px;
+    border-radius: 24px;
+  }
+}
+
+</style>

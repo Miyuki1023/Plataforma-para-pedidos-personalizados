@@ -63,30 +63,39 @@ async function handleSubmit() {
       .map((url: string) => url.trim())
       .filter((url: string) => url.length > 0)
 
-    const response = await api.post('/productos', {
+    const payload = {
       nombre: form.value.nombre,
       precio: Number(form.value.precio),
       categoria: form.value.categoria,
       stock: Number(form.value.stock),
       descripcion: form.value.descripcion || null,
-      imagenUrls: imagenUrls.length > 0 ? imagenUrls : null
-    })
+      imagenUrls: imagenUrls.length > 0 ? imagenUrls : null,
+      disponible: true // Aseguramos que el nuevo producto nazca como disponible
+    }
+
+    // Usamos plural /productos para consistencia con el backend
+    const response = await api.post('/admin/productos', payload)
+
+    // El interceptor de api.ts ya devuelve el cuerpo de la respuesta.
+    // El controlador devuelve { product: { ... } }
+    const createdProduct = response.product || response.data || response
 
     // Crear opciones si existen
-    const newProductId = response.data?.product?.id
+    const newProductId = createdProduct.id
     if (newProductId && form.value.opciones.length > 0) {
       for (const opt of form.value.opciones) {
         if (opt.nombre.trim()) {
-          await api.post(`/productos/${newProductId}/options`, opt)
+          await api.post(`/admin/productos/${newProductId}/options`, opt)
         }
       }
     }
 
-    emit('created', response.data?.product)
+    emit('created', createdProduct)
     resetForm()
     emit('close')
   } catch (err: any) {
-    error.value = err.response?.data?.message || 'Error al crear producto'
+    error.value = err.response?.data?.errors?.[0]?.msg || err.response?.data?.message || err.message || 'Error al crear producto'
+    console.error('[ProductCreateModal] Error detallado:', err)
   } finally {
     loading.value = false
   }

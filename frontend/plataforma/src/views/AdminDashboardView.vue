@@ -5,7 +5,7 @@ import AdminSidebar      from '../components/organisms/AdminSidebar.vue'
 import AppTopBar         from '../components/organisms/AppTopBar.vue'
 import DashboardFilters  from '../components/organisms/DashboardFilters.vue'
 import InventoryTable    from '../components/organisms/InventoryTable.vue'
-import RealtimeOrders    from '../components/organisms/RealTimeOrders.vue'
+import RealtimeOrders    from '../components/molecules/RealTimeOrders.vue'
 
 const inventory = ref<any[]>([])
 const orders = ref<any[]>([])
@@ -57,7 +57,7 @@ const fetchDashboardData = async (filters: any = {}) => {
 
     // Filtrar productos críticos (bajo stock o agotados) para la tabla de inventario
     // Alineado con la lógica de InventoryAttention.vue (empleados)
-    inventory.value = (prodRes.data || [])
+    inventory.value = (prodRes || [])
       .filter((p: any) => p.stock <= 10 || !p.disponible)
       .sort((a: any, b: any) => a.stock - b.stock)
       .slice(0, 5)
@@ -73,18 +73,18 @@ const fetchDashboardData = async (filters: any = {}) => {
       }))
 
     // 1. Lista de pedidos recientes (siempre visibles)
-    const recentRaw = recentOrdersRes.data?.orders || []
+    const recentRaw = recentOrdersRes?.orders || []
     orders.value = recentRaw.map((o: any) => ({
-      id: `#ORD-${o.id_pedido || o.id}`,
+      id: `#ORD-${o.id}`,
       amount: `S/ ${Number(o.total).toFixed(2)}`,
       time: formatRelativeTime(o.fecha_creacion),
-      items: o.cliente_nombre || o.usuario || 'Cliente Invitado',
+      items: o.usuario || 'Cliente Invitado',
       status: o.estado_pedido?.toUpperCase() || 'PROCESO',
       statusType: o.estado_pedido === 'entregado' ? 'delivered' : (o.estado_pedido === 'finalizado' ? 'done' : 'process')
     }))
 
     // 2. Cálculos para las Stat Cards (basados en el filtro de periodo)
-    const statsOrders = statsOrdersRes.data?.orders || []
+    const statsOrders = statsOrdersRes?.orders || []
     const totalValue = statsOrders.reduce((acc: number, o: any) => acc + Number(o.total), 0)
     stats.value = {
       sales: `S/ ${totalValue.toFixed(2)}`,
@@ -115,7 +115,7 @@ const downloadAllOrdersCSV = async () => {
   try {
     // Solicitamos una cantidad razonable para el reporte (evitando el error 400 por límites del servidor)
     const res = await api.get('/orders', { params: { limit: 100 } })
-    const allOrders = res.data?.orders || []
+    const allOrders = res?.orders || []
     
     if (allOrders.length === 0) return
 

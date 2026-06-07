@@ -135,8 +135,8 @@ async function fetchOrders() {
     }
 
     const response = await api.get('/orders', { params })
-    orders.value = Array.isArray(response.data?.orders)
-      ? response.data.orders.map(normalizeOrder)
+    orders.value = Array.isArray(response?.orders)
+      ? response.orders.map(normalizeOrder)
       : []
   } catch (error) {
     console.error(error)
@@ -183,7 +183,7 @@ async function handleViewDetails(orderId: string | number) {
   try {
     const id = String(orderId).replace('#', '')
     const response = await api.get(`/orders/${id}`)
-    const orderData = response.data?.order
+    const orderData = response?.order
     if (orderData) {
       // Normalizar datos numéricos
       selectedOrderDetails.value = {

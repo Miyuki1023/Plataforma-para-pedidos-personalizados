@@ -21,6 +21,11 @@ exports.createOrderValidation = [
     .isInt()
     .withMessage('id_trabajador_asignado debe ser un número'),
   (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
     // Must have either id_direccion or direccion_manual
     if (!req.body.id_direccion && !req.body.direccion_manual) {
       return res.status(400).json({

@@ -57,8 +57,9 @@ watch(
 
       // Cargar opciones del producto
       try {
-        const resp = await api.get(`/productos/${newProduct.id}/options`)
-        options.value = resp.data || []
+        const resp = await api.get(`/admin/productos/${newProduct.id}/options`)
+        // Como api.ts devuelve response.data, 'resp' es directamente el array de opciones
+        options.value = resp.data || resp || []
         originalOptionsIds.value = new Set(options.value.filter(o => o.id).map(o => o.id as number))
       } catch (err) {
         console.error('Error al cargar opciones:', err)
@@ -105,7 +106,7 @@ async function handleSubmit() {
       .map((url: string) => url.trim())
       .filter((url: string) => url.length > 0)
 
-    const response = await api.put(`/productos/${props.product?.id}`, {
+    const response = await api.put(`/admin/productos/${props.product?.id}`, {
       nombre: form.value.nombre,
       precio: Number(form.value.precio),
       categoria: form.value.categoria,
@@ -121,19 +122,19 @@ async function handleSubmit() {
     // 1. Eliminar las que ya no están
     for (const oldId of originalOptionsIds.value) {
       if (!currentIds.has(oldId)) {
-        await api.delete(`/productos/${props.product?.id}/options/${oldId}`)
+        await api.delete(`/admin/productos/${props.product?.id}/options/${oldId}`)
       }
     }
     // 2. Crear o actualizar las actuales
     for (const opt of options.value) {
       if (opt.id) {
-        await api.put(`/productos/${props.product?.id}/options/${opt.id}`, opt)
+        await api.put(`/admin/productos/${props.product?.id}/options/${opt.id}`, opt)
       } else if (opt.nombre.trim()) {
-        await api.post(`/productos/${props.product?.id}/options`, opt)
+        await api.post(`/admin/productos/${props.product?.id}/options`, opt)
       }
     }
 
-    emit('updated', response.data?.product)
+    emit('updated', response.product || response)
     emit('close')
   } catch (err: any) {
     error.value = err.response?.data?.message || 'Error al actualizar producto'

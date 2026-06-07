@@ -4,7 +4,7 @@ exports.registerValidation = [
   body('usuario')
     .notEmpty().withMessage('Usuario es requerido')
     .isLength({ min: 3 }).withMessage('Usuario mínimo 3 caracteres')
-    .matches(/^[a-zA-Z0-9_]+$/).withMessage('Usuario solo puede contener letras, números y guiones bajos'),
+    .matches(/^[a-zA-Z0-9_.@]+$/).withMessage('Usuario solo puede contener letras, números, puntos, @ y guiones bajos'),
 
   body('email')
     .notEmpty().withMessage('Email es requerido')
@@ -12,9 +12,7 @@ exports.registerValidation = [
 
   body('password')
     .notEmpty().withMessage('Password es requerido')
-    .isLength({ min: 6 }).withMessage('Password mínimo 6 caracteres')
-    .matches(/[A-Z]/).withMessage('Debe tener al menos 1 mayúscula')
-    .matches(/[0-9]/).withMessage('Debe tener al menos 1 número'),
+    .isLength({ min: 6 }).withMessage('Password mínimo 6 caracteres'),
 
   // Campos opcionales para registro
   body('fecha_nacimiento')
@@ -57,7 +55,7 @@ exports.adminRegisterValidation = [
   body('usuario')
     .notEmpty().withMessage('Usuario es requerido')
     .isLength({ min: 3 }).withMessage('Usuario mínimo 3 caracteres')
-    .matches(/^[a-zA-Z0-9_]+$/).withMessage('Usuario solo puede contener letras, números y guiones bajos'),
+    .matches(/^[a-zA-Z0-9_.@]+$/).withMessage('Usuario solo puede contener letras, números, puntos, @ y guiones bajos'),
 
   body('email')
     .notEmpty().withMessage('Email es requerido')
@@ -65,9 +63,7 @@ exports.adminRegisterValidation = [
 
   body('password')
     .notEmpty().withMessage('Password es requerido')
-    .isLength({ min: 6 }).withMessage('Password mínimo 6 caracteres')
-    .matches(/[A-Z]/).withMessage('Debe tener al menos 1 mayúscula')
-    .matches(/[0-9]/).withMessage('Debe tener al menos 1 número'),
+    .isLength({ min: 6 }).withMessage('Password mínimo 6 caracteres'),
 
   body('rol')
     .notEmpty().withMessage('Rol es requerido')

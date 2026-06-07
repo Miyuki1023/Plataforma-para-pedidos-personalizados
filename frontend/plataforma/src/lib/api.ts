@@ -22,4 +22,12 @@ api.interceptors.request.use((config) => {
   return Promise.reject(error)
 })
 
+// Interceptor de respuesta para unificar con el sistema de tu compañera
+// Esto permite que 'await api.get()' devuelva directamente el contenido de los datos
+api.interceptors.response.use(
+  (response) => response.data,
+  (error) => Promise.reject(error)
+)
+
+export const apiService = api
 export default api

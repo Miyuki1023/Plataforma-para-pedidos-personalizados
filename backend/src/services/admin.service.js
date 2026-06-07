@@ -1,5 +1,6 @@
 const pool = require('../config/db');
 const bcrypt = require('bcrypt');
+const userService = require('./user.service');
 
 exports.getAllUsers = async (adminId) => {
   // Verificar permisos de admin
@@ -13,12 +14,38 @@ exports.getAllUsers = async (adminId) => {
   }
 
   const result = await pool.query(
-    `SELECT id, usuario, email, fecha_nacimiento, sexo, telefono, id_rol, activo, fecha_registro
+    `SELECT id, usuario, apellido, foto_perfil, email, fecha_nacimiento, sexo, telefono, id_rol, activo, fecha_registro
      FROM usuario
      ORDER BY fecha_registro DESC`
   );
 
   return result.rows;
+};
+
+exports.updateUser = async (adminId, targetUserId, updateData) => {
+  // Verificar permisos de admin
+  const adminCheck = await pool.query(
+    'SELECT id_rol FROM usuario WHERE id = $1 AND activo = true',
+    [adminId]
+  );
+
+  if (adminCheck.rows.length === 0 || adminCheck.rows[0].id_rol !== 3) {
+    throw new Error('Acceso denegado: se requieren permisos de administrador');
+  }
+
+  // Normalizar campos para el servicio de usuario
+  const data = { ...updateData };
+  if (data.rol) {
+    data.id_rol = data.rol;
+    delete data.rol;
+  }
+
+  // Si el password está vacío, no lo actualizamos
+  if (data.password === '') {
+    delete data.password;
+  }
+
+  return await userService.updateUserProfile(targetUserId, data);
 };
 
 exports.updateUserRole = async (adminId, targetUserId, newRole) => {
@@ -131,7 +158,7 @@ exports.getUserById = async (adminId, targetUserId) => {
   }
 
   const result = await pool.query(
-    `SELECT id, usuario, email, fecha_nacimiento, sexo, telefono, id_rol, activo, fecha_registro
+    `SELECT id, usuario, apellidos AS apellido, foto_perfil, email, fecha_nacimiento, sexo, telefono, id_rol, activo, fecha_registro
      FROM usuario
      WHERE id = $1`,
     [targetUserId]

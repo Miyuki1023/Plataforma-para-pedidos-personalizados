@@ -18,7 +18,7 @@ const fetchOrders = async () => {
   try {
     // Traemos los últimos 10 para tener margen, aunque solo mostremos 3
     const res = await api.get('/orders', { params: { limit: 10 } })
-    orders.value = res.data?.orders || []
+    orders.value = res?.orders || []
   } catch (err) {
     console.error('Error al cargar pedidos en tiempo real:', err)
   } finally {
