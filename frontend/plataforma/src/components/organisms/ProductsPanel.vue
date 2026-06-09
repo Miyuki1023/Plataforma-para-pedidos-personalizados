@@ -29,6 +29,9 @@ const router = useRouter();
 const isCreateModalOpen = ref(false);
 const isEditModalOpen = ref(false);
 const selectedProductForEdit = ref<Product | null>(null);
+const dailyQuote = ref("La repostería es un arte donde la precisión se encuentra con la pasión.");
+const editedQuote = ref("");
+const isQuoteModalOpen = ref(false);
 
 const ITEMS_PER_PAGE = 8;
 
@@ -106,6 +109,30 @@ function handleEditProduct() {
   }
 }
 
+function handleEditRow(product: Product) {
+  selectedProductForEdit.value = product;
+  isEditModalOpen.value = true;
+}
+
+async function handleDeleteRow(product: Product) {
+  if (!confirm(`¿Estás seguro de que deseas eliminar el producto "${product.nombre}"?`)) {
+    return;
+  }
+
+  loading.value = true;
+  error.value = "";
+
+  try {
+    await api.delete(`/productos/${product.id}`);
+    products.value = products.value.filter((p) => p.id !== product.id);
+    selected.value = selected.value.filter((id) => id !== product.id);
+  } catch (err: any) {
+    error.value = err.response?.data?.message || "Error al eliminar el producto";
+  } finally {
+    loading.value = false;
+  }
+}
+
 function handleProductUpdated(updatedProduct: Product) {
   const index = products.value.findIndex((p) => p.id === updatedProduct.id);
   if (index !== -1) {
@@ -153,7 +180,18 @@ async function handleToggleProduct(product: Product) {
 }
 
 function handleNewSale() {
-  router.push("/");
+  router.push("/home");
+}
+
+function openQuoteModal() {
+  editedQuote.value = dailyQuote.value;
+  isQuoteModalOpen.value = true;
+}
+
+function saveQuote() {
+  dailyQuote.value = editedQuote.value.trim() || "La repostería es un arte donde la precisión se encuentra con la pasión.";
+  localStorage.setItem("dailyInspiration", dailyQuote.value);
+  isQuoteModalOpen.value = false;
 }
 
 // Computed for display
@@ -177,6 +215,10 @@ const displayProducts = computed(() => {
 
 onMounted(() => {
   fetchProducts();
+  const savedQuote = localStorage.getItem("dailyInspiration");
+  if (savedQuote) {
+    dailyQuote.value = savedQuote;
+  }
 });
 </script>
 
@@ -199,15 +241,14 @@ onMounted(() => {
 
       <!-- Card derecha: inspiración del día -->
       <div class="hero-card hero-card--inspiration">
-        <button class="insp-edit-btn" title="Editar inspiración">
+        <button class="insp-edit-btn" title="Editar inspiración" @click="openQuoteModal">
           <span class="material-symbols-rounded" style="font-size: 14px"
             >edit</span
           >
         </button>
         <p class="insp-label">Inspiración del día</p>
         <p class="insp-quote">
-          "La repostería es un arte donde la precisión se encuentra con la
-          pasión."
+          "{{ dailyQuote }}"
         </p>
       </div>
     </div>
@@ -263,6 +304,7 @@ onMounted(() => {
             <th>STOCK</th>
             <th>PRECIO</th>
             <th>ESTADO</th>
+            <th>ACCIONES</th>
           </tr>
         </thead>
         <tbody>
@@ -308,6 +350,16 @@ onMounted(() => {
                 @click="handleToggleProduct(p)"
               >
                 <span class="toggle-thumb" />
+              </button>
+            </td>
+            <td class="actions-cell">
+              <button class="btn-secondary btn-row" @click="handleEditRow(p)">
+                <span class="material-symbols-rounded">edit</span>
+                Editar
+              </button>
+              <button class="btn-danger btn-row" @click="handleDeleteRow(p)">
+                <span class="material-symbols-rounded">delete</span>
+                Eliminar
               </button>
             </td>
           </tr>
@@ -393,6 +445,25 @@ onMounted(() => {
     @close="isEditModalOpen = false"
     @updated="handleProductUpdated"
   />
+
+  <div v-if="isQuoteModalOpen" class="quote-modal-overlay" @click.self="isQuoteModalOpen = false">
+    <div class="quote-modal">
+      <header class="quote-modal-header">
+        <h2>Editar Inspiración del día</h2>
+        <button class="close-modal" @click="isQuoteModalOpen = false">×</button>
+      </header>
+      <textarea
+        v-model="editedQuote"
+        class="quote-textarea"
+        rows="5"
+        placeholder="Escribe la frase que quieras guardar aquí..."
+      ></textarea>
+      <div class="quote-modal-actions">
+        <button class="btn-secondary" type="button" @click="isQuoteModalOpen = false">Cancelar</button>
+        <button class="btn-primary" type="button" @click="saveQuote">Guardar</button>
+      </div>
+    </div>
+  </div>
 </template>
 
 <style scoped>
@@ -794,6 +865,85 @@ onMounted(() => {
 }
 .toggle--on .toggle-thumb {
   transform: translateX(15px);
+}
+
+.actions-cell {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btn-row {
+  padding: 0.42rem 0.8rem;
+  font-size: 0.75rem;
+  border-radius: 10px;
+}
+
+.btn-row .material-symbols-rounded {
+  font-size: 16px;
+}
+
+.quote-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 2000;
+}
+
+.quote-modal {
+  width: min(560px, 100%);
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.18);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.quote-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.quote-modal-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #3f0006;
+}
+
+.close-modal {
+  border: none;
+  background: transparent;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  color: #8b1a2e;
+}
+
+.quote-textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 120px;
+  padding: 1rem;
+  border: 1px solid #e8d5d5;
+  border-radius: 14px;
+  font-family: 'Lato', sans-serif;
+  font-size: 0.95rem;
+  color: #3f0006;
+}
+
+.quote-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
 }
 
 /* Pagination */

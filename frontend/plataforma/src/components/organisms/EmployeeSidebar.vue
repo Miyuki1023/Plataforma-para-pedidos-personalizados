@@ -1,7 +1,12 @@
 <script setup lang="ts">
-import { RouterLink, useRoute } from "vue-router";
+import { RouterLink, useRoute, useRouter } from "vue-router";
 
 const route = useRoute();
+const router = useRouter();
+
+const handleNewSale = () => {
+  router.push('/home');
+};
 
 const navItems = [
   { id: "analytics", label: "Analytics", icon: "analytics", to: "/empleado" },
@@ -38,7 +43,7 @@ const navItems = [
     </nav>
 
     <div class="sidebar-bottom">
-      <button class="btn-new-sale">
+      <button class="btn-new-sale" @click="handleNewSale">
         <svg
           width="13"
           height="13"

@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
+import { useAuthStore } from '../stores/auth'
 import api from '../lib/api'
 import AdminSidebar from '../components/organisms/AdminSidebar.vue'
-import AppTopBar from '../components/organisms/AppTopBar.vue'
 
 interface User {
   id: number
@@ -30,6 +30,19 @@ const newUser = ref({
   sexo: 'M',
   telefono: ''
 })
+
+const authStore = useAuthStore()
+const currentPage = ref(1)
+const roleFilter = ref<'all' | 1 | 2 | 3>('all')
+const ITEMS_PER_PAGE = 10
+
+const roleCounts = computed(() => ({
+  admin: users.value.filter((u) => u.id_rol === 3).length,
+  worker: users.value.filter((u) => u.id_rol === 2).length,
+  user: users.value.filter((u) => u.id_rol === 1).length
+}))
+
+const currentUserId = computed(() => authStore.user?.id)
 
 const fetchUsers = async () => {
   loading.value = true
@@ -59,13 +72,36 @@ const fetchUsers = async () => {
 }
 
 const filteredUsers = computed(() => {
-  return users.value.filter(u => 
-    u.usuario.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-    u.email.toLowerCase().includes(searchQuery.value.toLowerCase())
-  )
+  return users.value.filter(u => {
+    const matchesSearch =
+      u.usuario.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      u.email.toLowerCase().includes(searchQuery.value.toLowerCase())
+
+    const matchesRole =
+      roleFilter.value === 'all' || u.id_rol === roleFilter.value
+
+    return matchesSearch && matchesRole
+  })
+})
+
+const totalPages = computed(() => Math.max(1, Math.ceil(filteredUsers.value.length / ITEMS_PER_PAGE)))
+
+const paginatedUsers = computed(() => {
+  const start = (currentPage.value - 1) * ITEMS_PER_PAGE
+  return filteredUsers.value.slice(start, start + ITEMS_PER_PAGE)
+})
+
+watch([filteredUsers], () => {
+  if (currentPage.value > totalPages.value) {
+    currentPage.value = 1
+  }
 })
 
 const toggleUserStatus = async (user: User) => {
+  if (user.id === currentUserId.value) {
+    alert('No puedes cambiar el estado de tu propia cuenta desde aquí.')
+    return
+  }
   const action = user.activo ? 'deactivate' : 'activate'
   try {
     await api.put(`/admin/users/${user.id}/${action}`)
@@ -78,6 +114,12 @@ const toggleUserStatus = async (user: User) => {
 const handleRoleChange = async (user: User, event: Event) => {
   const newRole = parseInt((event.target as HTMLSelectElement).value)
   
+  if (user.id === currentUserId.value) {
+    alert('No puedes cambiar tu propio rol desde aquí.')
+    fetchUsers();
+    return;
+  }
+
   if (user.id === 1) {
     alert('Por seguridad, no se puede cambiar el rol del Administrador principal (ID 1).');
     fetchUsers(); // Revertir selección en el select
@@ -129,8 +171,6 @@ onMounted(fetchUsers)
     <AdminSidebar />
     
     <main class="admin-main">
-      <AppTopBar placeholder="Buscar usuarios..." v-model="searchQuery" />
-
       <div class="admin-content">
         <header class="content-header">
           <div>
@@ -142,6 +182,30 @@ onMounted(fetchUsers)
             Nuevo Usuario
           </button>
         </header>
+
+        <section class="role-dashboard">
+          <div class="role-card">
+            <span class="role-label">Administradores</span>
+            <strong>{{ roleCounts.admin }}</strong>
+          </div>
+          <div class="role-card">
+            <span class="role-label">Trabajadores</span>
+            <strong>{{ roleCounts.worker }}</strong>
+          </div>
+          <div class="role-card">
+            <span class="role-label">Usuarios</span>
+            <strong>{{ roleCounts.user }}</strong>
+          </div>
+          <div class="role-filter">
+            <label>Filtrar por rol</label>
+            <select v-model="roleFilter" class="filter-select">
+              <option value="all">Todos</option>
+              <option :value="3">Admin</option>
+              <option :value="2">Trabajador</option>
+              <option :value="1">Usuario</option>
+            </select>
+          </div>
+        </section>
 
         <div class="users-card">
           <table class="user-table">
@@ -155,7 +219,7 @@ onMounted(fetchUsers)
               </tr>
             </thead>
             <tbody>
-              <tr v-for="user in filteredUsers" :key="user.id">
+              <tr v-for="user in paginatedUsers" :key="user.id">
                 <td>
                   <div class="user-info">
                     <img :src="`https://i.pravatar.cc/40?u=${user.email}`" class="avatar" />
@@ -187,7 +251,8 @@ onMounted(fetchUsers)
                   <button 
                     @click="toggleUserStatus(user)" 
                     class="action-btn"
-                    :title="user.activo ? 'Desactivar' : 'Activar'"
+                    :title="user.id === currentUserId ? 'No puedes cambiar tu propio estado' : user.activo ? 'Desactivar' : 'Activar'"
+                    :disabled="user.id === currentUserId"
                   >
                     <span class="material-symbols-outlined">
                       {{ user.activo ? 'person_off' : 'person_check' }}
@@ -199,6 +264,23 @@ onMounted(fetchUsers)
           </table>
           
           <div v-if="loading" class="loading-state">Cargando usuarios...</div>
+          <div v-else class="pagination-bar">
+            <span class="pagination-summary">
+              Mostrando {{ paginatedUsers.length }} de {{ filteredUsers.length }} usuarios filtrados
+            </span>
+            <div class="pagination-buttons">
+              <button class="page-btn" :disabled="currentPage === 1" @click="currentPage--">Anterior</button>
+              <button
+                v-for="page in totalPages"
+                :key="page"
+                :class="['page-btn', { 'page-btn--active': currentPage === page }]"
+                @click="currentPage = page"
+              >
+                {{ page }}
+              </button>
+              <button class="page-btn" :disabled="currentPage === totalPages" @click="currentPage++">Siguiente</button>
+            </div>
+          </div>
         </div>
       </div>
     </main>
@@ -285,6 +367,82 @@ onMounted(fetchUsers)
 .avatar { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
 .user-name { font-weight: 700; color: #3f0006; font-size: 0.9rem; }
 .user-email { font-size: 0.75rem; color: #9e8080; }
+
+.role-dashboard {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(160px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.role-card,
+.role-filter {
+  background: #fff;
+  border: 1px solid #e8d5d5;
+  border-radius: 14px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.role-label {
+  font-size: 0.75rem;
+  color: #9e8080;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.filter-select {
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: 12px;
+  border: 1px solid #e8d5d5;
+  background: #fff;
+  color: #3f0006;
+}
+
+.status-badge { padding: 0.25rem 0.75rem; border-radius: 100px; font-size: 0.7rem; font-weight: 700; }
+.status--active { background: #e6f4ee; color: #2e7d52; }
+.status--inactive { background: #fde8e8; color: #9b1c1c; }
+
+.pagination-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 0 0;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.pagination-summary { color: #9e8080; font-size: 0.85rem; }
+.pagination-buttons { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
+.page-btn {
+  border: 1px solid #e8d5d5;
+  background: #fff;
+  color: #3f0006;
+  border-radius: 10px;
+  padding: 0.7rem 1rem;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.page-btn:hover:not(:disabled) {
+  border-color: #8b1a2e;
+  color: #8b1a2e;
+}
+
+.page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.page-btn--active {
+  background: #8b1a2e;
+  color: #fff;
+  border-color: #8b1a2e;
+}
 
 .role-select { padding: 0.3rem 0.5rem; border-radius: 8px; border: 1px solid #e8d5d5; font-size: 0.8rem; background: #fff; color: #3f0006; }
 

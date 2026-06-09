@@ -8,6 +8,10 @@ const router = useRouter();
 const authStore = useAuthStore();
 const showUserMenu = ref(false);
 
+const handleNewSale = () => {
+  router.push('/home');
+};
+
 const navItems = [
   { id: "analytics", label: "Análisis",  icon: "analytics",    to: "/admin" },
   { id: "products",  label: "Productos", icon: "package_2",    to: "/admin/productos" },
@@ -46,7 +50,7 @@ const logout = async () => {
     </nav>
 
     <div class="sidebar-bottom">
-      <button class="btn-new-sale">
+      <button class="btn-new-sale" @click="handleNewSale">
         <span class="material-symbols-outlined" style="font-size:16px">add</span>
         Nueva venta
       </button>
