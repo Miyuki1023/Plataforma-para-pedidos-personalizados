@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import EmployeeSidebar from "../components/organisms/EmployeeSidebar.vue";
+import AppTopBar from "../components/organisms/AppTopBar.vue";
 import ProductsPanel from "../components/organisms/ProductsPanel.vue";
 </script>
 
@@ -7,6 +8,7 @@ import ProductsPanel from "../components/organisms/ProductsPanel.vue";
   <div class="layout">
     <EmployeeSidebar />
     <div class="layout-content">
+      <AppTopBar />
       <ProductsPanel />
     </div>
   </div>

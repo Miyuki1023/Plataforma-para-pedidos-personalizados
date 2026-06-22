@@ -2,7 +2,7 @@
 import { ref, onMounted } from 'vue'
 import api               from '../lib/api'
 import AdminSidebar      from '../components/organisms/AdminSidebar.vue'
-
+import AppTopBar         from '../components/organisms/AppTopBar.vue'
 import DashboardFilters  from '../components/organisms/DashboardFilters.vue'
 import InventoryTable    from '../components/organisms/InventoryTable.vue'
 import RealtimeOrders    from '../components/molecules/RealTimeOrders.vue'
@@ -30,13 +30,7 @@ const fetchDashboardData = async (filters: any = {}) => {
     const orderParams: any = {}
 
     // Mapeo de periodos a rangos de fechas para la API
-    if (filters.year) {
-      const year = Number(filters.year)
-      if (!Number.isNaN(year)) {
-        orderParams.fecha_inicio = `${year}-01-01`
-        orderParams.fecha_fin = `${year}-12-31`
-      }
-    } else if (filters.period) {
+    if (filters.period) {
       const now = new Date()
       let start = new Date()
       start.setHours(0, 0, 0, 0)
@@ -55,21 +49,15 @@ const fetchDashboardData = async (filters: any = {}) => {
       orderParams.fecha_fin = now.toISOString().split('T')[0]
     }
 
-    const recentOrdersParams: any = { limit: 5, ...orderParams }
-
     const [prodRes, recentOrdersRes, statsOrdersRes] = await Promise.all([
-      api.get('/productos'),
-      api.get('/orders', { params: recentOrdersParams }), // Últimos pedidos según filtro de periodo/año
-      api.get('/orders', { params: orderParams })         // Stats basadas en rango de fechas
+      api.get('/productos', { params: filters.category ? { categoria: filters.category } : {} }),
+      api.get('/orders', { params: { limit: 5 } }), // Siempre traer los últimos 5 para la lista
+      api.get('/orders', { params: orderParams })   // Traer filtrados para las stats
     ])
 
     // Filtrar productos críticos (bajo stock o agotados) para la tabla de inventario
     // Alineado con la lógica de InventoryAttention.vue (empleados)
-    const productsToUse = filters.category
-      ? (prodRes || []).filter((p: any) => String(p.categoria).toLowerCase() === String(filters.category).toLowerCase())
-      : (prodRes || [])
-
-    inventory.value = productsToUse
+    inventory.value = (prodRes || [])
       .filter((p: any) => p.stock <= 10 || !p.disponible)
       .sort((a: any, b: any) => a.stock - b.stock)
       .slice(0, 5)
@@ -179,6 +167,8 @@ onMounted(() => fetchDashboardData(activeFilters.value))
     <AdminSidebar />
 
     <main class="admin-main">
+      <AppTopBar placeholder="Buscar..." />
+
       <div class="admin-content">
 
         <!-- Header -->
