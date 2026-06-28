@@ -2,9 +2,7 @@
 import { ref, onMounted } from 'vue'
 import api                 from '../lib/api'
 import AdminSidebar      from '../components/organisms/AdminSidebar.vue'
-import AppTopBar         from '../components/organisms/AppTopBar.vue'
 import DashboardFilters  from '../components/organisms/DashboardFilters.vue'
-// CAMBIO: Importamos el componente autónomo que sí funciona
 import InventoryAttention from '../components/molecules/InventoryAttention.vue' 
 import RealtimeOrders    from '../components/molecules/RealTimeOrders.vue'
 
@@ -135,7 +133,6 @@ onMounted(() => fetchDashboardData(activeFilters.value))
     <AdminSidebar />
 
     <main class="admin-main">
-      <AppTopBar placeholder="Buscar..." />
 
       <div class="admin-content">
 

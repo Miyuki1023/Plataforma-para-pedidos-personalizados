@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import EmployeeSidebar      from '../components/organisms/EmployeeSidebar.vue'
-import AppTopBar            from '../components/organisms/AppTopBar.vue'
 import InventoryAttention   from '../components/molecules/InventoryAttention.vue'
 import RealTimeOrders       from '../components/molecules/RealTimeOrders.vue'
 import ProductionGoalCard   from '../components/molecules/ProductionGoalCard.vue'
@@ -19,7 +18,6 @@ function handleNewSale() {
     <EmployeeSidebar />
 
     <main class="emp-main">
-      <AppTopBar />
 
       <div class="emp-content">
         <div class="page-header">
