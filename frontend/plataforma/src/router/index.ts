@@ -22,7 +22,7 @@ import EmployeeProductsView    from '../views/EmployeeProductsView.vue'
 import AdminDashboardView from '../views/AdminDashboardView.vue'
 import AdminProductsView from '../views/AdminProductsView.vue'
 import AdminUsersView from '../views/AdminUsersView.vue'
-
+import AdminReclamacionesView from '../views/AdminReclamacionesView.vue' 
 const router = createRouter({
 
   history: createWebHistory(
@@ -108,6 +108,7 @@ const router = createRouter({
     { path: '/admin', name: 'admin-dashboard', component: AdminDashboardView },
     { path: '/admin/productos', name: 'admin-products', component: AdminProductsView },
     { path: '/admin/usuarios', name: 'admin-users', component: AdminUsersView },
+    { path: '/admin/reclamaciones', name: 'admin-reclamaciones', component: AdminReclamacionesView },
 
 
     /* 404 */

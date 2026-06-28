@@ -9,9 +9,10 @@ const authStore = useAuthStore();
 const showUserMenu = ref(false);
 
 const navItems = [
-  { id: "analytics", label: "Análisis",  icon: "analytics",    to: "/admin" },
-  { id: "products",  label: "Productos", icon: "package_2",    to: "/admin/productos" },
-  { id: "users",     label: "Usuarios",  icon: "group",        to: "/admin/usuarios" },
+  { id: "analytics", label: "Panel de Control", icon: "analytics",    to: "/admin" },
+  { id: "products",  label: "Productos",        icon: "package_2",    to: "/admin/productos" },
+  { id: "users",     label: "Usuarios",         icon: "group",        to: "/admin/usuarios" },
+  { id: "claims",    label: "Reclamaciones",    icon: "receipt_long", to: "/admin/reclamaciones" },
 ];
 
 const toggleUserMenu = () => {
@@ -46,10 +47,6 @@ const logout = async () => {
     </nav>
 
     <div class="sidebar-bottom">
-      <button class="btn-new-sale">
-        <span class="material-symbols-outlined" style="font-size:16px">add</span>
-        Nueva venta
-      </button>
 
       <div class="sidebar-user-container">
         <!-- Menú emergente de usuario -->

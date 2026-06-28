@@ -1,17 +1,14 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import api               from '../lib/api'
+import api                 from '../lib/api'
 import AdminSidebar      from '../components/organisms/AdminSidebar.vue'
-import AppTopBar         from '../components/organisms/AppTopBar.vue'
 import DashboardFilters  from '../components/organisms/DashboardFilters.vue'
-import InventoryTable    from '../components/organisms/InventoryTable.vue'
+import InventoryAttention from '../components/molecules/InventoryAttention.vue' 
 import RealtimeOrders    from '../components/molecules/RealTimeOrders.vue'
 
-const inventory = ref<any[]>([])
 const orders = ref<any[]>([])
 const currentPeriod = ref('Hoy')
 
-// Mantenemos el estado global de los filtros seleccionados
 const activeFilters = ref({
   period: 'Hoy',
   category: '',
@@ -25,11 +22,11 @@ const stats = ref({
   completionRate: 0
 })
 
+// Ahora esta función solo se encarga de las órdenes y las estadísticas del panel
 const fetchDashboardData = async (filters: any = {}) => {
   try {
     const orderParams: any = {}
 
-    // Mapeo de periodos a rangos de fechas para la API
     if (filters.period) {
       const now = new Date()
       let start = new Date()
@@ -49,31 +46,14 @@ const fetchDashboardData = async (filters: any = {}) => {
       orderParams.fecha_fin = now.toISOString().split('T')[0]
     }
 
-    const [prodRes, recentOrdersRes, statsOrdersRes] = await Promise.all([
-      api.get('/productos', { params: filters.category ? { categoria: filters.category } : {} }),
-      api.get('/orders', { params: { limit: 5 } }), // Siempre traer los últimos 5 para la lista
-      api.get('/orders', { params: orderParams })   // Traer filtrados para las stats
+    // Eliminamos la petición de productos de aquí, ya que el componente hijo la hará sola
+    const [recentOrdersRes, statsOrdersRes] = await Promise.all([
+      api.get('/orders', { params: { limit: 5 } }),
+      api.get('/orders', { params: orderParams })  
     ])
 
-    // Filtrar productos críticos (bajo stock o agotados) para la tabla de inventario
-    // Alineado con la lógica de InventoryAttention.vue (empleados)
-    inventory.value = (prodRes || [])
-      .filter((p: any) => p.stock <= 10 || !p.disponible)
-      .sort((a: any, b: any) => a.stock - b.stock)
-      .slice(0, 5)
-      .map((p: any) => ({
-        id: p.id,
-        name: p.nombre,
-        desc: p.categoria,
-        img: Array.isArray(p.imagen_url) ? p.imagen_url[0] : (p.imagen_url || ''),
-        stockLabel: p.stock === 0 ? 'Sin stock' : `${p.stock} en stock`,
-        stockType: p.stock === 0 ? 'out' : (p.stock <= 10 ? 'low' : 'ok'),
-        price: `S/${p.precio}`,
-        available: p.disponible
-      }))
-
-    // 1. Lista de pedidos recientes (siempre visibles)
-    const recentRaw = recentOrdersRes?.orders || []
+    // 1. Lista de pedidos recientes
+    const recentRaw = recentOrdersRes?.orders || recentOrdersRes?.data || []
     orders.value = recentRaw.map((o: any) => ({
       id: `#ORD-${o.id}`,
       amount: `S/ ${Number(o.total).toFixed(2)}`,
@@ -83,8 +63,8 @@ const fetchDashboardData = async (filters: any = {}) => {
       statusType: o.estado_pedido === 'entregado' ? 'delivered' : (o.estado_pedido === 'finalizado' ? 'done' : 'process')
     }))
 
-    // 2. Cálculos para las Stat Cards (basados en el filtro de periodo)
-    const statsOrders = statsOrdersRes?.orders || []
+    // 2. Cálculos para las Stat Cards
+    const statsOrders = statsOrdersRes?.orders || statsOrdersRes?.data || []
     const totalValue = statsOrders.reduce((acc: number, o: any) => acc + Number(o.total), 0)
     stats.value = {
       sales: `S/ ${totalValue.toFixed(2)}`,
@@ -100,9 +80,7 @@ const fetchDashboardData = async (filters: any = {}) => {
 }
 
 const handleFilterChange = (filter: { type: string, value: string }) => {
-  // Evitamos procesar si se selecciona el texto por defecto del select
   if (filter.value.includes('Selecciona')) return
-
   activeFilters.value[filter.type as keyof typeof activeFilters.value] = filter.value
   
   if (filter.type === 'period') {
@@ -113,13 +91,11 @@ const handleFilterChange = (filter: { type: string, value: string }) => {
 
 const downloadAllOrdersCSV = async () => {
   try {
-    // Solicitamos una cantidad razonable para el reporte (evitando el error 400 por límites del servidor)
     const res = await api.get('/orders', { params: { limit: 100 } })
-    const allOrders = res?.orders || []
+    const allOrders = res?.orders || res?.data || []
     
     if (allOrders.length === 0) return
 
-    // Definimos encabezados y mapeamos los datos del backend
     const headers = ['ID Pedido', 'Cliente', 'Fecha', 'Total', 'Estado']
     const csvContent = [
       headers.join(','),
@@ -142,16 +118,6 @@ const downloadAllOrdersCSV = async () => {
   }
 }
 
-const toggleProductAvailability = async (item: any) => {
-  try {
-    await api.put(`/productos/${item.id}`, { disponible: !item.available })
-    // Actualizamos localmente para feedback inmediato
-    item.available = !item.available
-  } catch (error) {
-    console.error('Error al actualizar disponibilidad:', error)
-  }
-}
-
 const formatRelativeTime = (dateStr: string) => {
   const diffMins = Math.floor((new Date().getTime() - new Date(dateStr).getTime()) / 60000)
   if (diffMins < 1) return 'Ahora'
@@ -167,17 +133,14 @@ onMounted(() => fetchDashboardData(activeFilters.value))
     <AdminSidebar />
 
     <main class="admin-main">
-      <AppTopBar placeholder="Buscar..." />
 
       <div class="admin-content">
 
-        <!-- Header -->
         <div class="page-header">
           <h1 class="page-title">Panel de control</h1>
           <p class="page-subtitle">Resumen en tiempo real de tu negocio</p>
         </div>
 
-        <!-- Filters -->
         <DashboardFilters
           :periods="['Hoy','Esta semana','Este mes','Este año']"
           :categories="['Tortas','Cupcakes','Galletas','Bocaditos','Pastelería Salada','Cheesecakes']"
@@ -185,9 +148,7 @@ onMounted(() => fetchDashboardData(activeFilters.value))
           @filter-change="handleFilterChange"
         />
 
-        <!-- Stat cards -->
         <div class="stats-grid">
-
           <div class="stat-card stat-card--light">
             <div class="stat-header">
               <span class="stat-label">VENTAS ({{ currentPeriod.toUpperCase() }})</span>
@@ -231,12 +192,10 @@ onMounted(() => fetchDashboardData(activeFilters.value))
               <span class="progress-label-light">{{ stats.completionRate }}% Terminado</span>
             </div>
           </div>
-
         </div>
 
-        <!-- Bottom grid -->
         <div class="bottom-grid">
-          <InventoryTable :items="inventory" @toggle-availability="toggleProductAvailability" />
+          <InventoryAttention />
           <RealtimeOrders :orders="orders" @download="downloadAllOrdersCSV" />
         </div>
 
@@ -246,6 +205,7 @@ onMounted(() => fetchDashboardData(activeFilters.value))
 </template>
 
 <style scoped>
+/* Tu CSS se mantiene exactamente igual */
 @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&family=Noto+Serif:wght@400;700&family=Lato:wght@300;400;600;700&display=swap');
 
 .material-symbols-outlined {
@@ -262,13 +222,10 @@ onMounted(() => fetchDashboardData(activeFilters.value))
 .admin-main { flex: 1; display: flex; flex-direction: column; overflow: auto; }
 .admin-content { display: flex; flex-direction: column; gap: 1.25rem; padding: 1.25rem 2.75rem; text-align: start; }
 
-/* Header */
 .page-title { font-family: 'Noto Serif', serif; font-size: 1.8rem; font-weight: 700; color: #3f0006; margin: 0; }
 .page-subtitle { font-size: 0.8rem; color: #7c5730; margin: 0; }
 
-/* Stats */
 .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
-
 .stat-card { border-radius: 14px; padding: 1.1rem 1.25rem; display: flex; flex-direction: column; gap: 0.5rem; }
 .stat-card--light { background: #fef9ef; border: 1px solid #e8d5d5; }
 .stat-card--dark  { background: #8b1a2e; border: none; }
@@ -297,7 +254,6 @@ onMounted(() => fetchDashboardData(activeFilters.value))
 .progress-bar-track { flex: 1; height: 5px; background: rgba(255,255,255,0.25); border-radius: 10px; overflow: hidden; }
 .progress-bar-fill { height: 100%; background: rgba(255,255,255,0.85); border-radius: 10px; }
 
-/* Bottom */
 .bottom-grid { display: grid; grid-template-columns: 1fr 280px; gap: 1rem; align-items: start; }
 
 @media (max-width: 1024px) {

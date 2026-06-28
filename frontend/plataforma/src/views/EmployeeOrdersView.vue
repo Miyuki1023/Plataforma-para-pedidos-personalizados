@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import EmployeeSidebar from '../components/organisms/EmployeeSidebar.vue'
-import AppTopBar from '../components/organisms/AppTopBar.vue'
 import OrderStatCard from '../components/molecules/OrderStatCard.vue'
 import MiniCalendar from '../components/molecules/MiniCalendar.vue'
 import OrderRow from '../components/molecules/OrderRow.vue'
@@ -228,7 +227,6 @@ onMounted(() => {
     <EmployeeSidebar />
 
     <div class="orders-content">
-      <AppTopBar />
 
       <main class="orders-main">
 

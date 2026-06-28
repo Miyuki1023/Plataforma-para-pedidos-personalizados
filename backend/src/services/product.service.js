@@ -1,6 +1,8 @@
 const pool = require('../config/db');
 
 exports.getProducts = async () => {
+  // Eliminamos el WHERE disponible = true para que el editor de productos 
+  // pueda listar y re-activar los productos apagados.
   const result = await pool.query(`
     SELECT 
       id,
@@ -14,7 +16,6 @@ exports.getProducts = async () => {
       subtitulo,
       stock
     FROM producto
-    WHERE disponible = true
     ORDER BY id ASC
   `);
 
@@ -69,4 +70,12 @@ exports.getProductOptions = async (productId) => {
     [productId]
   );
   return result.rows;
+};
+
+exports.deleteProduct = async (id) => {
+  const result = await pool.query(
+    `UPDATE producto SET disponible = false WHERE id = $1`,
+    [id]
+  );
+  return result.rowCount > 0;
 };

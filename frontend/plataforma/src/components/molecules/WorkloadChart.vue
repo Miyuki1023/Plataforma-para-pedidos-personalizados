@@ -2,35 +2,20 @@
 import { ref, onMounted, computed } from 'vue'
 import api from '../../lib/api'
 
-const hours = ['06:00','08:00','10:00','12:00','14:00','16:00','18:00']
-const values = ref([0, 0, 0, 0, 0, 0, 0])
+const hours = ['06:00', '08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00', '22:00']
+const values = ref(new Array(hours.length).fill(0))
 
 const fetchWorkload = async () => {
-  const now = new Date()
-  const y = now.getFullYear()
-  const m = String(now.getMonth() + 1).padStart(2, '0')
-  const d = String(now.getDate()).padStart(2, '0')
-  const today = `${y}-${m}-${d}`
-
+  const today = new Date().toISOString().split('T')[0]
   try {
-    // Consultamos los pedidos de hoy para calcular la carga
-    const res = await api.get('/orders', { 
-      params: { fecha_inicio: today, fecha_fin: today } 
-    })
+    const res = await api.get('/orders', { params: { fecha_inicio: today, fecha_fin: today } })
     const orders = res.data?.orders || []
     
-    const counts = [0, 0, 0, 0, 0, 0, 0]
+    const counts = new Array(hours.length).fill(0)
     orders.forEach((order: any) => {
       const hour = new Date(order.fecha_creacion).getHours()
-      
-      // Clasificamos el pedido en el bloque horario correspondiente
-      if (hour >= 6 && hour < 8) counts[0]++
-      else if (hour >= 8 && hour < 10) counts[1]++
-      else if (hour >= 10 && hour < 12) counts[2]++
-      else if (hour >= 12 && hour < 14) counts[3]++
-      else if (hour >= 14 && hour < 16) counts[4]++
-      else if (hour >= 16 && hour < 18) counts[5]++
-      else if (hour >= 18) counts[6]++
+      const index = Math.floor(hour / 2) - 3 
+      if (index >= 0 && index < counts.length) counts[index]++
     })
     values.value = counts
   } catch (err) {
@@ -38,11 +23,10 @@ const fetchWorkload = async () => {
   }
 }
 
-const maxVal = computed(() => Math.max(...values.value, 1))
+const maxVal = computed(() => Math.max(...values.value, 5))
 const activeHour = computed(() => {
   const max = Math.max(...values.value)
-  if (max === 0) return ''
-  return hours[values.value.indexOf(max)]
+  return max > 0 ? hours[values.value.indexOf(max)] : ''
 })
 
 onMounted(fetchWorkload)
@@ -52,24 +36,18 @@ onMounted(fetchWorkload)
   <div class="workload-card">
     <div class="workload-header">
       <h2 class="workload-title">Carga de Trabajo por Hora</h2>
-      <p class="workload-subtitle">Proyección de volumen para anticipar picos de procesamiento.</p>
+      <p class="workload-subtitle">Volumen de pedidos proyectado para optimizar la preparación.</p>
     </div>
 
-    <div class="chart-area">
-      <!-- Barras -->
+    <div class="chart-container">
       <div class="bars-row">
-        <div
-          v-for="(val, i) in values"
-          :key="i"
-          class="bar-col"
-        >
+        <div v-for="(val, i) in values" :key="i" class="bar-col">
           <div class="bar-wrapper">
-            <!-- Figura encima de la barra más alta -->
-            <div v-if="hours[i] === activeHour && values[i] > 0" class="bar-icon">{{ values[i] }}</div>
+            <div v-if="val > 0 && hours[i] === activeHour" class="bar-icon">{{ val }}</div>
             <div
               class="bar"
-              :class="{ 'bar--active': hours[i] === activeHour }"
-              :style="{ height: `${(values[i] / maxVal) * 72}px` }"
+              :class="{ 'bar--active': val > 0 && hours[i] === activeHour }"
+              :style="{ height: `${(val / maxVal) * 100}%` }"
             />
           </div>
           <span class="bar-label" :class="{ 'bar-label--active': hours[i] === activeHour }">
@@ -79,13 +57,9 @@ onMounted(fetchWorkload)
       </div>
     </div>
 
-    <!-- Alerta -->
     <div class="workload-alert">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><circle cx="12" cy="16" r="0.5" fill="#b45309"/></svg>
-      <span v-if="activeHour">
-        <strong>Alerta:</strong> Se detecta un pico de actividad proyectado a las {{ activeHour }}.
-      </span>
-      <span v-else>No se registran pedidos para la proyección de hoy.</span>
+      <span v-if="activeHour"><strong>Pico de actividad:</strong> Se espera mayor volumen a las {{ activeHour }}.</span>
+      <span v-else>No hay actividad registrada para hoy.</span>
     </div>
   </div>
 </template>
@@ -94,105 +68,85 @@ onMounted(fetchWorkload)
 .workload-card {
   background: #EDE8DE;
   border-radius: 24px;
-  padding: 1.4rem 1.5rem;
+  padding: 1.5rem;
   display: flex;
   flex-direction: column;
-  text-align: start;
-  gap: 1rem;
-  height: 100%;
+  width: 100%;
 }
-.workload-title {
-  font-family: 'Noto Serif', sans-serif;
-  font-size: 24px;
-  font-weight: 700;
-  color: #3F0006;
-  margin: 0;
+
+/* Encabezado con espaciado mejorado */
+.workload-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
 }
-.workload-subtitle {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 14px;
-  color: #7C5730;
-  margin: 0.3rem 0 0;
-  line-height: 1.4;
+
+.workload-title { 
+  font-size: 1.5rem; 
+  color: #3F0006; 
+  margin: 0; 
+  font-family: 'Noto Serif', serif;
 }
-.chart-area { flex: 1;
-  padding-top: 1rem;
+
+.workload-subtitle { 
+  font-size: 0.9rem; 
+  color: #7C5730; 
+  margin: 0; 
+  line-height: 1.5;
 }
+
+.chart-container {
+  width: 100%;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+  margin-bottom: 1rem;
+}
+
 .bars-row {
   display: flex;
   align-items: flex-end;
-  justify-content: center;
-  gap: 0;
+  justify-content: space-between;
   height: 140px;
+  min-width: 600px;
+  gap: 1rem;
 }
 
-.bar-col {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.35rem;
-}
+.bar-col { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; flex: 1; }
 
 .bar-wrapper {
   position: relative;
+  width: 100%;
+  height: 100px;
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  height: 100px;
 }
 
 .bar {
-  width: 42px;
+  width: 100%;
+  max-width: 40px;
   background: #d7c8ba;
-  border-radius: 999px 999px 0 0;
-  transition: 0.4s ease;
+  border-radius: 8px 8px 0 0;
+  transition: height 0.6s cubic-bezier(0.17, 0.67, 0.5, 1);
 }
 
-.bar--active {
-  background: #3F0006;
-}
+.bar--active { background: #8b1a2e; }
 
-.bar-label {
-  font-size: 0.75rem;
-  color: #9b7a58;
-  font-weight: 600;
-}
-
-.bar-label--active {
-  color: #5b0008;
-  font-weight: 700;
-}
+.bar-label { font-size: 0.75rem; color: #9b7a58; font-weight: 600; }
+.bar-label--active { color: #8b1a2e; font-weight: 700; }
 
 .bar-icon {
-  position: absolute;
-  top: -22px;
-
-  width: 28px;
-  height: 28px;
-
-  border-radius: 50%;
-  background: #3F0006;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  color: white;
-  font-size: 11px;
-  font-weight: 700;
+  position: absolute; top: -30px;
+  background: #3F0006; color: white;
+  width: 24px; height: 24px;
+  border-radius: 50%; display: flex;
+  align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700;
 }
 
 .workload-alert {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: #ffffff7a;
-  border-radius: 24px;
-  padding: 1rem 0.85rem;
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 0.75rem;
-  color: #92400e;
-  line-height: 1.4;
+  background: #ffffff7a; border-radius: 12px;
+  padding: 1rem; font-size: 0.85rem; color: #92400e;
 }
-.workload-alert strong { font-weight: 700; }
 </style>
