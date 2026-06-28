@@ -73,3 +73,23 @@ exports.getProductOptions = async (req, res) => {
     res.status(500).json({ message: 'Error al obtener opciones', details: error.message });
   }
 };
+
+exports.deleteProduct = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await productService.deleteProduct(id);
+
+    // Si tu servicio retorna falso o nulo cuando el producto no existía
+    if (!result) {
+      return res.status(404).json({ message: 'Producto no encontrado' });
+    }
+
+    res.json({ message: 'Producto eliminado exitosamente' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ 
+      message: 'Error al eliminar el producto', 
+      details: error.message 
+    });
+  }
+};

@@ -70,3 +70,15 @@ exports.getProductOptions = async (productId) => {
   );
   return result.rows;
 };
+
+exports.deleteProduct = async (id) => {
+  // Ponemos disponible = false para "ocultarlo" de la tienda de forma segura
+  const result = await pool.query(
+    `UPDATE producto 
+     SET disponible = false 
+     WHERE id = $1`,
+    [id]
+  );
+  
+  return result.rowCount > 0;
+};
