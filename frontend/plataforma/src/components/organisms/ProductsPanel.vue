@@ -160,6 +160,34 @@ async function handleDeleteProducts() {
   }
 }
 
+// Cambiar disponibilidad del producto (Toggle interactivo)
+async function toggleAvailability(product: Product) {
+  error.value = "";
+  const nuevoEstado = product.disponible === false ? true : false;
+  
+  try {
+    // Mandamos todo el body estructurado como lo espera tu backend en updateProduct
+    await api.put(`/productos/${product.id}`, {
+      nombre: product.nombre,
+      descripcion: product.descripcion,
+      precio: product.precio,
+      categoria: product.categoria,
+      stock: product.stock,
+      imagenUrls: product.imagen_url,
+      disponible: nuevoEstado
+    });
+
+    // Actualización reactiva local
+    const index = products.value.findIndex((p) => p.id === product.id);
+    if (index !== -1) {
+      products.value[index].disponible = nuevoEstado;
+    }
+  } catch (err) {
+    console.error(err);
+    error.value = "Error al actualizar el estado del producto";
+  }
+}
+
 function handleNewSale() {
   router.push("/");
 }
@@ -331,10 +359,10 @@ onMounted(() => {
             <td class="price-cell">{{ p.price }}</td>
             <td style="text-align: center;">
               <button
-                class="toggle toggle--read-only"
+                class="toggle"
                 :class="{ 'toggle--on': p.active }"
-                :disabled="true"
-                title="El estado no puede modificarse desde aquí"
+                @click="toggleAvailability(p)"
+                title="Cambiar disponibilidad"
               >
                 <span class="toggle-thumb" />
               </button>
@@ -783,7 +811,7 @@ onMounted(() => {
   color: #2a1a1a;
 }
 
-/* Toggle solo lectura */
+/* Toggle interactivo */
 .toggle {
   width: 34px;
   height: 19px;
@@ -793,10 +821,7 @@ onMounted(() => {
   position: relative;
   transition: background 0.25s;
   padding: 0;
-}
-.toggle--read-only {
-  cursor: not-allowed;
-  opacity: 0.85;
+  cursor: pointer;
 }
 .toggle--on { background: #8b1a2e; }
 .toggle-thumb {

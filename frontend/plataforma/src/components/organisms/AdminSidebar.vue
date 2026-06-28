@@ -46,10 +46,6 @@ const logout = async () => {
     </nav>
 
     <div class="sidebar-bottom">
-      <button class="btn-new-sale">
-        <span class="material-symbols-outlined" style="font-size:16px">add</span>
-        Nueva venta
-      </button>
 
       <div class="sidebar-user-container">
         <!-- Menú emergente de usuario -->

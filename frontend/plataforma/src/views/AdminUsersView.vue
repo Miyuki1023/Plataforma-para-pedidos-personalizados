@@ -19,6 +19,25 @@ const loading = ref(false)
 const searchQuery = ref('')
 const showModal = ref(false)
 
+// Paginación
+const currentPage = ref(1)
+const itemsPerPage = 10
+
+// Obtener el ID del usuario logueado actualmente desde localStorage o sessionStorage
+// (Cambia 'user' o 'id' según cómo guardes tu sesión en el Login)
+const currentLoggedInUserId = computed(() => {
+  const userString = localStorage.getItem('user') || sessionStorage.getItem('user')
+  if (userString) {
+    try {
+      const parsed = JSON.parse(userString)
+      return parsed.id || parsed.id_usuario || null
+    } catch {
+      return null
+    }
+  }
+  return null
+})
+
 // Formulario para nuevo usuario
 const newUser = ref({
   usuario: '',
@@ -35,8 +54,6 @@ const fetchUsers = async () => {
   loading.value = true
   try {
     const res = await api.get('/admin/users')
-    // Con el nuevo api.ts, 'res' ya es el cuerpo de la respuesta
-    // También nos aseguramos de mapear 'rol' a 'id_rol' si es necesario para la consistencia del frontend
     const rawData = res.users || res || []
     users.value = rawData.map((u: any) => ({
       ...u,
@@ -47,7 +64,7 @@ const fetchUsers = async () => {
     const status = error.response?.status;
     
     if (status === 401) {
-      alert('Error 401: No autorizado. \n\n1. Revisa que BYPASS_AUTH=true esté en el .env del BACKEND.\n2. Reinicia el servidor de Node.js.\n3. Verifica los logs en la terminal del backend.');
+      alert('Error 401: No autorizado. \n\n1. Revisa que BYPASS_AUTH=true esté en el .env del BACKEND.\n2. Reinicia el servidor de Node.js.');
     } else if (status === 403) {
       alert('Error 403: Acceso denegado. Tu usuario no tiene permisos de Administrador.');
     } else {
@@ -58,6 +75,17 @@ const fetchUsers = async () => {
   }
 }
 
+// 1. Estadísticas dinámicas basadas en la lista total
+const stats = computed(() => {
+  return {
+    total: users.value.length,
+    usuarios: users.value.filter(u => u.id_rol === 1).length,
+    trabajadores: users.value.filter(u => u.id_rol === 2).length,
+    admins: users.value.filter(u => u.id_rol === 3).length
+  }
+})
+
+// Filtro por búsqueda
 const filteredUsers = computed(() => {
   return users.value.filter(u => 
     u.usuario.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
@@ -65,7 +93,30 @@ const filteredUsers = computed(() => {
   )
 })
 
+// 2. Lógica de Paginación (10 en 10)
+const totalPages = computed(() => {
+  return Math.ceil(filteredUsers.value.length / itemsPerPage) || 1
+})
+
+const paginatedUsers = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage
+  const end = start + itemsPerPage
+  return filteredUsers.value.slice(start, end)
+})
+
+// Resetear a la página 1 cuando se escribe en el buscador
+const handleSearchInput = (val: string) => {
+  searchQuery.value = val
+  currentPage.value = 1
+}
+
 const toggleUserStatus = async (user: User) => {
+  // 3. Protección: evitar auto-bloqueo
+  if (user.id === currentLoggedInUserId.value) {
+    alert('No puedes desactivar tu propia cuenta por seguridad.')
+    return
+  }
+
   const action = user.activo ? 'deactivate' : 'activate'
   try {
     await api.put(`/admin/users/${user.id}/${action}`)
@@ -78,20 +129,27 @@ const toggleUserStatus = async (user: User) => {
 const handleRoleChange = async (user: User, event: Event) => {
   const newRole = parseInt((event.target as HTMLSelectElement).value)
   
+  // Protección: administrador principal ID 1
   if (user.id === 1) {
     alert('Por seguridad, no se puede cambiar el rol del Administrador principal (ID 1).');
-    fetchUsers(); // Revertir selección en el select
+    fetchUsers();
+    return;
+  }
+
+  // 3. Protección: evitar auto-cambio de rol
+  if (user.id === currentLoggedInUserId.value) {
+    alert('No puedes cambiar tu propio rol. Solicita este cambio a otro Administrador.');
+    fetchUsers();
     return;
   }
 
   try {
     const res = await api.put(`/admin/users/${user.id}/role`, { rol: newRole })
-    // Sincronización optimista del estado local
     user.id_rol = newRole
     console.log('Cambio de rol exitoso:', res.message)
   } catch (error) {
     alert('No se pudo actualizar el rol')
-    fetchUsers() // Revertir UI
+    fetchUsers()
   }
 }
 
@@ -102,7 +160,6 @@ const handleCreateUser = async () => {
   }
   loading.value = true
   try {
-    // Enviamos el payload asegurando que id_rol esté presente según la interfaz User
     await api.post('/auth/admin/register', {
       ...newUser.value,
       rol: newUser.value.id_rol
@@ -129,19 +186,50 @@ onMounted(fetchUsers)
     <AdminSidebar />
     
     <main class="admin-main">
-      <AppTopBar placeholder="Buscar usuarios..." v-model="searchQuery" />
+      <AppTopBar placeholder="Buscar usuarios..." :modelValue="searchQuery" @update:modelValue="handleSearchInput" />
 
       <div class="admin-content">
         <header class="content-header">
           <div>
             <h1 class="page-title">Gestión de Usuarios</h1>
-            <p class="page-subtitle">{{ users.length }} usuarios registrados en el sistema</p>
+            <p class="page-subtitle">Control de accesos y perfiles del sistema</p>
           </div>
           <button class="btn-primary" @click="showModal = true">
             <span class="material-symbols-outlined">person_add</span>
             Nuevo Usuario
           </button>
         </header>
+
+        <section class="stats-grid">
+          <div class="stat-card total">
+            <span class="material-symbols-outlined icon">group</span>
+            <div class="stat-info">
+              <span class="stat-number">{{ stats.total }}</span>
+              <span class="stat-label">Total Usuarios</span>
+            </div>
+          </div>
+          <div class="stat-card client">
+            <span class="material-symbols-outlined icon">person</span>
+            <div class="stat-info">
+              <span class="stat-number">{{ stats.usuarios }}</span>
+              <span class="stat-label">Clientes / Users</span>
+            </div>
+          </div>
+          <div class="stat-card worker">
+            <span class="material-symbols-outlined icon">engineering</span>
+            <div class="stat-info">
+              <span class="stat-number">{{ stats.trabajadores }}</span>
+              <span class="stat-label">Trabajadores</span>
+            </div>
+          </div>
+          <div class="stat-card admin">
+            <span class="material-symbols-outlined icon">shield_person</span>
+            <div class="stat-info">
+              <span class="stat-number">{{ stats.admins }}</span>
+              <span class="stat-label">Administradores</span>
+            </div>
+          </div>
+        </section>
 
         <div class="users-card">
           <table class="user-table">
@@ -155,12 +243,15 @@ onMounted(fetchUsers)
               </tr>
             </thead>
             <tbody>
-              <tr v-for="user in filteredUsers" :key="user.id">
+              <tr v-for="user in paginatedUsers" :key="user.id">
                 <td>
                   <div class="user-info">
                     <img :src="`https://i.pravatar.cc/40?u=${user.email}`" class="avatar" />
                     <div>
-                      <div class="user-name">{{ user.usuario }}</div>
+                      <div class="user-name">
+                        {{ user.usuario }} 
+                        <span v-if="user.id === currentLoggedInUserId" class="me-badge">(Tú)</span>
+                      </div>
                       <div class="user-email">{{ user.email }}</div>
                     </div>
                   </div>
@@ -170,7 +261,7 @@ onMounted(fetchUsers)
                     :value="user.id_rol" 
                     @change="handleRoleChange(user, $event)" 
                     class="role-select"
-                    :disabled="user.id === 1"
+                    :disabled="user.id === 1 || user.id === currentLoggedInUserId"
                   >
                     <option :value="1">Usuario</option>
                     <option :value="2">Trabajador</option>
@@ -187,7 +278,9 @@ onMounted(fetchUsers)
                   <button 
                     @click="toggleUserStatus(user)" 
                     class="action-btn"
-                    :title="user.activo ? 'Desactivar' : 'Activar'"
+                    :class="{ 'action-btn--disabled': user.id === currentLoggedInUserId }"
+                    :disabled="user.id === currentLoggedInUserId"
+                    :title="user.id === currentLoggedInUserId ? 'No puedes desactivarte a ti mismo' : (user.activo ? 'Desactivar' : 'Activar')"
                   >
                     <span class="material-symbols-outlined">
                       {{ user.activo ? 'person_off' : 'person_check' }}
@@ -199,11 +292,32 @@ onMounted(fetchUsers)
           </table>
           
           <div v-if="loading" class="loading-state">Cargando usuarios...</div>
+
+          <div class="pagination-container" v-if="totalPages > 1">
+            <button 
+              class="pagination-btn" 
+              :disabled="currentPage === 1" 
+              @click="currentPage--"
+            >
+              <span class="material-symbols-outlined">chevron_left</span>
+            </button>
+            
+            <span class="pagination-info">
+              Página <strong>{{ currentPage }}</strong> de {{ totalPages }}
+            </span>
+
+            <button 
+              class="pagination-btn" 
+              :disabled="currentPage === totalPages" 
+              @click="currentPage++"
+            >
+              <span class="material-symbols-outlined">chevron_right</span>
+            </button>
+          </div>
         </div>
       </div>
     </main>
 
-    <!-- Modal de Creación -->
     <div v-if="showModal" class="modal-overlay">
       <div class="modal-content">
         <h2 class="modal-title">Registrar Nuevo Usuario</h2>
@@ -269,9 +383,16 @@ onMounted(fetchUsers)
 .admin-main { flex: 1; display: flex; flex-direction: column; overflow: auto; }
 .admin-content { padding: 2rem 2.75rem; }
 
-.content-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; }
+.content-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; }
 .page-title { font-family: 'Noto Serif', serif; font-size: 1.8rem; color: #3f0006; margin: 0; }
 .page-subtitle { font-size: 0.85rem; color: #7c5730; margin: 0.25rem 0 0; }
+
+/* Estilos de las tarjetas superiores */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem; margin-bottom: 2rem; }
+.stat-card { display: flex; align-items: center; gap: 1rem; padding: 1.25rem; background: #fef9ef; border: 1px solid #e8d5d5; border-radius: 14px; }
+.stat-card .icon { font-size: 2rem; color: #8b1a2e; background: #f5ece4; padding: 0.5rem; border-radius: 10px; }
+.stat-number { display: block; font-size: 1.5rem; font-weight: 800; color: #3f0006; line-height: 1.2; }
+.stat-label { font-size: 0.75rem; color: #7c5730; font-weight: 600; }
 
 .btn-primary { background: #8b1a2e; color: #fff; border: none; padding: 0.75rem 1.25rem; border-radius: 12px; display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: 600; font-family: 'Lato', sans-serif; transition: 0.3s; }
 .btn-primary:hover { background: #3f0006; transform: translateY(-2px); }
@@ -283,10 +404,12 @@ onMounted(fetchUsers)
 
 .user-info { display: flex; align-items: center; gap: 0.85rem; }
 .avatar { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-.user-name { font-weight: 700; color: #3f0006; font-size: 0.9rem; }
+.user-name { font-weight: 700; color: #3f0006; font-size: 0.9rem; display: flex; align-items: center; gap: 0.3rem; }
+.me-badge { font-size: 0.75rem; color: #8b1a2e; font-style: italic; font-weight: bold; }
 .user-email { font-size: 0.75rem; color: #9e8080; }
 
 .role-select { padding: 0.3rem 0.5rem; border-radius: 8px; border: 1px solid #e8d5d5; font-size: 0.8rem; background: #fff; color: #3f0006; }
+.role-select:disabled { background: #f5ece4; color: #9e8080; cursor: not-allowed; }
 
 .status-badge { padding: 0.25rem 0.75rem; border-radius: 100px; font-size: 0.7rem; font-weight: 700; }
 .status--active { background: #e6f4ee; color: #2e7d52; }
@@ -294,28 +417,22 @@ onMounted(fetchUsers)
 
 .date-cell { font-size: 0.8rem; color: #574140; }
 .action-btn { background: none; border: none; color: #8b1a2e; cursor: pointer; opacity: 0.7; transition: 0.2s; }
-.action-btn:hover { opacity: 1; transform: scale(1.1); }
+.action-btn:hover:not(:disabled) { opacity: 1; transform: scale(1.1); }
+.action-btn--disabled { color: #ccc; cursor: not-allowed; opacity: 0.5; }
+
+/* Estilos de la Paginación */
+.pagination-container { display: flex; justify-content: center; align-items: center; gap: 1rem; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #e8d5d5; }
+.pagination-btn { background: #fff; border: 1px solid #e8d5d5; border-radius: 8px; padding: 0.35rem; color: #8b1a2e; cursor: pointer; display: flex; align-items: center; transition: 0.2s; }
+.pagination-btn:disabled { color: #ccc; cursor: not-allowed; background: #fafafa; }
+.pagination-btn:not(:disabled):hover { background: #8b1a2e; color: #fff; }
+.pagination-info { font-size: 0.85rem; color: #7c5730; }
 
 /* Modal */
 .modal-overlay { position: fixed; inset: 0; background: rgba(63, 0, 6, 0.4); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1rem; }
-.modal-content { 
-  background: #fff; 
-  padding: 2.5rem; 
-  border-radius: 20px; 
-  width: 95%; 
-  max-width: 550px; 
-  box-shadow: 0 20px 40px rgba(0,0,0,0.2); 
-  max-height: 90vh;
-  overflow-y: auto;
-}
+.modal-content { background: #fff; padding: 2.5rem; border-radius: 20px; width: 95%; max-width: 550px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto; }
 
-@media (min-width: 1024px) {
-  .modal-content { max-width: 650px; }
-}
-
-@media (min-width: 1440px) {
-  .modal-content { max-width: 800px; }
-}
+@media (min-width: 1024px) { .modal-content { max-width: 650px; } }
+@media (min-width: 1440px) { .modal-content { max-width: 800px; } }
 .modal-title { font-family: 'Noto Serif', serif; color: #3f0006; margin-bottom: 1.5rem; }
 
 .form-group { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 1.25rem; }
@@ -332,5 +449,6 @@ onMounted(fetchUsers)
 @media (max-width: 768px) {
   .content-header { flex-direction: column; gap: 1rem; }
   .form-row { grid-template-columns: 1fr; }
+  .stats-grid { grid-template-columns: 1fr 1fr; }
 }
 </style>
