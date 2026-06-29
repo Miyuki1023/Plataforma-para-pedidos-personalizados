@@ -5,7 +5,7 @@ import BaseIcon from '../../atoms/BaseIcon.vue'
 
 import { useRouter } from 'vue-router'
 import { ref, onMounted } from 'vue'
-import { apiService } from '../../../modules/service/api.service'
+import { apiService } from '../../../lib/api.ts'
 
 const router = useRouter()
 

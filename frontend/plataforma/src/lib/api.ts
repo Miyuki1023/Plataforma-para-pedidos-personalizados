@@ -1,31 +1,94 @@
-import axios from 'axios'
+import axios, { type AxiosInstance, type AxiosRequestConfig } from 'axios';
 
-const api = axios.create({
+// ============================================================
+// 1. TIPOS DE ERROR
+// ============================================================
+export class ApiError extends Error {
+  status: number;
+  data: any;
+
+  constructor(message: string, status: number, data?: any) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.data = data;
+  }
+}
+
+// ============================================================
+// 2. INSTANCIA AXIOS
+// ============================================================
+const api: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api',
-})
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
-// Interceptor para adjuntar automáticamente el token JWT de localStorage en cada petición
-api.interceptors.request.use((config) => {
-  // Log para depurar qué está saliendo del frontend
-  if (import.meta.env.DEV) {
-    console.log(`[API] Enviando ${config.method?.toUpperCase()} a ${config.url}`, config.data);
-  }
+// ============================================================
+// 3. INTERCEPTORES
+// ============================================================
 
-  const token = localStorage.getItem('token')
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-  }
-  return config
-}, (error) => {
-  return Promise.reject(error)
-})
+// Request — Inyectar token + logging en dev
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
 
-// Interceptor de respuesta para unificar con el sistema de tu compañera
-// Esto permite que 'await api.get()' devuelva directamente el contenido de los datos
+    if (import.meta.env.DEV) {
+      console.log(`[${config.method?.toUpperCase()}] ${config.url}`, config.data);
+    }
+
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Response — Extraer data + errores consistentes
 api.interceptors.response.use(
   (response) => response.data,
-  (error) => Promise.reject(error)
-)
+  (error) => {
+    if (error.response) {
+      const message = error.response.data?.message || error.response.statusText;
+      return Promise.reject(
+        new ApiError(message, error.response.status, error.response.data)
+      );
+    }
 
-export const apiService = api
-export default api
+    if (error.request) {
+      return Promise.reject(new ApiError('No se pudo conectar con el servidor.', 0));
+    }
+
+    return Promise.reject(new ApiError('Ocurrió un error inesperado.', 0));
+  }
+);
+
+// ============================================================
+// 4. API SERVICE — Interfaz unificada con tipos genéricos
+// ============================================================
+export const apiService = {
+  get<T = any>(url: string, config?: AxiosRequestConfig): Promise<T> {
+    return api.get(url, config) as any;
+  },
+
+  post<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+    return api.post(url, data, config) as any;
+  },
+
+  put<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+    return api.put(url, data, config) as any;
+  },
+
+  patch<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+    return api.patch(url, data, config) as any;
+  },
+
+  delete<T = any>(url: string, config?: AxiosRequestConfig): Promise<T> {
+    return api.delete(url, config) as any;
+  },
+};
+
+export default api;

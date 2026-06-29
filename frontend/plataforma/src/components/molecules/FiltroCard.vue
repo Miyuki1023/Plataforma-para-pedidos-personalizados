@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import BaseCheckbox from '../atoms/BaseCheckbox.vue'
-import { apiService } from '../../modules/service/api.service'
+import { apiService } from '../../lib/api'
 
 const props = defineProps<{
   minPrice: number

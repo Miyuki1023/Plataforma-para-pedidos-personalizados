@@ -1,0 +1,12 @@
+# robots.txt - Vainilla y Miel
+# Pastelería artesanal
+
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /empleado/
+Disallow: /api/
+Disallow: /perfil/
+
+# Sitemap
+Sitemap: https://vainillaymiel.com/sitemap.xml

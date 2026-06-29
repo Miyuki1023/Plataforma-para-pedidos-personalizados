@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { apiService } from '../../../modules/service/api.service'
+import { apiService } from '../../lib/api'
 
 const props = defineProps<{
   isOpen: boolean

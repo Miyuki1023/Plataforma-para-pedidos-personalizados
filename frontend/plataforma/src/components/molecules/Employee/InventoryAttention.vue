@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { apiService } from '../../../modules/service/api.service'
+import { apiService } from '../../../lib/api'
 
 interface Product {
   id: number
