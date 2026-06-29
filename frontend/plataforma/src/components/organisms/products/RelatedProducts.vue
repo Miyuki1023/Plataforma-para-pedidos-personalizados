@@ -108,14 +108,6 @@ const visibleProducts = computed(() =>
   filteredProducts.value.slice(currentIndex.value, currentIndex.value + cardsPerView.value)
 )
 
-const nextSlide = () => {
-  currentIndex.value = Math.min(currentIndex.value + cardsPerView.value, maxIndex.value)
-}
-
-const prevSlide = () => {
-  currentIndex.value = Math.max(currentIndex.value - cardsPerView.value, 0)
-}
-
 /* Dots de paginación */
 const totalPages = computed(() =>
   Math.ceil(filteredProducts.value.length / cardsPerView.value)

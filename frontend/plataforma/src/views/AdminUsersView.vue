@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import api from '../lib/api'
+import { apiService } from '../modules/service/api.service'
 import AdminSidebar from '../components/organisms/AdminSidebar.vue'
 import AppTopBar from '../components/organisms/AppTopBar.vue'
 
@@ -53,7 +53,7 @@ const newUser = ref({
 const fetchUsers = async () => {
   loading.value = true
   try {
-    const res = await api.get('/admin/users')
+    const res = await apiService.get('/admin/users')
     const rawData = res.users || res || []
     users.value = rawData.map((u: any) => ({
       ...u,
@@ -119,7 +119,7 @@ const toggleUserStatus = async (user: User) => {
 
   const action = user.activo ? 'deactivate' : 'activate'
   try {
-    await api.put(`/admin/users/${user.id}/${action}`)
+    await apiService.put(`/admin/users/${user.id}/${action}`)
     user.activo = !user.activo
   } catch (error) {
     alert('Error al cambiar el estado del usuario')
@@ -144,7 +144,7 @@ const handleRoleChange = async (user: User, event: Event) => {
   }
 
   try {
-    const res = await api.put(`/admin/users/${user.id}/role`, { rol: newRole })
+    const res = await apiService.put(`/admin/users/${user.id}/role`, { rol: newRole })
     user.id_rol = newRole
     console.log('Cambio de rol exitoso:', res.message)
   } catch (error) {
@@ -160,7 +160,7 @@ const handleCreateUser = async () => {
   }
   loading.value = true
   try {
-    await api.post('/auth/admin/register', {
+    await apiService.post('/auth/admin/register', {
       ...newUser.value,
       rol: newUser.value.id_rol
     })

@@ -4,7 +4,7 @@ exports.createAddressValidation = [
   // Validación de dirección
   body('direccion')
     .notEmpty().withMessage('Dirección es requerida')
-    .isLength({ min: 10, max: 500 }).withMessage('Dirección debe tener entre 10 y 500 caracteres'),
+    .isLength({ min: 3, max: 500 }).withMessage('Dirección debe tener entre 3 y 500 caracteres'),
 
   // Validación de referencia
   body('referencia')
@@ -31,7 +31,7 @@ exports.updateAddressValidation = [
   // Validación de dirección (opcional)
   body('direccion')
     .optional()
-    .isLength({ min: 10, max: 500 }).withMessage('Dirección debe tener entre 10 y 500 caracteres'),
+    .isLength({ min: 3, max: 500 }).withMessage('Dirección debe tener entre 3 y 500 caracteres'),
 
   // Validación de referencia (opcional)
   body('referencia')

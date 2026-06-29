@@ -19,21 +19,18 @@ const categories = ref<string[]>([])
 
 const fetchCategories = async () => {
   try {
-    const response = await apiService.get('/categorias')
-    
-    // Manejamos si la API devuelve la respuesta de Axios (.data) o el array directo
-    const data = response?.data || response
-    const rawCategories = Array.isArray(data) ? data : (data?.categories || [])
+    const response: any = await apiService.get('/categorias')
 
-    categories.value = [...new Set(
-      rawCategories.map((c: any): string => {
-        // Extraemos el valor de forma segura si es un objeto o un string
-        const val = (typeof c === 'object' && c !== null) 
-          ? (c.nombre || c.categoria) 
-          : c
-        return String(val || '').trim().toUpperCase()
-      })
-    )].filter(Boolean)
+    const data = response?.data ?? response
+    const rawCategories = Array.isArray(data) ? data : (data?.categories || [])
+    const normalizedCategories = rawCategories.map((c: any): string => {
+      const val = (typeof c === 'object' && c !== null)
+        ? (c.nombre || c.categoria)
+        : c
+      return String(val || '').trim().toUpperCase()
+    })
+
+    categories.value = Array.from(new Set<string>(normalizedCategories)).filter(Boolean)
   } catch (err) {
     console.error('Error al cargar categorías:', err)
   }

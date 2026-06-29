@@ -9,17 +9,17 @@ const isModalOpen = ref(false)
 const policies = [
   {
     label: 'Políticas de privacidad',
-    href: '#'
+    href: '/sobre-nosotros'
   },
 
   {
     label: 'Términos y condiciones',
-    href: '#'
+    href: '/sobre-nosotros'
   },
 
   {
     label: 'Preguntas frecuentes',
-    href: '#'
+    href: '/sobre-nosotros'
   },
 ]
 

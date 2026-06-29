@@ -1,7 +1,9 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../../stores/auth'
+import { apiService } from '../../../modules/service/api.service'
 
 import CartProductCard from '../../molecules/CartProductCard.vue'
 import DeliveryCard from '../../molecules/DeliveryCard.vue'
@@ -30,6 +32,7 @@ interface Order {
 }
 
 const authStore = useAuthStore()
+const router = useRouter()
 const cartItems = ref<any[]>([])
 
 /* ── CARGAR CARRITO ── */
@@ -142,14 +145,32 @@ const confirmPay = async () => {
     payError.value = 'Ingresa un código de 4 dígitos válido.'
     return
   }
+  if (authStore.token && !selectedAddressId.value) {
+    payError.value = 'Selecciona una dirección de envío.'
+    return
+  }
 
   payLoading.value = true
   try {
-    await new Promise(r => setTimeout(r, 1400))
+    const payload = {
+      id_direccion: selectedAddressId.value || undefined,
+      observaciones: `Entrega ${selectedDay.value} · ${selectedSchedule.value}`,
+      metodo_pago: payMethod.value === 'yape' ? 'Yape' : 'Plin',
+      codigo_pago: yapeCode.value,
+      horario_entrega: selectedSchedule.value,
+      costo_envio: deliveryPrice,
+      items: cartItems.value.map((item: any) => ({
+        producto_id: item.producto_id || item.id,
+        cantidad: item.quantity || 1,
+        precio_unitario: Number(item.price || item.precio || 0),
+        opciones: item.toppings || item.opciones || null,
+      }))
+    }
 
-    const orderId = `PED-${Date.now()}`
+    const response: any = await apiService.post('/orders', payload)
+    const orderId = response?.order?.id_pedido || `PED-${Date.now()}`
     const order: Order = {
-      id: orderId,
+      id: String(orderId),
       title: `Boleta ${orderId}`,
       client: clientName.value,
       date: new Date().toLocaleString('es-PE', {
@@ -176,8 +197,12 @@ const confirmPay = async () => {
     paySuccess.value = true
     localStorage.removeItem('cartProduct')
     cartItems.value = []
-  } catch {
-    payError.value = 'No se pudo procesar el pago. Intenta de nuevo.'
+
+    window.setTimeout(() => {
+      router.push('/home')
+    }, 1100)
+  } catch (error: any) {
+    payError.value = error?.message || 'No se pudo procesar el pago. Intenta de nuevo.'
   } finally {
     payLoading.value = false
   }

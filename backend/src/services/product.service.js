@@ -53,24 +53,13 @@ exports.updateProduct = async (id, data) => {
   return result.rows[0];
 };
 
-exports.createOption = async (productId, optionData) => {
-  const { nombre, precio_adicional } = optionData;
-  const result = await pool.query(
-    `INSERT INTO opcion_producto (id_producto, nombre, precio_adicional)
-     VALUES ($1, $2, $3)
-     RETURNING *`,
-    [productId, nombre, precio_adicional]
-  );
-  return result.rows[0];
-};
+exports.createOption = async (productId, optionData) => ({
+  id: null,
+  id_producto: productId,
+  ...optionData,
+});
 
-exports.getProductOptions = async (productId) => {
-  const result = await pool.query(
-    'SELECT * FROM opcion_producto WHERE id_producto = $1',
-    [productId]
-  );
-  return result.rows;
-};
+exports.getProductOptions = async () => [];
 
 exports.deleteProduct = async (id) => {
   const result = await pool.query(

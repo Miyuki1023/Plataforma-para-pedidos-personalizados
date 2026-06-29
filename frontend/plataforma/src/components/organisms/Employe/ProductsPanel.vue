@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
-import { useRouter } from "vue-router";
 import ProductCreateModal from "./ProductCreateModal.vue";
 import ProductEditModal from "./ProductEditModal.vue";
 import { apiService } from '../../../modules/service/api.service'
@@ -22,8 +21,6 @@ const selected = ref<number[]>([]);
 const currentPage = ref(1);
 const loading = ref(false);
 const error = ref("");
-
-const router = useRouter();
 
 // Modal states
 const isCreateModalOpen = ref(false);
@@ -158,10 +155,6 @@ async function handleToggleProduct(product: Product) {
   } catch (err: any) {
     error.value = err.message || "Error al actualizar producto";
   }
-}
-
-function handleNewSale() {
-  router.push("/");
 }
 
 function openQuoteModal() {

@@ -1,12 +1,17 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '../stores/auth'
+import { apiService } from '../modules/service/api.service'
 
 import CartProductCard from '../components/molecules/CartProductCard.vue'
 import DeliveryCard from '../components/molecules/DeliveryCard.vue'
 import PurchaseSummary from '../components/molecules/PurchaseSummary.vue'
 import BaseButton from '../components/atoms/BaseButton.vue'
 
+const authStore = useAuthStore()
+const router = useRouter()
 const cartItems = ref<any[]>([])
 
 /* ── CARGAR CARRITO ── */
@@ -104,19 +109,6 @@ const generateReceiptText = (order: Order) => {
   return lines.join('\n')
 }
 
-const downloadReceipt = (order: Order | null) => {
-  if (!order) return
-  const blob = new Blob([order.receipt], { type: 'text/plain;charset=utf-8' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = `Boleta-${order.id}.txt`
-  document.body.appendChild(link)
-  link.click()
-  link.remove()
-  URL.revokeObjectURL(url)
-}
-
 const normalizePayCodeInput = (event: Event) => {
   const input = event.target as HTMLInputElement
   input.value = input.value.replace(/\D/g, '').slice(0, 4)
@@ -140,6 +132,10 @@ const closePayModal = () => {
 
 const confirmPay = async () => {
   payError.value = ''
+  if (!selectedDay.value) {
+    payError.value = 'Selecciona la fecha de entrega antes de pagar.'
+    return
+  }
   if (!payMethod.value) {
     payError.value = 'Selecciona un método de pago.'
     return
@@ -148,17 +144,36 @@ const confirmPay = async () => {
     payError.value = 'Ingresa el código de 4 dígitos.'
     return
   }
+  if (authStore.token && !selectedAddressId.value) {
+    payError.value = 'Selecciona una dirección de envío.'
+    return
+  }
   payLoading.value = true
   try {
-    await new Promise(r => setTimeout(r, 1400))
-    const orderId = `PED-${Date.now()}`
+    const payload = {
+      id_direccion: selectedAddressId.value || undefined,
+      observaciones: `Entrega ${selectedDay.value} · ${selectedSchedule.value}`,
+      metodo_pago: payMethod.value === 'yape' ? 'Yape' : 'Plin',
+      codigo_pago: yapeCode.value,
+      horario_entrega: selectedSchedule.value,
+      costo_envio: deliveryPrice,
+      items: cartItems.value.map((item: any) => ({
+        producto_id: item.producto_id || item.id,
+        cantidad: item.quantity || 1,
+        precio_unitario: Number(item.price || item.precio || 0),
+        opciones: item.toppings || item.opciones || null,
+      }))
+    }
+
+    const response: any = await apiService.post('/orders', payload)
+    const orderId = response?.order?.id_pedido || `PED-${Date.now()}`
     const orderDate = new Date().toLocaleString('es-PE', {
       dateStyle: 'medium',
       timeStyle: 'short'
     })
 
     const order: Order = {
-      id: orderId,
+      id: String(orderId),
       date: orderDate,
       items: [...cartItems.value],
       subtotal: subtotal.value,
@@ -166,7 +181,7 @@ const confirmPay = async () => {
       total: total.value,
       method: payMethod.value,
       code: yapeCode.value,
-      address: selectedDay.value || 'Pendiente',
+      address: `${selectedDay.value} · ${selectedSchedule.value}`,
       receipt: ''
     }
 
@@ -176,8 +191,12 @@ const confirmPay = async () => {
     paySuccess.value = true
     localStorage.removeItem('cartProduct')
     cartItems.value  = []
-  } catch {
-    payError.value = 'No se pudo procesar el pago. Intenta de nuevo.'
+
+    window.setTimeout(() => {
+      router.push('/home')
+    }, 1100)
+  } catch (error: any) {
+    payError.value = error?.message || 'No se pudo procesar el pago. Intenta de nuevo.'
   } finally {
     payLoading.value = false
   }

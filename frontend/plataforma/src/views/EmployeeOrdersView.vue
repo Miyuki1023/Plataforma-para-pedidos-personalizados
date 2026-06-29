@@ -90,7 +90,7 @@ function normalizeOrder(order: any): OrderItem {
   }
 }
 
-const orderDates = computed(() =>
+const orderDates = computed<string[]>(() =>
   orders.value
     .map((order) => {
       const d = new Date(order.fecha_creacion)
@@ -100,7 +100,7 @@ const orderDates = computed(() =>
       const day = String(d.getDate()).padStart(2, '0')
       return `${y}-${m}-${day}`
     })
-    .filter((date) => Boolean(date))
+    .filter((date): date is string => Boolean(date))
 )
 
 function mapOrder(order: OrderItem) {
@@ -133,10 +133,10 @@ async function fetchOrders() {
       params.fecha_fin = selectedDate.value
     }
 
-    const response = await api.get('/orders', { params })
+    const response: any = await api.get('/orders', { params })
     orders.value = Array.isArray(response?.orders)
       ? response.orders.map(normalizeOrder)
-      : []
+      : (Array.isArray(response?.data) ? response.data.map(normalizeOrder) : [])
   } catch (error) {
     console.error(error)
     const err = error as any
@@ -181,8 +181,8 @@ async function handleUpdateStatus(payload: { orderId: string | number; status: O
 async function handleViewDetails(orderId: string | number) {
   try {
     const id = String(orderId).replace('#', '')
-    const response = await api.get(`/orders/${id}`)
-    const orderData = response?.order
+    const response: any = await api.get(`/orders/${id}`)
+    const orderData = response?.order || response?.data
     if (orderData) {
       // Normalizar datos numéricos
       selectedOrderDetails.value = {

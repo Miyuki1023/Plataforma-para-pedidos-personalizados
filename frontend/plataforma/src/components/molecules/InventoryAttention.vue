@@ -17,8 +17,8 @@ const loading = ref(false)
 const fetchProducts = async () => {
   loading.value = true
   try {
-    const res = await api.get('/productos')
-    products.value = res || []
+    const res: any = await api.get('/productos')
+    products.value = Array.isArray(res) ? res : (res?.data || res?.products || [])
   } catch (err) {
     console.error('Error al cargar inventario:', err)
   } finally {

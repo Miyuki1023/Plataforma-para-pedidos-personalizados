@@ -49,11 +49,12 @@ const fetchDashboardData = async (filters: any = {}) => {
     // Eliminamos la petición de productos de aquí, ya que el componente hijo la hará sola
     const [recentOrdersRes, statsOrdersRes] = await Promise.all([
       api.get('/orders', { params: { limit: 5 } }),
-      api.get('/orders', { params: orderParams })  
-    ])
+      api.get('/orders', { params: { ...orderParams, limit: 100 } })
+    ]) as any[]
 
-    // 1. Lista de pedidos recientes
-    const recentRaw = recentOrdersRes?.orders || recentOrdersRes?.data || []
+    const recentRaw = Array.isArray(recentOrdersRes?.orders)
+      ? recentOrdersRes.orders
+      : (Array.isArray(recentOrdersRes?.data) ? recentOrdersRes.data : [])
     orders.value = recentRaw.map((o: any) => ({
       id: `#ORD-${o.id}`,
       amount: `S/ ${Number(o.total).toFixed(2)}`,
@@ -64,7 +65,9 @@ const fetchDashboardData = async (filters: any = {}) => {
     }))
 
     // 2. Cálculos para las Stat Cards
-    const statsOrders = statsOrdersRes?.orders || statsOrdersRes?.data || []
+    const statsOrders = Array.isArray(statsOrdersRes?.orders)
+      ? statsOrdersRes.orders
+      : (Array.isArray(statsOrdersRes?.data) ? statsOrdersRes.data : [])
     const totalValue = statsOrders.reduce((acc: number, o: any) => acc + Number(o.total), 0)
     stats.value = {
       sales: `S/ ${totalValue.toFixed(2)}`,
@@ -91,8 +94,10 @@ const handleFilterChange = (filter: { type: string, value: string }) => {
 
 const downloadAllOrdersCSV = async () => {
   try {
-    const res = await api.get('/orders', { params: { limit: 100 } })
-    const allOrders = res?.orders || res?.data || []
+    const res: any = await api.get('/orders', { params: { limit: 100 } })
+    const allOrders = Array.isArray(res?.orders)
+      ? res.orders
+      : (Array.isArray(res?.data) ? res.data : [])
     
     if (allOrders.length === 0) return
 

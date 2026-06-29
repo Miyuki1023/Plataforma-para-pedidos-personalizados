@@ -88,8 +88,8 @@ async function fetchProducts() {
   loading.value = true;
   error.value = "";
   try {
-    const response = await api.get("/productos");
-    products.value = response || [];
+    const response: any = await api.get("/productos");
+    products.value = Array.isArray(response) ? response : (response?.data || response?.products || []);
   } catch (err) {
     console.error(err);
     error.value = "Error al cargar productos";

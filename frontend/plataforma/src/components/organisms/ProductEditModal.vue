@@ -106,7 +106,7 @@ async function handleSubmit() {
       .map((url: string) => url.trim())
       .filter((url: string) => url.length > 0)
 
-    const response = await api.put(`/admin/productos/${props.product?.id}`, {
+    const response: any = await api.put(`/admin/productos/${props.product?.id}`, {
       nombre: form.value.nombre,
       precio: Number(form.value.precio),
       categoria: form.value.categoria,
@@ -134,7 +134,7 @@ async function handleSubmit() {
       }
     }
 
-    emit('updated', response.product || response)
+    emit('updated', response?.product || response?.data || response)
     emit('close')
   } catch (err: any) {
     error.value = err.response?.data?.message || 'Error al actualizar producto'

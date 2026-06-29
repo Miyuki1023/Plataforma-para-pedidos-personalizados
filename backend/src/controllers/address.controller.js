@@ -12,6 +12,7 @@ exports.getUserAddresses = async (req, res) => {
         id_distrito: addr.id_distrito,
         distrito: addr.distrito,
         nombre_direccion: addr.nombre_direccion,
+        is_default: addr.is_default,
         fecha_creacion: addr.fecha_creacion
       }))
     });
@@ -38,6 +39,7 @@ exports.getAddressById = async (req, res) => {
         id_distrito: address.id_distrito,
         distrito: address.distrito,
         nombre_direccion: address.nombre_direccion,
+        is_default: address.is_default,
         fecha_creacion: address.fecha_creacion
       }
     });
@@ -59,6 +61,7 @@ exports.createAddress = async (req, res) => {
         id_distrito: address.id_distrito,
         distrito: address.distrito,
         nombre_direccion: address.nombre_direccion,
+        is_default: address.is_default,
         fecha_creacion: address.fecha_creacion
       }
     });
@@ -86,6 +89,7 @@ exports.updateAddress = async (req, res) => {
         id_distrito: updatedAddress.id_distrito,
         distrito: updatedAddress.distrito,
         nombre_direccion: updatedAddress.nombre_direccion,
+        is_default: updatedAddress.is_default,
         fecha_creacion: updatedAddress.fecha_creacion
       }
     });

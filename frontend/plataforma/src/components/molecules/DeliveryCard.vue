@@ -168,14 +168,19 @@ const handleSaveAndSelect = async () => {
       reference: newAddr.referencia,
       isDefault: newAddr.is_default
     }
-    if (saveNewAddress.value) {
+
+    await fetchAddresses()
+    const refreshed = addresses.value.find((addr) => addr.id === saved.id)
+    if (refreshed) {
+      selectedAddressId.value = refreshed.id
+      emit('update:addressId', refreshed.id)
+    } else {
       addresses.value.push(saved)
       selectedAddressId.value = saved.id
       emit('update:addressId', saved.id)
-      useNewAddress.value = false
-    } else {
-      emit('update:addressId', null)
     }
+
+    useNewAddress.value = false
     newStreet.value = ''
     newLabel.value = ''
     newReference.value = ''

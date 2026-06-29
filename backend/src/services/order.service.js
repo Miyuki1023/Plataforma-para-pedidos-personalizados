@@ -17,37 +17,92 @@ const calculateTotal = async (items) => {
   return total;
 };
 
+const buildCreateOrderPayload = (data = {}) => ({
+  id_cliente: data.userId,
+  id_direccion: data.id_direccion ?? null,
+  total: Number(data.total ?? 0),
+  estado_pedido: data.estado_pedido || 'pendiente',
+  metodo_pago: data.metodo_pago || null,
+  codigo_pago: data.codigo_pago || null,
+  fecha_entrega: data.fecha_entrega || null,
+  horario_entrega: data.horario_entrega || null,
+  costo_envio: Number(data.costo_envio ?? 0),
+});
+
+const normalizeOrderItems = (items = []) => {
+  if (!Array.isArray(items)) return [];
+
+  return items
+    .filter(Boolean)
+    .map((item) => ({
+      producto_id: Number(item.producto_id ?? item.productoId ?? item.id ?? 0),
+      cantidad: Number(item.cantidad ?? item.quantity ?? 1),
+      precio_unitario: Number(item.precio_unitario ?? item.price ?? item.precio ?? 0),
+      opciones: item.opciones ?? item.options ?? null,
+    }))
+    .filter((item) => item.producto_id > 0);
+};
+
+exports.buildCreateOrderPayload = buildCreateOrderPayload;
+exports.normalizeOrderItems = normalizeOrderItems;
+
 // Crear pedido desde carrito
-exports.createOrderFromCart = async (userId, { id_direccion, direccion_manual, observaciones, id_trabajador_asignado }) => {
+exports.createOrderFromCart = async (userId, payload = {}) => {
   const client = await pool.connect();
-  
+
   try {
     await client.query('BEGIN');
 
-    // Obtener carrito del usuario
+    const {
+      id_direccion,
+      observaciones,
+      id_trabajador_asignado,
+      metodo_pago,
+      codigo_pago,
+      fecha_entrega,
+      horario_entrega,
+      costo_envio,
+    } = payload;
+
+    const requestItems = normalizeOrderItems(payload.items || payload.cartItems);
+
+    let cartId = null;
     const cartResult = await client.query(
       'SELECT id FROM carrito WHERE usuario_id = $1',
       [userId]
     );
 
-    if (cartResult.rows.length === 0) {
-      throw new Error('Carrito no encontrado');
+    if (cartResult.rows.length > 0) {
+      cartId = cartResult.rows[0].id;
+    } else {
+      const createdCart = await client.query(
+        'INSERT INTO carrito (usuario_id) VALUES ($1) RETURNING id',
+        [userId]
+      );
+      cartId = createdCart.rows[0].id;
     }
 
-    const cartId = cartResult.rows[0].id;
+    let items = [];
+    if (requestItems.length > 0) {
+      items = requestItems;
+    } else {
+      const itemsResult = await client.query(
+        `SELECT id, producto_id, cantidad, opciones, precio_unitario
+         FROM carrito_item WHERE carrito_id = $1`,
+        [cartId]
+      );
 
-    // Obtener items del carrito
-    const itemsResult = await client.query(
-      `SELECT id, producto_id, cantidad, opciones, precio_unitario
-       FROM carrito_item WHERE carrito_id = $1`,
-      [cartId]
-    );
+      items = itemsResult.rows.map((item) => ({
+        producto_id: item.producto_id,
+        cantidad: item.cantidad,
+        opciones: item.opciones,
+        precio_unitario: item.precio_unitario,
+      }));
+    }
 
-    if (itemsResult.rows.length === 0) {
+    if (items.length === 0) {
       throw new Error('El carrito está vacío');
     }
-
-    const items = itemsResult.rows;
 
     // Validar dirección
     if (id_direccion) {
@@ -76,49 +131,52 @@ exports.createOrderFromCart = async (userId, { id_direccion, direccion_manual, o
     // Calcular total
     let total = 0;
     for (const item of items) {
-      const subtotal = Number(item.precio_unitario) * item.cantidad;
+      const subtotal = Number(item.precio_unitario || 0) * Number(item.cantidad || 1);
       total += subtotal;
     }
 
-    // Crear pedido
+    const orderPayload = buildCreateOrderPayload({
+      userId,
+      id_direccion,
+      total,
+      estado_pedido: 'pendiente',
+      metodo_pago,
+      codigo_pago,
+      fecha_entrega,
+      horario_entrega,
+      costo_envio,
+    });
+
     const orderResult = await client.query(
       `INSERT INTO pedido (
-        id_cliente, id_direccion, direccion_manual, 
-        total, estado_pedido, id_trabajador_asignado, fecha_creacion
-      ) VALUES ($1, $2, $3, $4, $5, $6, NOW())
-       RETURNING id_pedido, id_cliente, id_direccion, direccion_manual, 
-                 total, estado_pedido, id_trabajador_asignado, fecha_creacion`,
-      [userId, id_direccion || null, direccion_manual || null, total, 'pendiente', id_trabajador_asignado || null]
+        id_cliente, id_direccion, total, estado_pedido, metodo_pago, codigo_pago, fecha_entrega, horario_entrega, costo_envio
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       RETURNING id_pedido, id_cliente, id_direccion, total, estado_pedido, metodo_pago, codigo_pago, fecha_entrega, horario_entrega, costo_envio, fecha_creacion`,
+      [
+        orderPayload.id_cliente,
+        orderPayload.id_direccion,
+        orderPayload.total,
+        orderPayload.estado_pedido,
+        orderPayload.metodo_pago,
+        orderPayload.codigo_pago,
+        orderPayload.fecha_entrega,
+        orderPayload.horario_entrega,
+        orderPayload.costo_envio,
+      ]
     );
 
     const order = orderResult.rows[0];
 
     // Insertar detalles del pedido
     for (const item of items) {
-      const subtotal = Number(item.precio_unitario) * item.cantidad;
-      
-      const detailResult = await client.query(
+      const subtotal = Number(item.precio_unitario || 0) * Number(item.cantidad || 1);
+
+      await client.query(
         `INSERT INTO detalle_pedido (
-          id_pedido, id_producto, cantidad, subtotal, observaciones
-        ) VALUES ($1, $2, $3, $4, $5)
-         RETURNING id`,
-        [order.id_pedido, item.producto_id, item.cantidad, subtotal, observaciones || null]
+          id_pedido, id_producto, cantidad, subtotal, observaciones, precio_unitario
+        ) VALUES ($1, $2, $3, $4, $5, $6)`,
+        [order.id_pedido, item.producto_id, item.cantidad, subtotal, observaciones || null, Number(item.precio_unitario || 0)]
       );
-
-      const detailId = detailResult.rows[0].id;
-
-      // Insertar opciones si existen
-      if (item.opciones && typeof item.opciones === 'object') {
-        const optionIds = Object.values(item.opciones);
-        
-        for (const optionId of optionIds) {
-          await client.query(
-            `INSERT INTO detalle_pedido_opcion (id_detalle, id_opcion)
-             VALUES ($1, $2)`,
-            [detailId, optionId]
-          );
-        }
-      }
     }
 
     // Limpiar carrito
@@ -129,7 +187,6 @@ exports.createOrderFromCart = async (userId, { id_direccion, direccion_manual, o
 
     await client.query('COMMIT');
 
-    // Retornar pedido con detalles
     return await this.getOrderDetails(order.id_pedido);
 
   } catch (error) {
@@ -146,7 +203,8 @@ exports.getUserOrders = async (userId, { estado_pedido = null, page = 1, limit =
   
   let query = `
     SELECT p.id_pedido, p.id_cliente, p.id_direccion, p.fecha_creacion,
-           p.direccion_manual, p.total, p.estado_pedido, p.id_trabajador_asignado,
+           p.total, p.estado_pedido, p.metodo_pago, p.codigo_pago,
+           p.fecha_entrega, p.horario_entrega, p.costo_envio,
            u.usuario AS cliente_nombre
     FROM pedido p
     JOIN usuario u ON p.id_cliente = u.id
@@ -176,12 +234,11 @@ exports.getAllOrders = async ({ estado_pedido = null, id_cliente = null, page = 
   
   let query = `
     SELECT p.id_pedido, p.id_cliente, p.id_direccion, p.fecha_creacion,
-           p.direccion_manual, p.total, p.estado_pedido, p.id_trabajador_asignado,
-           u.usuario AS cliente_nombre, 
-           t.usuario AS trabajador_nombre
+           p.total, p.estado_pedido, p.metodo_pago, p.codigo_pago,
+           p.fecha_entrega, p.horario_entrega, p.costo_envio,
+           u.usuario AS cliente_nombre
     FROM pedido p
     JOIN usuario u ON p.id_cliente = u.id
-    LEFT JOIN usuario t ON p.id_trabajador_asignado = t.id
     WHERE 1=1
   `;
 
@@ -212,12 +269,11 @@ exports.getAllOrders = async ({ estado_pedido = null, id_cliente = null, page = 
 exports.getOrdersByDateRange = async (startDate, endDate, { estado_pedido = null } = {}) => {
   let query = `
     SELECT p.id_pedido, p.id_cliente, p.id_direccion, p.fecha_creacion,
-           p.direccion_manual, p.total, p.estado_pedido, p.id_trabajador_asignado,
-           u.usuario AS cliente_nombre,
-           t.usuario AS trabajador_nombre
+           p.total, p.estado_pedido, p.metodo_pago, p.codigo_pago,
+           p.fecha_entrega, p.horario_entrega, p.costo_envio,
+           u.usuario AS cliente_nombre
     FROM pedido p
     JOIN usuario u ON p.id_cliente = u.id
-    LEFT JOIN usuario t ON p.id_trabajador_asignado = t.id
     WHERE DATE(p.fecha_creacion) >= $1 AND DATE(p.fecha_creacion) <= $2
   `;
 
@@ -239,12 +295,11 @@ exports.getOrdersByDateRange = async (startDate, endDate, { estado_pedido = null
 exports.searchOrderById = async (orderId) => {
   const result = await pool.query(
     `SELECT p.id_pedido, p.id_cliente, p.id_direccion, p.fecha_creacion,
-            p.direccion_manual, p.total, p.estado_pedido, p.id_trabajador_asignado,
-            u.usuario AS cliente_nombre,
-            t.usuario AS trabajador_nombre
+            p.total, p.estado_pedido, p.metodo_pago, p.codigo_pago,
+            p.fecha_entrega, p.horario_entrega, p.costo_envio,
+            u.usuario AS cliente_nombre
      FROM pedido p
      JOIN usuario u ON p.id_cliente = u.id
-     LEFT JOIN usuario t ON p.id_trabajador_asignado = t.id
      WHERE p.id_pedido = $1`,
     [orderId]
   );
@@ -261,13 +316,12 @@ exports.getOrderDetails = async (orderId) => {
   // Obtener encabezado del pedido
   const orderResult = await pool.query(
     `SELECT p.id_pedido, p.id_cliente, p.id_direccion, p.fecha_creacion,
-            p.direccion_manual, p.total, p.estado_pedido, p.id_trabajador_asignado,
+            p.total, p.estado_pedido, p.metodo_pago, p.codigo_pago,
+            p.fecha_entrega, p.horario_entrega, p.costo_envio,
             u.usuario AS cliente_nombre,
-            t.usuario AS trabajador_nombre,
-            d.id AS direccion_id, d.direccion, d.referencia, d.nombre_direccion
+            d.id AS direccion_id, d.calle AS direccion, d.referencia, d.ciudad AS nombre_direccion
      FROM pedido p
      JOIN usuario u ON p.id_cliente = u.id
-     LEFT JOIN usuario t ON p.id_trabajador_asignado = t.id
      LEFT JOIN direccion d ON p.id_direccion = d.id
      WHERE p.id_pedido = $1`,
     [orderId]
@@ -290,22 +344,10 @@ exports.getOrderDetails = async (orderId) => {
     [orderId]
   );
 
-  // Obtener opciones para cada detalle
-  const details = [];
-  for (const detail of detailsResult.rows) {
-    const optionsResult = await pool.query(
-      `SELECT dpo.id, dpo.id_opcion, op.nombre, op.precio_adicional
-       FROM detalle_pedido_opcion dpo
-       JOIN opcion_producto op ON dpo.id_opcion = op.id
-       WHERE dpo.id_detalle = $1`,
-      [detail.id]
-    );
-
-    details.push({
-      ...detail,
-      opciones: optionsResult.rows
-    });
-  }
+  const details = detailsResult.rows.map((detail) => ({
+    ...detail,
+    opciones: []
+  }));
 
   return {
     ...order,
@@ -332,29 +374,19 @@ exports.updateOrderStatus = async (orderId, nuevoEstado) => {
 
 // Asignar trabajador a pedido
 exports.assignWorkerToOrder = async (orderId, workerId) => {
-  // Validar trabajador
-  const workerCheck = await pool.query(
-    'SELECT id_rol FROM usuario WHERE id = $1 AND (id_rol = 2 OR id_rol = 3)',
-    [workerId]
+  const orderCheck = await pool.query(
+    'SELECT id_pedido FROM pedido WHERE id_pedido = $1',
+    [orderId]
   );
 
-  if (workerCheck.rows.length === 0) {
-    throw new Error('Trabajador no encontrado o rol inválido');
-  }
-
-  const result = await pool.query(
-    `UPDATE pedido 
-     SET id_trabajador_asignado = $1
-     WHERE id_pedido = $2
-     RETURNING id_pedido, id_trabajador_asignado`,
-    [workerId, orderId]
-  );
-
-  if (result.rows.length === 0) {
+  if (orderCheck.rows.length === 0) {
     throw new Error('Pedido no encontrado');
   }
 
-  return result.rows[0];
+  return {
+    id_pedido: orderId,
+    id_trabajador_asignado: null
+  };
 };
 
 // Contar pedidos para paginación

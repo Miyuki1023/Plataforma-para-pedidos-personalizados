@@ -1,9 +1,7 @@
 import axios from 'axios'
 
 const api = axios.create({
-  // Es preferible usar /api para aprovechar el proxy de Vite configurado en vite.config.ts
-  // Esto evita problemas de CORS y discrepancias en las rutas durante el desarrollo.
-  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api',
 })
 
 // Interceptor para adjuntar automáticamente el token JWT de localStorage en cada petición

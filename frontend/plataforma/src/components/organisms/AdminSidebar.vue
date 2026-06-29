@@ -2,6 +2,7 @@
 import { ref } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "../../stores/auth";
+import { apiService } from "../../modules/service/api.service";
 
 const route = useRoute();
 const router = useRouter();
@@ -21,10 +22,12 @@ const toggleUserMenu = () => {
 
 const logout = async () => {
   try {
-    await authStore.logout();
-    router.push("/login");
+    await apiService.post('/auth/logout', {});
   } catch (error) {
-    console.error("Error al cerrar sesión:", error);
+    console.error('Error al cerrar sesión:', error);
+  } finally {
+    authStore.logout();
+    router.replace('/login');
   }
 };
 </script>

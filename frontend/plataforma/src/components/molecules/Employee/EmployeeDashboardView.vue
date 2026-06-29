@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import EmployeeSidebar from '../components/organisms/EmployeeSidebar.vue'
-import AppTopBar from '../components/organisms/AppTopBar.vue'
-import WorkloadChart from '../components/molecules/WorkloadChart.vue'
-import InventoryAttention from '../components/molecules/InventoryAttention.vue'
-import RealTimeOrders from '../components/molecules/RealTimeOrders.vue'
+import EmployeeSidebar from '../../organisms/EmployeeSidebar.vue'
+import AppTopBar from '../../organisms/AppTopBar.vue'
+import WorkloadChart from '../WorkloadChart.vue'
+import InventoryAttention from '../InventoryAttention.vue'
+import RealTimeOrders from '../RealTimeOrders.vue'
 </script>
 
 <template>

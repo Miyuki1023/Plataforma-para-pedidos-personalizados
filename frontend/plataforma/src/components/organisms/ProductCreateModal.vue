@@ -73,12 +73,8 @@ async function handleSubmit() {
       disponible: true // Aseguramos que el nuevo producto nazca como disponible
     }
 
-    // Usamos plural /productos para consistencia con el backend
-    const response = await api.post('/admin/productos', payload)
-
-    // El interceptor de api.ts ya devuelve el cuerpo de la respuesta.
-    // El controlador devuelve { product: { ... } }
-    const createdProduct = response.product || response.data || response
+    const response: any = await api.post('/admin/productos', payload)
+    const createdProduct = response?.product || response?.data || response
 
     // Crear opciones si existen
     const newProductId = createdProduct.id

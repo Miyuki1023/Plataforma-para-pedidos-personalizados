@@ -25,13 +25,6 @@ exports.createOrderValidation = [
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
-
-    // Must have either id_direccion or direccion_manual
-    if (!req.body.id_direccion && !req.body.direccion_manual) {
-      return res.status(400).json({
-        message: 'Debe proporcionar id_direccion o direccion_manual'
-      });
-    }
     next();
   }
 ];

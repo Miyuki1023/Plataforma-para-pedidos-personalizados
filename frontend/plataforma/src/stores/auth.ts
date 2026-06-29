@@ -8,12 +8,13 @@ export const useAuthStore = defineStore('auth', () => {
 
   const login = async (credentials: any) => {
     const data = await apiService.post('/auth/login', credentials);
-    
-    user.value = data.user;
+    const profile = data.user || data;
+
+    user.value = profile;
     token.value = data.token;
-    
+
     localStorage.setItem('token', data.token);
-    localStorage.setItem('user', JSON.stringify(data.user));
+    localStorage.setItem('user', JSON.stringify(profile));
   };
 
   const logout = () => {
@@ -29,17 +30,18 @@ export const useAuthStore = defineStore('auth', () => {
   };
 
   const fetchProfile = async () => {
-    // Coincidir con app.js: app.use('/api/user', userRoutes)
     const data = await apiService.get('/user/profile');
-    user.value = data.user;
-    localStorage.setItem('user', JSON.stringify(data.user));
+    const profile = data.user || data;
+    user.value = profile;
+    localStorage.setItem('user', JSON.stringify(profile));
+    return profile;
   };
 
   const updateProfile = async (updateData: any) => {
-    // Coincidir con app.js: app.use('/api/user', userRoutes)
     const data = await apiService.put('/user/profile', updateData);
-    user.value = data;
-    localStorage.setItem('user', JSON.stringify(data));
+    const profile = data.user || data;
+    user.value = profile;
+    localStorage.setItem('user', JSON.stringify(profile));
     return data;
   };
 

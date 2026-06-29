@@ -69,10 +69,10 @@ export const apiService = {
     });
   },
 
-  put(endpoint: string, body: any) {
+  put(endpoint: string, body?: any) {
     return this.request(endpoint, {
       method: 'PUT',
-      body: JSON.stringify(body),
+      body: body ? JSON.stringify(body) : undefined,
     });
   },
 

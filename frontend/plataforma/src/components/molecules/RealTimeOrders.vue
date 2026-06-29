@@ -16,9 +16,10 @@ const loading = ref(false)
 const fetchOrders = async () => {
   loading.value = true
   try {
-    // Traemos los últimos 10 para tener margen, aunque solo mostremos 3
-    const res = await api.get('/orders', { params: { limit: 10 } })
-    orders.value = res?.orders || []
+    const res: any = await api.get('/orders', { params: { limit: 10 } })
+    orders.value = Array.isArray(res?.orders)
+      ? res.orders
+      : (Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []))
   } catch (err) {
     console.error('Error al cargar pedidos en tiempo real:', err)
   } finally {
