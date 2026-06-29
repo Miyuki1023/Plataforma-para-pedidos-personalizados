@@ -4,7 +4,7 @@ import { useRouter } from "vue-router";
 import ProductCreateModal from "./ProductCreateModal.vue";
 import ProductEditModal from "./ProductEditModal.vue";
 import api from "../../lib/api";
-
+import NewSaleModal from "../molecules/NewSaleModal.vue"
 interface Product {
   id: number;
   nombre: string;
@@ -22,7 +22,7 @@ const selected = ref<number[]>([]);
 const currentPage = ref(1);
 const loading = ref(false);
 const error = ref("");
-
+const isSaleModalOpen = ref(false)
 // Filtro de categorías
 const selectedCategory = ref("");
 
@@ -55,7 +55,9 @@ const allSelected = computed(
     filteredProducts.value.length > 0 &&
     selected.value.length === filteredProducts.value.length
 );
-
+function handleNewSale() {
+  isSaleModalOpen.value = true
+}
 function toggleAll() {
   selected.value = allSelected.value ? [] : filteredProducts.value.map((p) => p.id);
 }
@@ -188,9 +190,6 @@ async function toggleAvailability(product: Product) {
   }
 }
 
-function handleNewSale() {
-  router.push("/");
-}
 
 function handleGenerateCatalog() {
   alert("Generando catálogo PDF con las " + totalItems.value + " creaciones actuales...");
@@ -260,10 +259,12 @@ onMounted(() => {
           <span class="material-symbols-rounded">add</span>
           Nuevo producto
         </button>
-        <button class="btn-secondary" @click="handleNewSale">
-          <span class="material-symbols-rounded">shopping_cart</span>
-          Nueva venta
+        
+         <button class="btn-primary" @click="handleNewSale">
+          <span class="material-symbols-rounded">add</span>
+          Nuevo venta
         </button>
+        
         <button 
           class="btn-secondary"
           :disabled="selected.length !== 1"
@@ -431,7 +432,11 @@ onMounted(() => {
       </div>
     </div>
   </main>
-
+<NewSaleModal
+  :is-open="isSaleModalOpen"
+  @close="isSaleModalOpen = false"
+  @created="handleNewSale"
+/>
   <ProductCreateModal 
     :is-open="isCreateModalOpen"
     @close="isCreateModalOpen = false"

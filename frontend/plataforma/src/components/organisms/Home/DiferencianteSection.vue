@@ -77,7 +77,7 @@ const differentials = [
  
        <div class="diff-image-wrapper">
       <img
-        src="../../../assets/diff_img.png"
+        src="../../../assets/diff_img.webp"
         alt="Torta decorada personalizada"
         class="diff-image"
       />

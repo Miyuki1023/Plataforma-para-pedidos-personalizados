@@ -80,14 +80,14 @@ h3 {
 
 .login-hero {
   flex: 1;
-  background-image: url('./assets/img_login.png');
+  background-image: url('../src/assets/img_login.webp');
   background-size: cover;
   background-position: left;
 }
 
 .register-hero {
   flex: 1;
-  background-image: url('./assets/img_register.png');
+  background-image: url('../src/assets/img_register.webp');
   background-size: cover;
   background-position: left;
 }
@@ -1329,7 +1329,7 @@ h3 {
       rgba(0, 0, 0, 0.10),
       rgba(0, 0, 0, 0.10)
     ),
-    url('./assets/img_herohome.png');  
+    url('./assets/img_herohome.webp');  
   background-size: cover;
   min-height: 630px;
   display: flex;
@@ -2140,7 +2140,7 @@ h3 {
   height: 240px;
 
   background:
-    url('@/assets/fondo.png')
+    url('../src/assets/fondo.webp')
     no-repeat center;
 
   background-size: contain;
@@ -8523,7 +8523,7 @@ h3 {
   transform: translateY(-50%) scale(1.1);
 }
 
-.nav-btn:hover :deep(svg) {
+.nav-btn:hover svg {
   color: white !important;
 }
 

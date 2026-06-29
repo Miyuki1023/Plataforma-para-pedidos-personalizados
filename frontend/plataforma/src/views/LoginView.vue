@@ -3,8 +3,8 @@ import LoginForm from '../components/molecules/LoginForm.vue'
 </script>
 
 <template>
-  <div class="form-page">
-    <div class="login-hero" />
+  <main class="form-page">
+    <div class="login-hero" role="img" aria-label="Imagen decorativa de pastelería" />
 
     <div class="login-panel">
       <div class="login-card">
@@ -15,5 +15,5 @@ import LoginForm from '../components/molecules/LoginForm.vue'
         <LoginForm />
       </div>
     </div>
-  </div>
+  </main>
 </template>

@@ -69,7 +69,7 @@ const saveProfile = async () => {
     const res = await authStore.updateProfile(payload)
 
     // Sincronizar con la respuesta del servidor
-    const updatedUser = res?.user || res?.data || res
+    const updatedUser = res?.user || res
     if (updatedUser) {
       localName.value = updatedUser.usuario || localName.value
       localPhone.value = updatedUser.telefono || localPhone.value

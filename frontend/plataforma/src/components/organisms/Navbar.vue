@@ -96,9 +96,9 @@ onBeforeUnmount(() => {
 
     <!-- MENU -->
     <button
-    
       class="icon-btn"
       @click="toggleMenu"
+      aria-label="Abrir menú de navegación"
     >
       <BaseIcon name="menu" :size="20" />
     </button>
@@ -108,6 +108,7 @@ onBeforeUnmount(() => {
       to="/home" 
       class="navbar-brand" 
       :class="{ 'logo-compact': isSearchOpen }"
+      aria-label="Ir a inicio"
     >Vainilla y miel</RouterLink>
 
     <!-- ACTIONS -->
@@ -133,6 +134,7 @@ onBeforeUnmount(() => {
               type="text"
               placeholder="Buscar..."
               class="search-input"
+              aria-label="Buscar productos"
             />
 
             <!-- RESULTADOS DE BÚSQUEDA -->
@@ -144,7 +146,7 @@ onBeforeUnmount(() => {
                   class="result-item"
                   @click="goToProduct(p)"
                 >
-                  <img :src="p.imagen_url || p.imagen || '/placeholder.png'" class="result-img" />
+                  <img :src="p.imagen_url || p.imagen || '/placeholder.png'" class="result-img" alt="" />
                   <div class="result-info">
                     <span class="result-name">{{ p.nombre || p.name }}</span>
                     <span class="result-price">S/ {{ p.precio || p.price }}</span>
@@ -164,6 +166,7 @@ onBeforeUnmount(() => {
             key="search-button"
             class="icon-btn"
             @click.stop="toggleSearch"
+            aria-label="Abrir búsqueda"
           >
             <BaseIcon name="search" :size="20" />
           </button>
@@ -171,12 +174,12 @@ onBeforeUnmount(() => {
       </div>
 
       <!-- USER -->
-      <RouterLink class="icon-btn" :to="profileLink">
+      <RouterLink class="icon-btn" :to="profileLink" aria-label="Ir a perfil">
         <BaseIcon name="user" :size="20" />
       </RouterLink>
 
       <!-- CART -->
-      <RouterLink class="icon-btn" :to="{ name: 'carrito' }">
+      <RouterLink class="icon-btn" :to="{ name: 'carrito' }" aria-label="Ir al carrito">
         <BaseIcon name="cart" :size="20" />
       </RouterLink>
     </div>
@@ -198,6 +201,7 @@ onBeforeUnmount(() => {
       <button
         class="close-btn"
         @click="toggleMenu"
+        aria-label="Cerrar menú"
       >
         ✕
       </button>

@@ -1,4 +1,3 @@
-<!-- molecules/PurchaseSummary.vue -->
 
 <script setup lang="ts">
 

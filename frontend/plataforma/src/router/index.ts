@@ -101,7 +101,6 @@ const router = createRouter({
       name: 'forgot-password',
       component: ForgotPasswordView
     },
-    { path: '/register', name: 'register', component: RegisterView },
     { path: '/empleado',           name: 'employee-dashboard', component: EmployeeDashboardView },
     { path: '/empleado/ordenes',   name: 'employee-orders',    component: EmployeeOrdersView },
     { path: '/empleado/productos', name: 'employee-products',  component: EmployeeProductsView },
