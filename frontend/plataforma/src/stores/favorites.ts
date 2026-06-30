@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import api from '../lib/api'
+import { apiService } from '../lib/api'
 
 export const useFavoritesStore = defineStore('favorites', () => {
   const favorites = ref<any[]>([])
@@ -10,9 +10,8 @@ export const useFavoritesStore = defineStore('favorites', () => {
   const fetchFavorites = async () => {
     try {
       loading.value = true
-      const data = await api.get('/favorites')
-
-      favorites.value = data?.data ?? data ?? []
+      const data = await apiService.get<any[]>('/favorites')
+      favorites.value = Array.isArray(data) ? data : data ?? []
     } catch (error) {
       console.error('Error fetching favorites:', error)
       favorites.value = []
@@ -25,10 +24,10 @@ export const useFavoritesStore = defineStore('favorites', () => {
   const addFavorite = async (productId: string | number) => {
     if (!productId || productId === 'undefined') return false;
     const cleanId = String(productId).replace('id:', '').trim();
-    if (isFavorite(cleanId)) return true; // Evitar llamada si ya es favorito localmente
+    if (isFavorite(cleanId)) return true;
 
     try {
-      await api.post(`/favorites/${cleanId}`, {})
+      await apiService.post(`/favorites/${cleanId}`, {})
       await fetchFavorites()
       return true
     } catch (error) {
@@ -42,7 +41,7 @@ export const useFavoritesStore = defineStore('favorites', () => {
     if (!productId || productId === 'undefined') return false;
     const cleanId = String(productId).replace('id:', '').trim();
     try {
-      await api.delete(`/favorites/${cleanId}`)
+      await apiService.delete(`/favorites/${cleanId}`)
       await fetchFavorites()
       return true
     } catch (error) {

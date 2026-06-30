@@ -1,14 +1,15 @@
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
+import { ref } from 'vue'
 import EmployeeSidebar    from '../components/organisms/EmployeeSidebar.vue'
 import InventoryAttention   from '../components/molecules/InventoryAttention.vue'
 import RealTimeOrders       from '../components/molecules/RealTimeOrders.vue'
 import WorkloadChart        from '../components/molecules/WorkloadChart.vue'
+import NewSaleModal         from '../components/molecules/NewSaleModal.vue'
 
-const router = useRouter()
+const showNewSale = ref(false)
 
 function handleNewSale() {
-  router.push('/')
+  showNewSale.value = true
 }
 </script>
 
@@ -39,6 +40,12 @@ function handleNewSale() {
         </section>
       </div>
     </main>
+
+    <NewSaleModal
+      :isOpen="showNewSale"
+      @close="showNewSale = false"
+      @created="() => {}"
+    />
   </div>
 </template>
 

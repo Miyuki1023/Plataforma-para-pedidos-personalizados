@@ -3,8 +3,8 @@ import RegisterForm from '../components/molecules/RegisterForm.vue'
 </script>
 
 <template>
-  <div class="form-page">
-    <div class="register-hero" />
+  <main class="form-page">
+    <div class="register-hero" role="img" aria-label="Imagen decorativa de pastelería" />
     <div class="register-panel">
       <div class="register-card">
         <h1 class="form-title">Crea tu cuenta</h1>
@@ -14,6 +14,5 @@ import RegisterForm from '../components/molecules/RegisterForm.vue'
         <RegisterForm />
       </div>
     </div>
-
-  </div>
+  </main>
 </template>

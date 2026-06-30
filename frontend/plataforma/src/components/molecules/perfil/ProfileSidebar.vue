@@ -5,7 +5,7 @@ import { ref, onMounted, watch } from 'vue'
 import BaseInput from '../../atoms/BaseInput.vue'
 import PrimaryButton from '../../atoms/PrimaryButton.vue'
 import { useAuthStore } from '../../../stores/auth'
-import { apiService } from '../../../modules/service/api.service'
+import { apiService } from '../../../lib/api.ts'
 
 interface Address {
   id: number
@@ -69,7 +69,7 @@ const saveProfile = async () => {
     const res = await authStore.updateProfile(payload)
 
     // Sincronizar con la respuesta del servidor
-    const updatedUser = res?.user || res?.data || res
+    const updatedUser = res?.user || res
     if (updatedUser) {
       localName.value = updatedUser.usuario || localName.value
       localPhone.value = updatedUser.telefono || localPhone.value

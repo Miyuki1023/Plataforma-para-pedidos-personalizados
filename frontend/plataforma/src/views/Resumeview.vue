@@ -3,7 +3,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-import { apiService } from '../modules/service/api.service'
+import { apiService } from '../lib/api'
 
 import CartProductCard from '../components/molecules/CartProductCard.vue'
 import DeliveryCard from '../components/molecules/DeliveryCard.vue'

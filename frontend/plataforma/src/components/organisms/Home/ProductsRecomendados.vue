@@ -5,7 +5,7 @@ import { RouterLink } from 'vue-router'
 import ProductCard from '../../molecules/ProductCard.vue'
 import BaseButton from '../../atoms/BaseButton.vue'
 import BaseIcon from '../../atoms/BaseIcon.vue'
-import { apiService } from '../../../modules/service/api.service'
+import { apiService } from '../../../lib/api'
 
 const products = ref<any[]>([])
 const loading = ref(true)

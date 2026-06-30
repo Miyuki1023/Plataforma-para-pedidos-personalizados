@@ -4,7 +4,7 @@ import Navbar from '../components/organisms/Navbar.vue'
 import ProductProfile from '../components/organisms/products/ProductProfile.vue'
 import RelatedProducts from '../components/organisms/products/RelatedProducts.vue'
 import Footer from '../components/organisms/Footer.vue'
-import { apiService } from '../modules/service/api.service'
+import { apiService } from '../lib/api'
 
 const props = defineProps<{
   id: string | number

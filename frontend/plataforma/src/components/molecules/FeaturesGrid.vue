@@ -78,7 +78,7 @@ const features = [
 
 
 
-.feature-item-card:hover :deep(svg) {
+.feature-item-card:hover svg {
   color: white !important;
 }
 

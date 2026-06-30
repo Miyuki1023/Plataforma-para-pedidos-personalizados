@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { apiService } from '../../../modules/service/api.service'
+import { apiService } from '../../lib/api'
 
 const hours = ['06:00','08:00','10:00','12:00','14:00','16:00','18:00']
 const values = ref([0, 0, 0, 0, 0, 0, 0])

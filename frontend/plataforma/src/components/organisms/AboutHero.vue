@@ -4,7 +4,7 @@ import HistoryContent from '../molecules/HistoryContent.vue'
 
 <template>
   <section class="hero-about">
-    <img src="../../assets/image.png" class="hero-image" />
+    <img src="../../assets/image.webp" class="hero-image" />
 
     <HistoryContent />
   </section>

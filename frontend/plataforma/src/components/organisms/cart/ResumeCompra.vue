@@ -3,7 +3,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../../stores/auth'
-import { apiService } from '../../../modules/service/api.service'
+import { apiService } from '../../../lib/api.ts'
 
 import CartProductCard from '../../molecules/CartProductCard.vue'
 import DeliveryCard from '../../molecules/DeliveryCard.vue'
@@ -68,7 +68,7 @@ const deliveryPrice = 10
 const total         = computed(() => subtotal.value + deliveryPrice)
 
 const clientName = computed(() => {
-  return authStore.user?.nombre || authStore.user?.name || 'Invitado'
+  return authStore.user?.usuario || authStore.user?.name || 'Invitado'
 })
 
 const orderHistoryKey = 'orderHistory'
@@ -124,6 +124,7 @@ const closePayModal = () => {
   if (payLoading.value) return
   showPayModal.value = false
 }
+
 
 const normalizePayCodeInput = (event: Event) => {
   const target = event.target as HTMLInputElement

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
-import { apiService } from '../../modules/service/api.service'
+import { apiService } from '../../lib/api.ts'
 import BaseButton from '../atoms/BaseButton.vue'
 import BaseInput from '../atoms/BaseInput.vue'
 

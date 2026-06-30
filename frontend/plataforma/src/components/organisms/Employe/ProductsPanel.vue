@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from "vue";
 import ProductCreateModal from "./ProductCreateModal.vue";
 import ProductEditModal from "./ProductEditModal.vue";
-import { apiService } from '../../../modules/service/api.service'
+import { apiService } from '../../lib/api'
 
 interface Product {
   id: number;

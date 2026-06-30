@@ -11,7 +11,7 @@ import ChallengesList from '../molecules/ChallengesList.vue'
       <ChallengesList />
     </div>
 
-    <img src="../../assets/challenges-section2.png" class="mockup" />
+    <img src="../../assets/challenges-section2.webp" class="mockup" />
   </section>
 </template>
 

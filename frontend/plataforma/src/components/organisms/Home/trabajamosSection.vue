@@ -11,7 +11,7 @@ const router = useRouter()
   <div class="about-image">
 
     <img
-      src="../../../assets/about_img.png"
+      src="../../../assets/about_img.webp"
       alt="Así trabajamos"
     />
 
