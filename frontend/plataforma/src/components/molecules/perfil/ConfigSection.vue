@@ -166,7 +166,7 @@ const handleLogout = async () => {
   try {
     await apiService.post('/auth/logout', {})
     await authStore.logout()
-    router.push('/') // Redirigir al inicio después de cerrar sesión
+    router.push('/home') // Redirigir al inicio después de cerrar sesión
   } catch (err) {
     console.error('Error al cerrar sesión:', err)
     authStore.logout()

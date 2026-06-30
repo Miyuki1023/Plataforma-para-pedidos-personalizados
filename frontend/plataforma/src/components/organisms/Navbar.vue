@@ -4,9 +4,11 @@ import { RouterLink, useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import { apiService } from '../../lib/api'
 
+import { useCartStore } from '../../stores/cart'
 import BaseIcon from '../atoms/BaseIcon.vue'
 
 const authStore = useAuthStore()
+const cartStore = useCartStore()
 const router = useRouter()
 const isMenuOpen = ref(false)
 const isSearchOpen = ref(false)
@@ -24,18 +26,14 @@ const closeMenu = () => {
 
 const searchQuery = ref('')
 const allProducts = ref<any[]>([])
-const searchLoading = ref(false)
 
 const fetchProducts = async () => {
   if (allProducts.value.length > 0) return
-  searchLoading.value = true
   try {
     const data = await apiService.get('/productos')
     allProducts.value = Array.isArray(data) ? data : (data.products || [])
   } catch (err) {
     console.error('Error fetching search products:', err)
-  } finally {
-    searchLoading.value = false
   }
 }
 
@@ -109,6 +107,7 @@ onBeforeUnmount(() => {
       class="navbar-brand" 
       :class="{ 'logo-compact': isSearchOpen }"
       aria-label="Ir a inicio"
+      style="padding: 0.5rem 0;"
     >Vainilla y miel</RouterLink>
 
     <!-- ACTIONS -->
@@ -179,8 +178,11 @@ onBeforeUnmount(() => {
       </RouterLink>
 
       <!-- CART -->
-      <RouterLink class="icon-btn" :to="{ name: 'carrito' }" aria-label="Ir al carrito">
+      <RouterLink class="icon-btn cart-btn" :to="{ name: 'carrito' }" aria-label="Ir al carrito">
         <BaseIcon name="cart" :size="20" />
+        <span v-if="cartStore.totalItems > 0" class="cart-badge animate-bounceIn">
+          {{ cartStore.totalItems > 99 ? '99+' : cartStore.totalItems }}
+        </span>
       </RouterLink>
     </div>
   </header>
@@ -251,6 +253,28 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+.cart-btn {
+  position: relative;
+}
+.cart-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  background: var(--primary);
+  color: #fff;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  box-shadow: 0 2px 6px rgba(139,26,46,0.3);
+  pointer-events: none;
+}
+
 .search-wrapper {
   position: relative;
 }

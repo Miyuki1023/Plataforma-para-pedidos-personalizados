@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { useCartStore } from '../../../stores/cart'
 import BaseButton from '../../atoms/BaseButton.vue'
 import BaseInput from '../../atoms/BaseInput.vue'
 import FavoriteIcon from '../../atoms/FavoriteIcon.vue'
@@ -10,11 +11,25 @@ const props = defineProps<{
 }>()
 
 const router = useRouter()
+const cartStore = useCartStore()
+
+/* ─── STOCK ─────────────────────────────────────────────── */
+const stock = computed(() => props.product?.stock || props.product?.cantidad || 10)
+const stockStatus = computed(() => {
+  if (stock.value > 5) return { label: 'Disponible', class: 'stock--available', icon: '✅' }
+  if (stock.value > 0) return { label: 'Bajo stock', class: 'stock--low', icon: '⚠️' }
+  return { label: 'Se prepara bajo pedido', class: 'stock--order', icon: '🔄' }
+})
+const preparationTime = computed(() => {
+  if (stock.value >= quantity.value) return '24 horas'
+  return '48 - 72 horas'
+})
+const deliveryTime = computed(() => '2 - 5 días hábiles')
 
 /* ─── CARRITO ─────────────────────────────────────────────── */
-const goToProduct = () => {
+const goToCart = () => {
   const cartProduct = {
-    id: props.product.id,
+    id: props.product.id || Date.now(),
     image: props.product.image,
     name: props.product.name,
     description: props.product.description,
@@ -26,9 +41,14 @@ const goToProduct = () => {
     ].filter(Boolean),
     message: message.value,
     quantity: quantity.value,
-    price: totalPrice.value
+    price: totalPrice.value,
+    unitPrice: selectedSizePrice.value + toppingsPrice.value,
+    stock: stock.value,
+    preparationTime: preparationTime.value,
+    customizations: hasAnyTopping.value ? 'Personalizado' : '',
+    personalized: hasAnyTopping.value
   }
-  localStorage.setItem('cartProduct', JSON.stringify(cartProduct))
+  cartStore.addItem(cartProduct)
   router.push({ name: 'carrito' })
 }
 
@@ -42,7 +62,7 @@ const activeImage = ref(props.product?.image)
 watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
 
 /* ─── TAMAÑO ──────────────────────────────────────────────── */
-const selectedSize = ref('Mediano') // default al más popular
+const selectedSize = ref('Mediano')
 const sizes = [
   { label: 'Pequeño', detail: '12 cm', price: 60 },
   { label: 'Mediano', detail: '16 cm', price: 80, popular: true },
@@ -54,16 +74,6 @@ const ingredient = ref('')
 const message    = ref('')
 
 /* ─── TOPPINGS DINÁMICOS ──────────────────────────────────── */
-/*
-  Cada topping es { id, value }.
-  Cuando el usuario elige en el ÚLTIMO slot → se añade uno nuevo vacío.
-  Si el nuevo total superaría MAX_TOPPINGS, no se añade.
-  Se puede eliminar cualquier slot.
-
-  Modal de selección grande:
-    - Al hacer clic en el botón "+" que aparece junto al slot vacío se abre
-      un modal que muestra todas las opciones como chips grandes.
-*/
 const MAX_TOPPINGS = 5
 
 type ToppingSlot = { id: number; value: string }
@@ -102,7 +112,6 @@ const selectFromModal = (value: string) => {
 
   arr[idx].value = value
 
-  // Si era el último slot y no llegamos al máximo → nuevo slot vacío
   if (idx === arr.length - 1 && arr.length < MAX_TOPPINGS) {
     const isFruit = modalTarget.value.options === fruitOptions
     const newId = isFruit ? nextFruitId++ : nextCreamId++
@@ -117,7 +126,6 @@ const removeTopping = (array: ToppingSlot[], id: number) => {
   if (idx !== -1) {
     array.splice(idx, 1)
   }
-  // Siempre asegurar que haya al menos un slot vacío al final para agregar
   if (array.length === 0 || array[array.length - 1].value !== '') {
     const isFruit = array === fruitToppings.value
     const newId = isFruit ? nextFruitId++ : nextCreamId++
@@ -129,6 +137,17 @@ const removeTopping = (array: ToppingSlot[], id: number) => {
 const quantity = ref(1)
 const increaseQty = () => quantity.value++
 const decreaseQty = () => { if (quantity.value > 1) quantity.value-- }
+
+/* ─── STOCK OVERFLOW MESSAGE ─────────────────────────────── */
+const stockOverflow = computed(() => {
+  if (quantity.value <= stock.value) return null
+  const extra = quantity.value - stock.value
+  return {
+    available: stock.value,
+    extra,
+    message: `Tenemos **${stock.value} unidades** listas para entrega inmediata. Las **${extra} restantes** serán preparadas especialmente para ti y podrían requerir un poco más de tiempo.`
+  }
+})
 
 /* ─── PRECIO ──────────────────────────────────────────────── */
 const selectedSizePrice = computed(() =>
@@ -153,7 +172,6 @@ const hasAnyTopping = computed(() =>
   creamToppings.value.some(t => t.value)
 )
 
-// Opciones ya usadas (para deshabilitar duplicados en modal)
 const usedOptions = computed(() => {
   if (!modalTarget.value) return new Set<string>()
   return new Set(
@@ -162,6 +180,13 @@ const usedOptions = computed(() => {
       .map(t => t.value)
   )
 })
+
+const addedToCart = ref(false)
+const addToCart = () => {
+  addedToCart.value = true
+  goToCart()
+  setTimeout(() => { addedToCart.value = false }, 2000)
+}
 </script>
 
 <template>
@@ -176,7 +201,6 @@ const usedOptions = computed(() => {
 
         <FavoriteIcon class="profile-fav" />
 
-        <!-- Zoom hint -->
         <div class="image-hint">Toca para zoom</div>
       </div>
 
@@ -204,16 +228,24 @@ const usedOptions = computed(() => {
           <div class="profile-meta">
             <span class="meta-chip">⭐ 4.9</span>
             <span class="meta-chip">📦 +120 pedidos</span>
-            <span class="meta-chip">🚚 Entrega hoy</span>
+            <span class="meta-chip">🚚 {{ deliveryTime }}</span>
           </div>
         </div>
 
         <h1 class="profile-title">{{ props.product.name }}</h1>
         <p class="profile-description">{{ props.product.description }}</p>
 
-        <div class="stock-alert">
-          <span class="stock-dot" />
-          Solo quedan <strong>4</strong> disponibles
+        <!-- Stock status -->
+        <div class="stock-info" :class="stockStatus.class">
+          <span class="stock-icon">{{ stockStatus.icon }}</span>
+          <span class="stock-label">{{ stockStatus.label }}</span>
+          <span class="stock-count" v-if="stock > 0">({{ stock }} disponibles)</span>
+        </div>
+
+        <!-- Preparation time -->
+        <div class="time-info">
+          <span>⏱️ Preparación: <strong>{{ preparationTime }}</strong></span>
+          <span>📬 Entrega: <strong>{{ deliveryTime }}</strong></span>
         </div>
       </div>
 
@@ -262,7 +294,6 @@ const usedOptions = computed(() => {
           </div>
 
           <div class="topping-chips-row">
-            <!-- Chips de frutas ya seleccionadas -->
             <div
               v-for="topping in fruitToppings.filter(t => t.value)"
               :key="topping.id"
@@ -276,7 +307,6 @@ const usedOptions = computed(() => {
               >×</button>
             </div>
 
-            <!-- Botón "+" para agregar (si no llegamos al máximo) -->
             <button
               v-if="fruitToppings.filter(t => t.value).length < MAX_TOPPINGS"
               class="topping-add-btn"
@@ -340,6 +370,12 @@ const usedOptions = computed(() => {
           <span class="qty-number">{{ quantity }}</span>
           <button class="qty-btn" @click="increaseQty">+</button>
         </div>
+
+        <!-- Stock overflow message -->
+        <div v-if="stockOverflow" class="stock-overflow-notice animate-fadeIn">
+          <span class="stock-overflow-icon">ℹ️</span>
+          <p class="stock-overflow-text" v-html="stockOverflow.message"></p>
+        </div>
       </div>
 
       <!-- RESUMEN -->
@@ -366,8 +402,13 @@ const usedOptions = computed(() => {
       <!-- CTA -->
       <div class="profile-footer">
         <p class="footer-note">🔒 Pago seguro · Entrega garantizada</p>
-        <BaseButton class="profile-button" @click="goToProduct">
-          🛒 Agregar al carrito
+        <BaseButton
+          class="profile-button"
+          :class="{ 'btn-added': addedToCart }"
+          @click="addToCart"
+        >
+          <span v-if="!addedToCart">🛒 Agregar al carrito</span>
+          <span v-else>✅ ¡Agregado!</span>
         </BaseButton>
       </div>
     </div><!-- /profile-content -->
@@ -408,10 +449,6 @@ const usedOptions = computed(() => {
   </Teleport>
 </template>
 <style scoped>
-
-/* ───────────────────────────────────────────────────────────
-   LAYOUT
-─────────────────────────────────────────────────────────── */
 .product-profile {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -430,9 +467,6 @@ const usedOptions = computed(() => {
   }
 }
 
-/* ───────────────────────────────────────────────────────────
-   GALERÍA
-─────────────────────────────────────────────────────────── */
 .profile-gallery {
   position: sticky;
   top: 100px;
@@ -443,7 +477,7 @@ const usedOptions = computed(() => {
   position: relative;
   border-radius: 24px;
   overflow: hidden;
-  background: var(--color-bg-soft, #fff5f9);
+  background: var(--soft-bg);
   aspect-ratio: 1;
 }
 
@@ -462,16 +496,12 @@ const usedOptions = computed(() => {
   position: absolute;
   top: 16px;
   left: 16px;
-
-  background: var(--primary, #c05080);
+  background: var(--primary);
   color: white;
-
   font-size: 0.75rem;
   font-weight: 700;
-
   padding: 4px 12px;
   border-radius: 20px;
-
   letter-spacing: 0.05em;
 }
 
@@ -485,19 +515,13 @@ const usedOptions = computed(() => {
   position: absolute;
   bottom: 12px;
   left: 50%;
-
   transform: translateX(-50%);
-
   font-size: 0.7rem;
   color: rgba(255,255,255,0.85);
-
   background: rgba(0,0,0,0.35);
-
   padding: 4px 12px;
   border-radius: 20px;
-
   pointer-events: none;
-
   opacity: 0;
   transition: opacity 0.3s;
 }
@@ -516,21 +540,16 @@ const usedOptions = computed(() => {
   flex: 1;
   border-radius: 12px;
   overflow: hidden;
-
   border: 2px solid transparent;
-
   cursor: pointer;
-
   transition: border-color 0.2s;
-
   background: none;
   padding: 0;
-
   aspect-ratio: 1;
 }
 
 .thumb-btn.active {
-  border-color: var(--primary, #c05080);
+  border-color: var(--primary);
 }
 
 .thumb-image {
@@ -540,37 +559,52 @@ const usedOptions = computed(() => {
   display: block;
 }
 
-/* ───────────────────────────────────────────────────────────
-   CONTENIDO
-─────────────────────────────────────────────────────────── */
 .profile-content {
   display: flex;
   flex-direction: column;
   gap: 28px;
 }
 
-/* ───────────────────────────────────────────────────────────
-   TITULOS
-─────────────────────────────────────────────────────────── */
 .profile-title {
   font-size: 2rem;
   font-weight: 800;
-  color: var(--primary-dark, #4a0028);
+  color: var(--text-h);
   line-height: 1.2;
   margin-bottom: 10px;
 }
 
 .profile-description {
   font-size: 0.95rem;
-  color: var(--text-muted, #666);
+  color: var(--text-soft);
   line-height: 1.6;
 }
 
-/* ───────────────────────────────────────────────────────────
-   SECCIONES
-─────────────────────────────────────────────────────────── */
+/* Stock */
+.stock-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+.stock--available { background: #e8f5e9; color: #2e7d32; }
+.stock--low { background: #fff3e0; color: #e65100; }
+.stock--order { background: #f3e5f5; color: #6a1b9a; }
+.stock-icon { font-size: 1rem; }
+.stock-count { opacity: 0.8; font-weight: 400; }
+
+.time-info {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+  color: var(--text-soft);
+}
+
 .profile-section {
-  border-top: 1px solid #f1e3ea;
+  border-top: 1px solid var(--border);
   padding-top: 24px;
 }
 
@@ -578,24 +612,20 @@ const usedOptions = computed(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-
   margin-bottom: 16px;
 }
 
 .profile-subtitle {
   font-size: 1rem;
   font-weight: 700;
-  color: var(--primary-dark, #4a0028);
+  color: var(--text-h);
 }
 
 .section-note {
   font-size: 0.78rem;
-  color: #999;
+  color: var(--text-muted);
 }
 
-/* ───────────────────────────────────────────────────────────
-   TAMAÑOS
-─────────────────────────────────────────────────────────── */
 .sizes-grid {
   display: flex;
   gap: 12px;
@@ -603,124 +633,76 @@ const usedOptions = computed(() => {
 
 .size-chip {
   flex: 1;
-
   position: relative;
-
   border: 2px solid #eee;
   background: white;
-
   border-radius: 18px;
-
   padding: 16px 10px;
-
   display: flex;
   flex-direction: column;
   align-items: center;
-
   gap: 4px;
-
   cursor: pointer;
-
   transition: all 0.2s ease;
 }
 
 .size-chip:hover {
-  border-color: var(--primary, #c05080);
+  border-color: var(--primary);
 }
 
 .size-chip.active {
-  border-color: var(--primary, #c05080);
+  border-color: var(--primary);
   background: #fff2f7;
 }
 
 .size-chip.popular {
-  border-color: var(--primary, #c05080);
+  border-color: var(--primary);
 }
 
 .popular-badge {
   position: absolute;
   top: -10px;
   left: 50%;
-
   transform: translateX(-50%);
-
-  background: var(--primary, #c05080);
+  background: var(--primary);
   color: white;
-
   font-size: 0.6rem;
   font-weight: 700;
-
   padding: 3px 10px;
-
   border-radius: 999px;
 }
 
-.size-name {
-  font-size: 0.9rem;
-  font-weight: 700;
-}
+.size-name { font-size: 0.9rem; font-weight: 700; }
+.size-detail { font-size: 0.72rem; color: var(--text-muted); }
+.size-price { font-size: 0.9rem; font-weight: 700; color: var(--primary); }
 
-.size-detail {
-  font-size: 0.72rem;
-  color: #999;
-}
-
-.size-price {
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: var(--primary, #c05080);
-}
-
-/* ───────────────────────────────────────────────────────────
-   TOPPINGS
-─────────────────────────────────────────────────────────── */
-.toppings-section {
-  display: flex;
-  flex-direction: column;
-}
+.toppings-section { display: flex; flex-direction: column; }
 
 .topping-group {
   padding: 18px 0;
   border-bottom: 1px dashed #f0dbe6;
 }
 
-.topping-group:last-child {
-  border-bottom: none;
-}
+.topping-group:last-child { border-bottom: none; }
 
 .topping-group-header {
   display: flex;
   align-items: center;
   gap: 10px;
-
   margin-bottom: 14px;
 }
 
-.topping-group-icon {
-  font-size: 1.2rem;
-}
-
-.topping-group-label {
-  font-size: 0.92rem;
-  font-weight: 700;
-  color: var(--primary-dark, #4a0028);
-
-  flex: 1;
-}
-
+.topping-group-icon { font-size: 1.2rem; }
+.topping-group-label { font-size: 0.92rem; font-weight: 700; color: var(--text-h); flex: 1; }
 .topping-group-price {
   font-size: 0.75rem;
-  color: var(--primary, #c05080);
-
+  color: var(--primary);
   background: #fff0f5;
-
   padding: 4px 10px;
   border-radius: 999px;
-
   font-weight: 700;
 }
 
-/* Chips */
 .topping-chips-row {
   display: flex;
   flex-wrap: wrap;
@@ -731,14 +713,10 @@ const usedOptions = computed(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-
-  background: var(--primary, #c05080);
+  background: var(--primary);
   color: white;
-
   padding: 8px 14px;
-
   border-radius: 999px;
-
   font-size: 0.84rem;
   font-weight: 600;
 }
@@ -746,41 +724,28 @@ const usedOptions = computed(() => {
 .topping-chip-remove {
   width: 20px;
   height: 20px;
-
   border: none;
   border-radius: 50%;
-
   background: rgba(255,255,255,0.2);
   color: white;
-
   cursor: pointer;
-
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-/* BOTÓN AGREGAR */
 .topping-add-btn {
   display: flex;
   align-items: center;
   gap: 10px;
-
   padding: 10px 18px;
-
   border-radius: 999px;
-
-  border: 2px dashed var(--primary, #c05080);
-
+  border: 2px dashed var(--primary);
   background: #fff5f9;
-
-  color: var(--primary, #c05080);
-
+  color: var(--primary);
   font-size: 0.85rem;
   font-weight: 700;
-
   cursor: pointer;
-
   transition: all 0.2s ease;
 }
 
@@ -792,42 +757,30 @@ const usedOptions = computed(() => {
 .add-icon {
   width: 24px;
   height: 24px;
-
   border-radius: 50%;
-
-  background: var(--primary, #c05080);
+  background: var(--primary);
   color: white;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   font-size: 1rem;
 }
 
-/* ───────────────────────────────────────────────────────────
-   CANTIDAD
-─────────────────────────────────────────────────────────── */
 .quantity-box {
   display: inline-flex;
   align-items: center;
-
   border: 1px solid #eee;
   border-radius: 14px;
-
   overflow: hidden;
 }
 
 .qty-btn {
   width: 46px;
   height: 46px;
-
   border: none;
   background: white;
-
   font-size: 1.3rem;
-  color: var(--primary, #c05080);
-
+  color: var(--primary);
   cursor: pointer;
 }
 
@@ -837,16 +790,28 @@ const usedOptions = computed(() => {
   font-weight: 700;
 }
 
-/* ───────────────────────────────────────────────────────────
-   RESUMEN
-─────────────────────────────────────────────────────────── */
+.stock-overflow-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 12px 16px;
+  background: #fff8e1;
+  border: 1px solid #ffe082;
+  border-radius: 12px;
+}
+.stock-overflow-icon { font-size: 1.2rem; flex-shrink: 0; }
+.stock-overflow-text {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #795548;
+  line-height: 1.5;
+}
+
 .summary-card {
-  background: #faf5f8;
-
+  background: var(--soft-bg);
   border-radius: 20px;
-
   padding: 20px;
-
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -855,28 +820,17 @@ const usedOptions = computed(() => {
 .summary-row {
   display: flex;
   justify-content: space-between;
-
   font-size: 0.92rem;
 }
 
 .summary-divider {
   height: 1px;
-  background: #ead5df;
+  background: var(--border);
 }
 
-.summary-total {
-  font-size: 1rem;
-  font-weight: 700;
-}
+.summary-total { font-size: 1rem; font-weight: 700; }
+.total-price { color: var(--primary); font-size: 1.4rem; }
 
-.total-price {
-  color: var(--primary, #c05080);
-  font-size: 1.4rem;
-}
-
-/* ───────────────────────────────────────────────────────────
-   FOOTER
-─────────────────────────────────────────────────────────── */
 .profile-footer {
   display: flex;
   flex-direction: column;
@@ -885,79 +839,54 @@ const usedOptions = computed(() => {
 
 .footer-note {
   text-align: center;
-  color: #999;
+  color: var(--text-muted);
   font-size: 0.8rem;
 }
 
-.profile-button {
-  width: 100%;
-}
+.profile-button { width: 100%; }
+.btn-added { background: var(--success) !important; }
 
-/* ───────────────────────────────────────────────────────────
-   MODAL
-─────────────────────────────────────────────────────────── */
 .modal-overlay {
   position: fixed;
   inset: 0;
-
   z-index: 99999;
-
   background: rgba(0,0,0,0.55);
   backdrop-filter: blur(6px);
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   padding: 20px;
 }
 
 .modal-sheet {
   position: relative;
   z-index: 100000;
-
   width: 100%;
   max-width: 500px;
-
   max-height: 85vh;
   overflow-y: auto;
-
   background: white;
-
   border-radius: 28px;
-
   padding: 28px;
-
-  box-shadow:
-    0 20px 60px rgba(0,0,0,0.25);
-
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
   animation: modalUp .25s ease;
 }
 
 @keyframes modalUp {
-  from {
-    transform: translateY(25px);
-    opacity: 0;
-  }
-
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+  from { transform: translateY(25px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
 .modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-
   margin-bottom: 24px;
 }
 
 .modal-title {
   font-size: 1.1rem;
   font-weight: 700;
-
   display: flex;
   align-items: center;
   gap: 10px;
@@ -965,10 +894,8 @@ const usedOptions = computed(() => {
 
 .modal-price {
   font-size: 0.75rem;
-
   background: #fff0f5;
-  color: var(--primary, #c05080);
-
+  color: var(--primary);
   padding: 4px 10px;
   border-radius: 999px;
 }
@@ -976,131 +903,64 @@ const usedOptions = computed(() => {
 .modal-close {
   width: 34px;
   height: 34px;
-
   border: none;
   border-radius: 50%;
-
   background: #f4f4f4;
-
   cursor: pointer;
-
   font-size: 1.2rem;
 }
 
-/* Opciones */
 .modal-options {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
-
   margin-bottom: 20px;
 }
 
 .modal-option {
   border: none;
-
-  background: #fff5f9;
-
-  padding: 18px 16px;
-
-  border-radius: 18px;
-
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
+  background: #faf5f8;
+  border-radius: 16px;
+  padding: 16px;
   cursor: pointer;
-
-  transition: all 0.2s ease;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
 }
 
-.modal-option:hover:not(.disabled) {
-  transform: translateY(-2px);
+.modal-option:hover:not(:disabled) {
   background: #ffe3ef;
+  transform: scale(1.03);
 }
 
 .modal-option.disabled {
-  opacity: 0.45;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
-.option-name {
-  font-weight: 600;
-}
-
+.option-name { font-weight: 700; font-size: 0.9rem; }
+.option-badge { font-size: 0.7rem; color: var(--text-muted); }
 .option-check {
-  width: 28px;
-  height: 28px;
-
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
-
-  background: var(--primary, #c05080);
+  background: var(--primary);
   color: white;
-
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.option-badge {
-  font-size: 0.72rem;
-
-  background: #eee;
-
-  padding: 4px 8px;
-  border-radius: 999px;
+  font-size: 0.8rem;
 }
 
 .modal-cancel {
   width: 100%;
-
-  padding: 14px;
-
+  padding: 12px;
+  border: 1px solid #eee;
   border-radius: 14px;
-
-  border: 1px solid #ddd;
   background: white;
-
   cursor: pointer;
-
   font-weight: 600;
 }
-
-/* ───────────────────────────────────────────────────────────
-   TRANSICIÓN
-─────────────────────────────────────────────────────────── */
-.modal-fade-enter-active,
-.modal-fade-leave-active {
-  transition: opacity .25s;
-}
-
-.modal-fade-enter-from,
-.modal-fade-leave-to {
-  opacity: 0;
-}
-
-/* ───────────────────────────────────────────────────────────
-   RESPONSIVE
-─────────────────────────────────────────────────────────── */
-@media (max-width: 768px) {
-
-  .profile-gallery {
-    position: relative;
-    top: unset;
-  }
-
-  .sizes-grid {
-    flex-direction: column;
-  }
-
-  .modal-options {
-    grid-template-columns: 1fr;
-  }
-
-  .modal-sheet {
-    padding: 22px;
-    border-radius: 24px;
-  }
-}
-
 </style>

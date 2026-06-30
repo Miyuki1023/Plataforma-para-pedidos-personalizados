@@ -98,9 +98,19 @@ async function loadProducts() {
 async function loadUsers() {
   try {
     const res: any = await api.get('/admin/users')
-    users.value = res.users || res || []
+
+    console.log('USERS RESPONSE:', res)
+
+    const data = res.users || res || []
+
+    users.value = data.map((u: any) => ({
+      id: u.id,
+      usuario: u.usuario
+    }))
+
   } catch (err) {
-    console.error('Error cargando usuarios', err)
+    console.error('Error cargando usuarios:', err)
+    error.value = 'No se pudieron cargar los usuarios'
   }
 }
 /* =========================

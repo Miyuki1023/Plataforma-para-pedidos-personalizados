@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { apiService } from '../../lib/api'
+import { apiService } from '../../../lib/api'
 
 interface Product {
   id: number

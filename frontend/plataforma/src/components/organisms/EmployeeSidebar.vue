@@ -190,7 +190,7 @@ const logout = async () => {
 
 .user-role {
   font-size: 0.68rem;
-  color: #9e8080;
+  color: #6b4f4f;
 }
 
 .arrow-icon {

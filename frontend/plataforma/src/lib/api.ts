@@ -86,6 +86,7 @@ export const apiService = {
     return api.patch(url, data, config) as any;
   },
 
+
   delete<T = any>(url: string, config?: AxiosRequestConfig): Promise<T> {
     return api.delete(url, config) as any;
   },

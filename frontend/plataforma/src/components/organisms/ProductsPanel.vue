@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
-import { useRouter } from "vue-router";
 import ProductCreateModal from "./ProductCreateModal.vue";
 import ProductEditModal from "./ProductEditModal.vue";
 import api from "../../lib/api";
@@ -25,8 +24,6 @@ const error = ref("");
 const isSaleModalOpen = ref(false)
 // Filtro de categorías
 const selectedCategory = ref("");
-
-const router = useRouter();
 
 // Modal states
 const isCreateModalOpen = ref(false);

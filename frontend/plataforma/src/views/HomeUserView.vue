@@ -16,6 +16,7 @@ import DiferencianteSection from '../components/organisms/Home/DiferencianteSect
 <template>
   <div class="home">
     <Navbar />
+    <main>
       <Hero />
       <CategoriesSection/>
       <FeatureCard/>
@@ -24,6 +25,7 @@ import DiferencianteSection from '../components/organisms/Home/DiferencianteSect
       <PromosSection />
       <DiferencianteSection />
       <TestimoniosSection />
+    </main>
     <Footer />
   </div>
 </template>

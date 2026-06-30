@@ -121,6 +121,7 @@ const visibleTestimonials = computed(() => {
       <button
         class="testi-arrow"
         @click="prevSlide"
+        aria-label="Testimonio anterior"
       >
         <BaseIcon
           name="arrow-left"
@@ -154,6 +155,7 @@ const visibleTestimonials = computed(() => {
       <button
         class="testi-arrow"
         @click="nextSlide"
+        aria-label="Siguiente testimonio"
       >
         <BaseIcon
           name="arrow-right"
@@ -167,12 +169,13 @@ const visibleTestimonials = computed(() => {
     <!-- DOTS -->
     <div class="testi-dots">
 
-      <span
+      <button
         v-for="(_, i) in testimonials"
         :key="i"
         class="dot"
         :class="{ active: currentIndex === i }"
         @click="currentIndex = i"
+        :aria-label="'Ir al testimonio ' + (i + 1)"
       />
 
     </div>

@@ -1,18 +1,27 @@
 <script setup lang="ts">
-defineProps<{
+import { computed } from 'vue'
+
+const props = defineProps<{
   type?: 'button' | 'submit' | 'reset'
   disabled?: boolean
   variant?: 'primary' | 'secondary' | 'ghost'
+  loading?: boolean
 }>()
+
+const classes = computed(() => [
+  'base-button',
+  props.variant ? `base-button--${props.variant}` : '',
+  { 'base-button--loading': props.loading }
+])
 </script>
 
 <template>
   <button
     :type="type ?? 'button'"
-    :disabled="disabled"
-    class="base-button"
-    :class="variant ? `base-button--${variant}` : ''"
+    :disabled="disabled || loading"
+    :class="classes"
   >
-    <slot />
+    <span v-if="loading" class="spinner" />
+    <span v-else><slot /></span>
   </button>
 </template>

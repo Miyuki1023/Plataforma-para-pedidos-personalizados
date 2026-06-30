@@ -15,15 +15,15 @@ const onChange = (type: string, event: Event) => {
 
 <template>
   <div class="filters">
-    <select class="filter-select" @change="onChange('period', $event)">
+    <select class="filter-select" @change="onChange('period', $event)" aria-label="Seleccionar periodo">
       <option>Selecciona por periodo</option>
       <option v-for="p in (periods ?? ['Hoy','Esta semana','Este mes'])" :key="p">{{ p }}</option>
     </select>
-    <select class="filter-select" @change="onChange('category', $event)">
+    <select class="filter-select" @change="onChange('category', $event)" aria-label="Seleccionar categoría">
       <option>Selecciona la categoría</option>
       <option v-for="c in (categories ?? ['Panadería','Repostería'])" :key="c">{{ c }}</option>
     </select>
-    <select class="filter-select" @change="onChange('year', $event)">
+    <select class="filter-select" @change="onChange('year', $event)" aria-label="Seleccionar año">
       <option>Selecciona los años</option>
       <option v-for="y in (years ?? ['2025','2024'])" :key="y">{{ y }}</option>
     </select>

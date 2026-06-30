@@ -27,9 +27,9 @@ defineProps<{
 </div>
 
     <!-- NAME -->
-    <h4 class="testi-name">
+    <p class="testi-name">
       {{ name }}
-    </h4>
+    </p>
 
     <!-- STARS -->
     <div class="testi-stars">

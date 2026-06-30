@@ -125,7 +125,6 @@ const closePayModal = () => {
   showPayModal.value = false
 }
 
-
 const normalizePayCodeInput = (event: Event) => {
   const target = event.target as HTMLInputElement
   target.value = target.value.replace(/\D/g, '').slice(0, 4)
