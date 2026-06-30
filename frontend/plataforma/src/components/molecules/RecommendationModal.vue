@@ -41,37 +41,68 @@ const categories = [
 ]
 
 const handleSubmit = async () => {
-  if (!formData.value.name || !formData.value.email || !formData.value.message) {
-    alert('Por favor completa todos los campos')
-    return
+  // 1. Limpieza de datos (trimming) para evitar errores por espacios vacíos
+  const data = {
+    name: formData.value.name.trim(),
+    email: formData.value.email.trim(),
+    message: formData.value.message.trim(),
+    category: formData.value.category,
+    rating: formData.value.category === 'recommendation' ? formData.value.rating : 1
+  };
+
+  // 2. Validación de campos obligatorios
+  if (!data.name || !data.email || !data.message) {
+    alert('Por favor, completa todos los campos obligatorios.');
+    return;
   }
 
-  isSubmitting.value = true
+  // 3. Validación de formato de Email (Regex estándar)
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(data.email)) {
+    alert('Por favor, ingresa un correo electrónico válido.');
+    return;
+  }
+
+  // 4. Validación de longitud del mensaje (según los requerimientos de tu servidor)
+  if (data.message.length < 10) {
+    alert('El mensaje es muy corto. Por favor, escribe al menos 10 caracteres.');
+    return;
+  }
+
+  isSubmitting.value = true;
 
   try {
-    await api.post('/reclamaciones', {
-      name: formData.value.name,
-      email: formData.value.email,
-      category: formData.value.category,
-      rating: formData.value.rating,
-      message: formData.value.message
-    })
+    // 5. Envío al servidor
+    await api.post('/reclamaciones', data);
 
-    emit('submit', formData.value)
-    submitted.value = true
+    // 6. Éxito: Reset visual y cierre
+    submitted.value = true;
+    emit('submit', data);
 
     setTimeout(() => {
-      resetForm()
-      emit('close')
-    }, 2000)
+      resetForm();
+      emit('close');
+    }, 2000);
+
   } catch (error: any) {
-    const backendMessage = error?.response?.data?.message || error?.response?.data?.errors || error.message || error
-    console.error('Error al enviar recomendación:', backendMessage)
-    alert(`No se pudo enviar el mensaje. ${backendMessage?.message || backendMessage || ''}`)
+    // 7. Manejo de errores profesional
+    const errorData = error?.response?.data;
+    
+    // Si viene del validador de Express (array de errores)
+    let errorMessage = 'Ocurrió un error inesperado.';
+    if (errorData?.errors && Array.isArray(errorData.errors)) {
+      errorMessage = errorData.errors.map((e: any) => e.msg).join('\n');
+    } else {
+      // Si viene como mensaje plano
+      errorMessage = errorData?.message || error.message || 'Error de conexión con el servidor.';
+    }
+
+    console.error('Error al enviar reclamación:', errorData || error);
+    alert(`No se pudo enviar el mensaje:\n${errorMessage}`);
   } finally {
-    isSubmitting.value = false
+    isSubmitting.value = false;
   }
-}
+};
 
 const resetForm = () => {
   formData.value = {
