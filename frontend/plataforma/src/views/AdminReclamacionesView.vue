@@ -15,12 +15,24 @@ interface Reclamo {
 
 const reclamaciones = ref<Reclamo[]>([]);
 const filtroTipo = ref('Todos');
-const tiposDisponibles = ['Todos', 'Reclamo', 'Sugerencia', 'Felicitación'];
+const tiposDisponibles = [
+  { value: 'Todos', label: 'Todos' },
+  { value: 'recommendation', label: 'Recomendación' },
+  { value: 'feedback', label: 'Sugerencia' },
+  { value: 'complaint', label: 'Queja' }
+];
+
+const labelPorTipo: Record<string, string> = {
+  recommendation: 'Recomendación',
+  feedback: 'Sugerencia',
+  complaint: 'Queja',
+  question: 'Pregunta'
+};
 
 const fetchReclamaciones = async () => {
   try {
     const res = await api.get('/reclamaciones');
-    reclamaciones.value = res.data.data;
+    reclamaciones.value = res.data;
   } catch (error) {
     console.error('Error al cargar reclamaciones:', error);
   }
@@ -33,9 +45,9 @@ const filtrados = computed(() => {
 
 const contadorPorTipo = computed(() => {
   return tiposDisponibles.reduce((acc, tipo) => {
-    acc[tipo] = tipo === 'Todos' 
-      ? reclamaciones.value.length 
-      : reclamaciones.value.filter(r => r.tipo_mensaje === tipo).length;
+    acc[tipo.value] = tipo.value === 'Todos'
+      ? reclamaciones.value.length
+      : reclamaciones.value.filter(r => r.tipo_mensaje === tipo.value).length;
     return acc;
   }, {} as Record<string, number>);
 });
@@ -57,13 +69,13 @@ onMounted(fetchReclamaciones);
         <div class="stats-grid">
           <div 
             v-for="tipo in tiposDisponibles" 
-            :key="tipo" 
+            :key="tipo.value" 
             class="stat-card stat-card--light"
-            :class="{ 'stat-card--active': filtroTipo === tipo }"
-            @click="filtroTipo = tipo"
+            :class="{ 'stat-card--active': filtroTipo === tipo.value }"
+            @click="filtroTipo = tipo.value"
           >
-            <span class="stat-label">{{ tipo.toUpperCase() }}</span>
-            <div class="stat-value">{{ contadorPorTipo[tipo] }}</div>
+            <span class="stat-label">{{ tipo.label.toUpperCase() }}</span>
+            <div class="stat-value">{{ contadorPorTipo[tipo.value] }}</div>
           </div>
         </div>
 
@@ -85,7 +97,7 @@ onMounted(fetchReclamaciones);
                   <div class="cell-name">{{ item.nombre }}</div>
                   <small class="cell-email">{{ item.email }}</small>
                 </td>
-                <td><span :class="['badge', item.tipo_mensaje.toLowerCase()]">{{ item.tipo_mensaje }}</span></td>
+                <td><span :class="['badge', item.tipo_mensaje]">{{ labelPorTipo[item.tipo_mensaje] || item.tipo_mensaje }}</span></td>
                 <td><span class="star-rating">★ {{ item.calificacion }}</span></td>
                 <td class="msg-cell">{{ item.mensaje }}</td>
               </tr>
@@ -130,9 +142,10 @@ onMounted(fetchReclamaciones);
 .cell-email { color: #7c5730; }
 
 .badge { padding: 0.25rem 0.6rem; border-radius: 6px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; }
-.reclamo { background: #fee2e2; color: #991b1b; }
-.sugerencia { background: #dbeafe; color: #1e40af; }
-.felicitación { background: #dcfce7; color: #166534; }
+.recommendation { background: #dcfce7; color: #166534; }
+  .feedback { background: #dbeafe; color: #1e40af; }
+  .complaint { background: #fee2e2; color: #991b1b; }
+  .question { background: #ede9fe; color: #3730a3; }
 
 .star-rating { color: #d97706; font-weight: 700; }
 .msg-cell { max-width: 400px; }

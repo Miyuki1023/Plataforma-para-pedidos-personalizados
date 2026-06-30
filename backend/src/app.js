@@ -10,6 +10,7 @@ const addressRoutes = require('./routes/address.routes');
 const categoryRoutes = require('./routes/categories.routes');
 const orderRoutes = require('./routes/order.routes');
 const favoritesRoutes = require('./routes/favorite.routes');
+const reclamacionesRoutes = require('./routes/reclamaciones.routes');
 const app = express();
 
 app.use(cors());
@@ -26,5 +27,6 @@ app.use('/api/addresses', addressRoutes);
 app.use('/api/categorias', categoryRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/favorites', favoritesRoutes);
+app.use('/api/reclamaciones', reclamacionesRoutes);
 
 module.exports = app;

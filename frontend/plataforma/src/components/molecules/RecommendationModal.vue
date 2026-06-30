@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import BaseIcon from '../atoms/BaseIcon.vue'
+import api from '../../lib/api'
 
 interface Props {
   isOpen: boolean
@@ -36,8 +37,7 @@ const submitted = ref(false)
 const categories = [
   { value: 'recommendation', label: '✨ Recomendación' },
   { value: 'feedback', label: '💬 Sugerencia' },
-  { value: 'complaint', label: '⚠️ Queja' },
-  { value: 'question', label: '❓ Pregunta' }
+  { value: 'complaint', label: '⚠️ Queja' }
 ]
 
 const handleSubmit = async () => {
@@ -48,18 +48,29 @@ const handleSubmit = async () => {
 
   isSubmitting.value = true
 
-  // Simular envío
-  setTimeout(() => {
+  try {
+    await api.post('/reclamaciones', {
+      name: formData.value.name,
+      email: formData.value.email,
+      category: formData.value.category,
+      rating: formData.value.rating,
+      message: formData.value.message
+    })
+
     emit('submit', formData.value)
     submitted.value = true
-    isSubmitting.value = false
 
-    // Reset después de 2 segundos
     setTimeout(() => {
       resetForm()
       emit('close')
     }, 2000)
-  }, 800)
+  } catch (error: any) {
+    const backendMessage = error?.response?.data?.message || error?.response?.data?.errors || error.message || error
+    console.error('Error al enviar recomendación:', backendMessage)
+    alert(`No se pudo enviar el mensaje. ${backendMessage?.message || backendMessage || ''}`)
+  } finally {
+    isSubmitting.value = false
+  }
 }
 
 const resetForm = () => {
@@ -161,7 +172,7 @@ const handleClose = () => {
       </div>
 
       <!-- Rating (solo para recomendaciones) -->
-      <div v-if="formData.category === 'recommendation'" class="form-group">
+        <div v-if="formData.category === 'recommendation'" class="form-group">
         <label for="rating" class="form-label">Calificación</label>
         <div class="rating-container">
           <button
