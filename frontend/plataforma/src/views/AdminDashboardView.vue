@@ -148,8 +148,6 @@ onMounted(() => fetchDashboardData(activeFilters.value))
 
         <DashboardFilters
           :periods="['Hoy','Esta semana','Este mes','Este año']"
-          :categories="['Tortas','Cupcakes','Galletas','Bocaditos','Pastelería Salada','Cheesecakes']"
-          :years="['2025','2024','2023']"
           @filter-change="handleFilterChange"
         />
 
