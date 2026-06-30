@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import BaseIcon from '../atoms/BaseIcon.vue'
+import api from '../../lib/api'
 
 interface Props {
   isOpen: boolean
@@ -36,31 +37,84 @@ const submitted = ref(false)
 const categories = [
   { value: 'recommendation', label: '✨ Recomendación' },
   { value: 'feedback', label: '💬 Sugerencia' },
-  { value: 'complaint', label: '⚠️ Queja' },
-  { value: 'question', label: '❓ Pregunta' }
+  { value: 'complaint', label: '⚠️ Queja' }
 ]
 
+// Almacenamiento local de recomendaciones
+const RECOMMENDATIONS_KEY = 'vainilla-recommendations'
+
+const saveRecommendationLocally = (data: FormData) => {
+  try {
+    const existing = JSON.parse(localStorage.getItem(RECOMMENDATIONS_KEY) || '[]')
+    const newEntry = {
+      id: Date.now(),
+      nombre: data.name,
+      email: data.email,
+      tipo_mensaje: data.category,
+      calificacion: data.rating,
+      mensaje: data.message,
+      fecha_creacion: new Date().toISOString(),
+      estado: 'Pendiente'
+    }
+    existing.push(newEntry)
+    localStorage.setItem(RECOMMENDATIONS_KEY, JSON.stringify(existing))
+  } catch (e) {
+    console.error('Error saving recommendation locally:', e)
+  }
+}
+
 const handleSubmit = async () => {
-  if (!formData.value.name || !formData.value.email || !formData.value.message) {
-    alert('Por favor completa todos los campos')
-    return
+  // 1. Limpieza de datos (trimming) para evitar errores por espacios vacíos
+  const data = {
+    name: formData.value.name.trim(),
+    email: formData.value.email.trim(),
+    message: formData.value.message.trim(),
+    category: formData.value.category,
+    rating: formData.value.category === 'recommendation' ? formData.value.rating : 1
+  };
+
+  // 2. Validación de campos obligatorios
+  if (!data.name || !data.email || !data.message) {
+    alert('Por favor, completa todos los campos obligatorios.');
+    return;
   }
 
-  isSubmitting.value = true
+  // 3. Validación de formato de Email (Regex estándar)
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(data.email)) {
+    alert('Por favor, ingresa un correo electrónico válido.');
+    return;
+  }
 
-  // Simular envío
-  setTimeout(() => {
-    emit('submit', formData.value)
-    submitted.value = true
-    isSubmitting.value = false
+  // 4. Validación de longitud del mensaje (según los requerimientos de tu servidor)
+  if (data.message.length < 10) {
+    alert('El mensaje es muy corto. Por favor, escribe al menos 10 caracteres.');
+    return;
+  }
 
-    // Reset después de 2 segundos
+  isSubmitting.value = true;
+
+  try {
+    // 5. Envío al servidor
+    await api.post('/reclamaciones', data);
+  } catch (error: any) {
+    console.error('Error al enviar al servidor, guardando localmente:', error);
+  } finally {
+    // 6. Guardar localmente SIEMPRE (incluso si el servidor falla)
+    saveRecommendationLocally(data)
+
+    // 7. Éxito: Reset visual y cierre
+    submitted.value = true;
+    emit('submit', data);
+
     setTimeout(() => {
-      resetForm()
-      emit('close')
-    }, 2000)
-  }, 800)
-}
+      resetForm();
+      emit('close');
+    }, 2000);
+
+    isSubmitting.value = false;
+  }
+};
 
 const resetForm = () => {
   formData.value = {
@@ -161,7 +215,7 @@ const handleClose = () => {
       </div>
 
       <!-- Rating (solo para recomendaciones) -->
-      <div v-if="formData.category === 'recommendation'" class="form-group">
+        <div v-if="formData.category === 'recommendation'" class="form-group">
         <label for="rating" class="form-label">Calificación</label>
         <div class="rating-container">
           <button

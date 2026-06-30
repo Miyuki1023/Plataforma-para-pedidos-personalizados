@@ -17,12 +17,43 @@ const form = ref({
   categoria: '',
   stock: '',
   descripcion: '',
-  imagenUrls: '',
   opciones: [] as { nombre: string; precio_adicional: number }[]
 })
 
 const loading = ref(false)
 const error = ref('')
+
+// ─── IMÁGENES ──────────────────────────────────────────────
+const selectedFiles = ref<File[]>([])
+const previewUrls = ref<string[]>([])
+const uploadingImages = ref(false)
+
+const handleFileSelect = (event: Event) => {
+  const input = event.target as HTMLInputElement
+  if (!input.files) return
+
+  const newFiles = Array.from(input.files)
+  selectedFiles.value = [...selectedFiles.value, ...newFiles]
+
+  // Generar previews
+  newFiles.forEach(file => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      if (e.target?.result) {
+        previewUrls.value.push(e.target.result as string)
+      }
+    }
+    reader.readAsDataURL(file)
+  })
+
+  // Reset input
+  input.value = ''
+}
+
+const removeImage = (index: number) => {
+  selectedFiles.value.splice(index, 1)
+  previewUrls.value.splice(index, 1)
+}
 
 function addOption() {
   form.value.opciones.push({ nombre: '', precio_adicional: 0 })
@@ -58,10 +89,26 @@ async function handleSubmit() {
   error.value = ''
 
   try {
-    const imagenUrls = form.value.imagenUrls
-      .split(',')
-      .map((url: string) => url.trim())
-      .filter((url: string) => url.length > 0)
+    let imagenUrls: string[] | null = null
+
+    // Subir imágenes si hay archivos seleccionados
+    if (selectedFiles.value.length > 0) {
+      uploadingImages.value = true
+      const formData = new FormData()
+      selectedFiles.value.forEach(file => {
+        formData.append('images', file)
+      })
+
+      try {
+        const uploadResponse: any = await api.post('/upload', formData)
+        imagenUrls = uploadResponse?.urls || uploadResponse?.data || null
+      } catch {
+        // Si falla la subida, usar las previews como fallback
+        imagenUrls = previewUrls.value.length > 0 ? previewUrls.value : null
+      } finally {
+        uploadingImages.value = false
+      }
+    }
 
     const payload = {
       nombre: form.value.nombre,
@@ -69,8 +116,8 @@ async function handleSubmit() {
       categoria: form.value.categoria,
       stock: Number(form.value.stock),
       descripcion: form.value.descripcion || null,
-      imagenUrls: imagenUrls.length > 0 ? imagenUrls : null,
-      disponible: true // Aseguramos que el nuevo producto nazca como disponible
+      imagenUrls,
+      disponible: true
     }
 
     const response: any = await api.post('/admin/productos', payload)
@@ -104,9 +151,10 @@ function resetForm() {
     categoria: '',
     stock: '',
     descripcion: '',
-    imagenUrls: '',
     opciones: []
   }
+  selectedFiles.value = []
+  previewUrls.value = []
   error.value = ''
 }
 
@@ -121,7 +169,7 @@ function handleBackdropClick(event: MouseEvent) {
   <Teleport to="body">
     <div v-if="isOpen" class="modal-backdrop" @click="handleBackdropClick">
       <div class="modal-content">
-        <button class="modal-close" @click="$emit('close')" type="button">
+        <button class="modal-close" @click="$emit('close')" type="button" aria-label="Cerrar modal">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <line x1="18" y1="6" x2="6" y2="18" />
             <line x1="6" y1="6" x2="18" y2="18" />
@@ -131,7 +179,7 @@ function handleBackdropClick(event: MouseEvent) {
         <div class="modal-body">
           <h2 class="modal-title">Nuevo Producto</h2>
 
-          <div v-if="error" class="error-message">{{ error }}</div>
+          <div v-if="error" class="error-message" role="alert">{{ error }}</div>
 
           <form @submit.prevent="handleSubmit" class="form">
             <!-- Nombre -->
@@ -144,6 +192,7 @@ function handleBackdropClick(event: MouseEvent) {
                 class="form-input"
                 placeholder="Ej: Torta de Vainilla"
                 required
+                aria-required="true"
               />
             </div>
 
@@ -160,6 +209,7 @@ function handleBackdropClick(event: MouseEvent) {
                   class="form-input"
                   placeholder="50.00"
                   required
+                  aria-required="true"
                 />
               </div>
 
@@ -174,6 +224,7 @@ function handleBackdropClick(event: MouseEvent) {
                   class="form-input"
                   placeholder="10"
                   required
+                  aria-required="true"
                 />
               </div>
             </div>
@@ -181,7 +232,7 @@ function handleBackdropClick(event: MouseEvent) {
             <!-- Categoría -->
             <div class="form-group">
               <label for="categoria" class="form-label">Categoría *</label>
-              <select id="categoria" v-model="form.categoria" class="form-input" required>
+              <select id="categoria" v-model="form.categoria" class="form-input" required aria-required="true">
                 <option value="">Selecciona una categoría</option>
                 <option value="Tortas">Tortas</option>
                 <option value="Pastelería">Pastelería</option>
@@ -203,35 +254,58 @@ function handleBackdropClick(event: MouseEvent) {
               />
             </div>
 
-            <!-- URLs de Imagen -->
+            <!-- Subida de Imágenes -->
             <div class="form-group">
-              <label for="imagenUrls" class="form-label">URLs de Imagen (separadas por comas)</label>
-              <input
-                id="imagenUrls"
-                v-model="form.imagenUrls"
-                type="text"
-                class="form-input"
-                placeholder="https://example.com/image1.jpg, https://example.com/image2.jpg"
-              />
+              <label class="form-label">Imágenes del Producto</label>
+              <div class="file-upload-area">
+                <label class="file-upload-btn" for="image-upload">
+                  <span class="material-symbols-rounded">cloud_upload</span>
+                  Seleccionar imágenes
+                </label>
+                <input
+                  id="image-upload"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  class="file-input-hidden"
+                  @change="handleFileSelect"
+                />
+                <p class="file-hint">Formatos: JPG, PNG, WebP</p>
+              </div>
+
+              <!-- Previews -->
+              <div v-if="previewUrls.length > 0" class="preview-grid">
+                <div v-for="(url, index) in previewUrls" :key="index" class="preview-item">
+                  <img :src="url" alt="Vista previa del producto" class="preview-img" />
+                  <button
+                    type="button"
+                    class="preview-remove"
+                    @click="removeImage(index)"
+                    aria-label="Eliminar imagen"
+                  >
+                    <span class="material-symbols-rounded">close</span>
+                  </button>
+                </div>
+              </div>
             </div>
 
             <!-- Opciones de Personalización -->
             <div class="form-group">
               <div class="options-header">
                 <label class="form-label">Opciones de Personalización</label>
-                <button type="button" class="btn-add-option" @click="addOption">
+                <button type="button" class="btn-add-option" @click="addOption" aria-label="Agregar opción">
                   <span class="material-symbols-rounded">add_circle</span>
                   Agregar
                 </button>
               </div>
               
               <div v-for="(opt, index) in form.opciones" :key="index" class="option-row">
-                <input v-model="opt.nombre" placeholder="Nombre (ej: Sabor Vainilla)" class="form-input" />
+                <input v-model="opt.nombre" placeholder="Nombre (ej: Sabor Vainilla)" class="form-input" aria-label="Nombre de la opción" />
                 <div class="price-input-wrapper">
                   <span class="currency">S/</span>
-                  <input v-model.number="opt.precio_adicional" type="number" step="0.1" class="form-input" placeholder="0.00" />
+                  <input v-model.number="opt.precio_adicional" type="number" step="0.1" class="form-input" placeholder="0.00" aria-label="Precio adicional" />
                 </div>
-                <button type="button" class="btn-remove-option" @click="removeOption(index)">
+                <button type="button" class="btn-remove-option" @click="removeOption(index)" aria-label="Eliminar opción">
                   <span class="material-symbols-rounded">delete</span>
                 </button>
               </div>
@@ -240,8 +314,8 @@ function handleBackdropClick(event: MouseEvent) {
             <!-- Botones -->
             <div class="form-actions">
               <button type="button" class="btn-secondary" @click="$emit('close')">Cancelar</button>
-              <button type="submit" class="btn-primary" :disabled="loading">
-                {{ loading ? 'Creando...' : 'Crear Producto' }}
+              <button type="submit" class="btn-primary" :disabled="loading || uploadingImages">
+                {{ uploadingImages ? 'Subiendo imágenes...' : loading ? 'Creando...' : 'Crear Producto' }}
               </button>
             </div>
           </form>
@@ -383,6 +457,108 @@ function handleBackdropClick(event: MouseEvent) {
 .form-textarea {
   resize: vertical;
   min-height: 80px;
+}
+
+/* ─── File Upload ─── */
+.file-upload-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1.5rem;
+  border: 2px dashed #e8d5d5;
+  border-radius: 12px;
+  background: #faf7f5;
+  transition: border-color 0.2s;
+}
+
+.file-upload-area:hover {
+  border-color: #8b1a2e;
+}
+
+.file-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.2rem;
+  background: #8b1a2e;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-family: 'Lato', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.file-upload-btn:hover {
+  background: #a82339;
+}
+
+.file-input-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.file-hint {
+  font-size: 0.75rem;
+  color: #9e8080;
+  margin: 0;
+}
+
+.preview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.preview-item {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #f5ece4;
+}
+
+.preview-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.preview-remove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 20px;
+  height: 20px;
+  background: rgba(0, 0, 0, 0.6);
+  border: none;
+  border-radius: 50%;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.2s;
+}
+
+.preview-remove:hover {
+  background: rgba(139, 26, 46, 0.9);
+}
+
+.preview-remove .material-symbols-rounded {
+  font-size: 14px !important;
 }
 
 .options-header {

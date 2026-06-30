@@ -148,9 +148,8 @@ onMounted(() => fetchDashboardData(activeFilters.value))
 
         <DashboardFilters
           :periods="['Hoy','Esta semana','Este mes','Este año']"
-          :categories="['Tortas','Cupcakes','Galletas','Bocaditos','Pastelería Salada','Cheesecakes']"
-          :years="['2025','2024','2023']"
           @filter-change="handleFilterChange"
+          aria-label="Filtros del panel de control"
         />
 
         <div class="stats-grid">
@@ -168,7 +167,7 @@ onMounted(() => fetchDashboardData(activeFilters.value))
               <div class="bar" style="height:26px"></div>
               <div class="bar bar--active" style="height:46px"></div>
             </div>
-            <div class="stat-footer stat-footer--up">↑ Actualizado ahora</div>
+            <div class="stat-footer stat-footer--up" aria-live="polite">↑ Actualizado ahora</div>
           </div>
 
           <div class="stat-card stat-card--light">
@@ -180,7 +179,7 @@ onMounted(() => fetchDashboardData(activeFilters.value))
             <svg class="mini-chart" viewBox="0 0 120 50" fill="none">
               <path d="M0 40 C20 38,30 10,50 15 C70 20,80 35,100 8 C110 2,115 5,120 5" stroke="#8b1a2e" stroke-width="2" fill="none"/>
             </svg>
-            <div class="stat-footer">Ticket promedio: S/ {{ stats.avgTicket }}</div>
+            <div class="stat-footer" aria-label="Ticket promedio">Ticket promedio: S/ {{ stats.avgTicket }}</div>
           </div>
 
           <div class="stat-card stat-card--dark">
@@ -200,8 +199,8 @@ onMounted(() => fetchDashboardData(activeFilters.value))
         </div>
 
         <div class="bottom-grid">
-          <InventoryAttention />
-          <RealtimeOrders :orders="orders" @download="downloadAllOrdersCSV" />
+          <InventoryAttention aria-label="Atención de inventario" />
+          <RealtimeOrders :orders="orders" @download="downloadAllOrdersCSV" aria-label="Órdenes en tiempo real" />
         </div>
 
       </div>

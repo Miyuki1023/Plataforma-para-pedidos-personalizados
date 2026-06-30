@@ -19,6 +19,7 @@ const onChange = (type: string, event: Event) => {
       <option>Selecciona por periodo</option>
       <option v-for="p in (periods ?? ['Hoy','Esta semana','Este mes'])" :key="p">{{ p }}</option>
     </select>
+<<<<<<< HEAD
     <select class="filter-select" @change="onChange('category', $event)" aria-label="Seleccionar categoría">
       <option>Selecciona la categoría</option>
       <option v-for="c in (categories ?? ['Panadería','Repostería'])" :key="c">{{ c }}</option>
@@ -27,6 +28,8 @@ const onChange = (type: string, event: Event) => {
       <option>Selecciona los años</option>
       <option v-for="y in (years ?? ['2025','2024'])" :key="y">{{ y }}</option>
     </select>
+=======
+>>>>>>> 94957d43a6e4b85b9bca84f462614b8cb52e3570
   </div>
 </template>
 

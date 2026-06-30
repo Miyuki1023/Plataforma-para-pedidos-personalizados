@@ -1,8 +1,8 @@
-
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../../stores/auth'
+import { useCartStore } from '../../../stores/cart'
 import { apiService } from '../../../lib/api.ts'
 
 import CartProductCard from '../../molecules/CartProductCard.vue'
@@ -32,16 +32,8 @@ interface Order {
 }
 
 const authStore = useAuthStore()
+const cartStore = useCartStore()
 const router = useRouter()
-const cartItems = ref<any[]>([])
-
-/* ── CARGAR CARRITO ── */
-onMounted(() => {
-  const savedProduct = localStorage.getItem('cartProduct')
-  if (savedProduct) {
-    cartItems.value = [JSON.parse(savedProduct)]
-  }
-})
 
 /* ── ENTREGA ── */
 const selectedDay      = ref('')
@@ -49,23 +41,22 @@ const selectedSchedule = ref('Mañana (07:00 - 09:00)')
 const selectedAddressId = ref<number | null>(null)
 
 /* ── CANTIDADES ── */
-const increaseQty = (id: number) => {
-  const p = cartItems.value.find(i => i.id === id)
-  if (p) p.quantity++
+const increaseQty = (id: string | number) => {
+  cartStore.updateQuantity(id, (cartStore.items.find(i => i.id === id)?.quantity || 1) + 1)
 }
-const decreaseQty = (id: number) => {
-  const p = cartItems.value.find(i => i.id === id)
-  if (p && p.quantity > 1) p.quantity--
+const decreaseQty = (id: string | number) => {
+  const item = cartStore.items.find(i => i.id === id)
+  if (item && item.quantity > 1) {
+    cartStore.updateQuantity(id, item.quantity - 1)
+  }
 }
-const removeProduct = (id: number) => {
-  cartItems.value = cartItems.value.filter(i => i.id !== id)
-  localStorage.removeItem('cartProduct')
+const removeProduct = (id: string | number) => {
+  cartStore.removeItem(id)
 }
 
 /* ── TOTALES ── */
-const subtotal      = computed(() => cartItems.value.reduce((a, i) => a + (i.price || 0) * (i.quantity || 1), 0))
 const deliveryPrice = 10
-const total         = computed(() => subtotal.value + deliveryPrice)
+const total = computed(() => cartStore.subtotal + deliveryPrice)
 
 const clientName = computed(() => {
   return authStore.user?.usuario || authStore.user?.name || 'Invitado'
@@ -96,7 +87,7 @@ const buildReceipt = (order: Order) => {
     'Productos:',
     items,
     '-----------------------------',
-    `Subtotal: ${formatCurrency(subtotal.value)}`,
+    `Subtotal: ${formatCurrency(cartStore.subtotal)}`,
     `Costo de envío: ${formatCurrency(deliveryPrice)}`,
     `Total: ${formatCurrency(order.total)}`,
     '¡Gracias por tu compra!'
@@ -112,7 +103,7 @@ const paySuccess     = ref(false)
 const payError       = ref('')
 
 const openPayModal = () => {
-  if (cartItems.value.length === 0) return
+  if (cartStore.items.length === 0) return
   showPayModal.value = true
   payMethod.value    = null
   yapeCode.value     = ''
@@ -159,7 +150,7 @@ const confirmPay = async () => {
       codigo_pago: yapeCode.value,
       horario_entrega: selectedSchedule.value,
       costo_envio: deliveryPrice,
-      items: cartItems.value.map((item: any) => ({
+      items: cartStore.items.map((item: any) => ({
         producto_id: item.producto_id || item.id,
         cantidad: item.quantity || 1,
         precio_unitario: Number(item.price || item.precio || 0),
@@ -182,7 +173,7 @@ const confirmPay = async () => {
       paymentMethod: payMethod.value === 'yape' ? 'Yape' : 'Plin',
       paymentCode: yapeCode.value,
       delivery: `${selectedDay.value} · ${selectedSchedule.value}`,
-      items: cartItems.value.map((item: any) => ({
+      items: cartStore.items.map((item: any) => ({
         id: item.id,
         name: item.nombre || item.name || item.title || 'Producto',
         quantity: item.quantity || 1,
@@ -195,8 +186,8 @@ const confirmPay = async () => {
     saveOrder(order)
 
     paySuccess.value = true
-    localStorage.removeItem('cartProduct')
-    cartItems.value = []
+    // Vaciar carrito SOLO después de confirmar la compra exitosamente
+    cartStore.clearCart()
 
     window.setTimeout(() => {
       router.push('/home')
@@ -221,10 +212,19 @@ const confirmPay = async () => {
         </p>
       </div>
 
-      <div class="cart-products">
+      <div v-if="cartStore.items.length === 0" class="empty-cart">
+        <div class="empty-cart-icon">🛒</div>
+        <h2 class="empty-cart-title">Tu carrito está vacío</h2>
+        <p class="empty-cart-desc">Agrega productos desde nuestro catálogo para empezar.</p>
+        <BaseButton class="empty-cart-btn" @click="router.push('/catalogo')">
+          Ver catálogo
+        </BaseButton>
+      </div>
+
+      <div v-else class="cart-products">
         <CartProductCard
-          v-for="item in cartItems"
-          :key="item.id"
+          v-for="item in cartStore.items"
+          :key="`${item.id}-${item.size}-${JSON.stringify(item.toppings)}-${item.message}`"
           :item="item"
           @increase="increaseQty(item.id)"
           @decrease="decreaseQty(item.id)"
@@ -234,7 +234,7 @@ const confirmPay = async () => {
     </div>
 
     <!-- RIGHT -->
-    <div class="resume-right">
+    <div v-if="cartStore.items.length > 0" class="resume-right">
       <DeliveryCard
         v-model:day="selectedDay"
         v-model:schedule="selectedSchedule"
@@ -242,7 +242,7 @@ const confirmPay = async () => {
       />
 
       <PurchaseSummary
-        :subtotal="subtotal"
+        :subtotal="cartStore.subtotal"
         :delivery="deliveryPrice"
         :total="total"
       />
@@ -337,3 +337,310 @@ const confirmPay = async () => {
     </div>
   </Teleport>
 </template>
+
+<style scoped>
+
+
+.resume-left {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.resume-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.resume-title {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--text-h);
+  margin: 0;
+}
+
+.resume-subtitle {
+  font-size: 0.9rem;
+  color: var(--text-soft);
+  margin: 0;
+}
+
+.cart-products {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.empty-cart {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+  gap: 1rem;
+}
+
+.empty-cart-icon {
+  font-size: 4rem;
+  opacity: 0.5;
+}
+
+.empty-cart-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-h);
+  margin: 0;
+}
+
+.empty-cart-desc {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin: 0;
+  max-width: 300px;
+}
+
+.empty-cart-btn {
+  max-width: 200px;
+}
+
+.resume-right {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  position: sticky;
+  top: 100px;
+  align-self: start;
+}
+
+.finish-btn {
+  width: 100%;
+  max-width: 100%;
+}
+
+/* ── PAY MODAL ── */
+.pay-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.pay-modal {
+  background: white;
+  border-radius: 28px;
+  padding: 2rem;
+  max-width: 480px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  animation: modalUp .25s ease;
+}
+
+@keyframes modalUp {
+  from { transform: translateY(25px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.pay-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  background: #f4f4f4;
+  cursor: pointer;
+  font-size: 1.3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.pay-close:hover { background: #e8e8e8; }
+
+.pay-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.pay-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+
+.pay-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-h);
+  margin: 0 0 0.3rem;
+}
+
+.pay-subtitle {
+  font-size: 0.9rem;
+  color: var(--text-soft);
+  margin: 0;
+}
+
+.pay-methods {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.pay-method-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  border: 2px solid #eee;
+  border-radius: 16px;
+  background: white;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+}
+
+.pay-method-btn.active {
+  border-color: var(--primary);
+  background: #fff0f5;
+}
+
+.pay-method-logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 1rem;
+  color: white;
+}
+
+.yape-logo { background: #7b1fa2; }
+.plin-logo { background: #1565c0; }
+
+.pay-steps {
+  margin-bottom: 1.5rem;
+}
+
+.pay-instructions {
+  font-size: 0.85rem;
+  color: var(--text);
+  line-height: 1.8;
+  padding-left: 1.2rem;
+  margin: 0 0 1rem;
+}
+
+.pay-code-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.pay-code-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+.pay-code-input {
+  text-align: center;
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: 0.5em;
+  padding: 0.8rem;
+  border: 2px solid #eee;
+  border-radius: 16px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.pay-code-input:focus {
+  border-color: var(--primary);
+}
+
+.pay-code-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.pay-error {
+  background: #fde8e8;
+  color: #c0392b;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.pay-action-btn {
+  width: 100%;
+  padding: 1rem;
+  border: none;
+  border-radius: 16px;
+  background: var(--primary);
+  color: white;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pay-action-btn:hover:not(:disabled) {
+  background: var(--primary-dark);
+  transform: translateY(-2px);
+}
+
+.pay-action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.pay-action-btn--success {
+  background: var(--success);
+}
+
+.pay-success-icon {
+  text-align: center;
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.btn-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255,255,255,0.35);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 768px) {
+  .resume-section {
+    grid-template-columns: 1fr;
+  }
+  .resume-right {
+    position: static;
+  }
+}
+</style>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
-import ProductCard from '../../molecules/ProductCard.vue'
+import ProductCard from '../../organisms/ProductCard.vue'
 import { useFavoritesStore } from '../../../stores/favorites'
 
 const favStore = useFavoritesStore()

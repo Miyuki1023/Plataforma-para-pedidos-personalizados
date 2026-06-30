@@ -165,12 +165,11 @@ const savePassword = async () => {
 const handleLogout = async () => {
   try {
     await apiService.post('/auth/logout', {})
-    await authStore.logout()
-    router.push('/home') // Redirigir al inicio después de cerrar sesión
   } catch (err) {
     console.error('Error al cerrar sesión:', err)
+  } finally {
     authStore.logout()
-    router.push('/')
+    router.push('/home')
   }
 }
 
