@@ -28,6 +28,7 @@ const labelPorTipo: Record<string, string> = {
   complaint: 'Queja',
   question: 'Pregunta'
 };
+<<<<<<< HEAD
 
 const RECOMMENDATIONS_KEY = 'vainilla-recommendations'
 
@@ -39,16 +40,22 @@ const loadLocalRecommendations = () => {
     return []
   }
 }
+=======
+>>>>>>> 94957d43a6e4b85b9bca84f462614b8cb52e3570
 
 const fetchReclamaciones = async () => {
   try {
     const res = await api.get('/reclamaciones');
+<<<<<<< HEAD
     const serverData = res.data || []
     const localData = loadLocalRecommendations()
     // Combinar datos del servidor con locales, evitando duplicados por id
     const serverIds = new Set(serverData.map((r: any) => r.id))
     const uniqueLocal = localData.filter((r: any) => !serverIds.has(r.id))
     reclamaciones.value = [...serverData, ...uniqueLocal]
+=======
+    reclamaciones.value = res.data;
+>>>>>>> 94957d43a6e4b85b9bca84f462614b8cb52e3570
   } catch (error) {
     console.error('Error al cargar reclamaciones del servidor, usando datos locales:', error);
     reclamaciones.value = loadLocalRecommendations()

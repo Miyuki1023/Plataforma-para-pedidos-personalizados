@@ -97,6 +97,7 @@ const handleSubmit = async () => {
   try {
     // 5. Envío al servidor
     await api.post('/reclamaciones', data);
+<<<<<<< HEAD
   } catch (error: any) {
     console.error('Error al enviar al servidor, guardando localmente:', error);
   } finally {
@@ -104,6 +105,10 @@ const handleSubmit = async () => {
     saveRecommendationLocally(data)
 
     // 7. Éxito: Reset visual y cierre
+=======
+
+    // 6. Éxito: Reset visual y cierre
+>>>>>>> 94957d43a6e4b85b9bca84f462614b8cb52e3570
     submitted.value = true;
     emit('submit', data);
 
@@ -112,6 +117,25 @@ const handleSubmit = async () => {
       emit('close');
     }, 2000);
 
+<<<<<<< HEAD
+=======
+  } catch (error: any) {
+    // 7. Manejo de errores profesional
+    const errorData = error?.response?.data;
+    
+    // Si viene del validador de Express (array de errores)
+    let errorMessage = 'Ocurrió un error inesperado.';
+    if (errorData?.errors && Array.isArray(errorData.errors)) {
+      errorMessage = errorData.errors.map((e: any) => e.msg).join('\n');
+    } else {
+      // Si viene como mensaje plano
+      errorMessage = errorData?.message || error.message || 'Error de conexión con el servidor.';
+    }
+
+    console.error('Error al enviar reclamación:', errorData || error);
+    alert(`No se pudo enviar el mensaje:\n${errorMessage}`);
+  } finally {
+>>>>>>> 94957d43a6e4b85b9bca84f462614b8cb52e3570
     isSubmitting.value = false;
   }
 };
