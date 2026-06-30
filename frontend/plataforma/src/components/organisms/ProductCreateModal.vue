@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import api from '../../lib/api'
+import { ref, computed, onMounted } from 'vue'
+import { apiService } from '../../lib/api'
 
 const props = defineProps<{
   isOpen: boolean
@@ -28,6 +28,25 @@ const selectedFiles = ref<File[]>([])
 const previewUrls = ref<string[]>([])
 const uploadingImages = ref(false)
 
+// Categorías: primero intentar desde API, fallback a hardcoded
+const categories = ref<string[]>(['Tortas', 'Pastelería', 'Postres', 'Bebidas', 'Otros'])
+const categoriesLoading = ref(false)
+
+const loadCategories = async () => {
+  categoriesLoading.value = true
+  try {
+    const data: any = await apiService.get('/categories')
+    const raw = Array.isArray(data) ? data : data?.categories || data?.data || []
+    if (raw.length > 0) {
+      categories.value = raw.map((c: any) => c.nombre || c.name || c)
+    }
+  } catch {
+    // Fallback silencioso a hardcoded — ya están inicializadas
+  } finally {
+    categoriesLoading.value = false
+  }
+}
+
 const handleFileSelect = (event: Event) => {
   const input = event.target as HTMLInputElement
   if (!input.files) return
@@ -35,7 +54,7 @@ const handleFileSelect = (event: Event) => {
   const newFiles = Array.from(input.files)
   selectedFiles.value = [...selectedFiles.value, ...newFiles]
 
-  // Generar previews
+  // Generar previews como base64 para enviar al backend
   newFiles.forEach(file => {
     const reader = new FileReader()
     reader.onload = (e) => {
@@ -54,6 +73,10 @@ const removeImage = (index: number) => {
   selectedFiles.value.splice(index, 1)
   previewUrls.value.splice(index, 1)
 }
+
+onMounted(() => {
+  loadCategories()
+})
 
 function addOption() {
   form.value.opciones.push({ nombre: '', precio_adicional: 0 })
@@ -89,25 +112,12 @@ async function handleSubmit() {
   error.value = ''
 
   try {
+    // Enviar imágenes como base64 en el payload directamente
+    // El backend no tiene endpoint /upload, así que enviamos inline
     let imagenUrls: string[] | null = null
-
-    // Subir imágenes si hay archivos seleccionados
-    if (selectedFiles.value.length > 0) {
+    if (previewUrls.value.length > 0) {
       uploadingImages.value = true
-      const formData = new FormData()
-      selectedFiles.value.forEach(file => {
-        formData.append('images', file)
-      })
-
-      try {
-        const uploadResponse: any = await api.post('/upload', formData)
-        imagenUrls = uploadResponse?.urls || uploadResponse?.data || null
-      } catch {
-        // Si falla la subida, usar las previews como fallback
-        imagenUrls = previewUrls.value.length > 0 ? previewUrls.value : null
-      } finally {
-        uploadingImages.value = false
-      }
+      imagenUrls = previewUrls.value
     }
 
     const payload = {
@@ -116,19 +126,21 @@ async function handleSubmit() {
       categoria: form.value.categoria,
       stock: Number(form.value.stock),
       descripcion: form.value.descripcion || null,
-      imagenUrls,
+      imagen_url: imagenUrls,
       disponible: true
     }
 
-    const response: any = await api.post('/admin/productos', payload)
-    const createdProduct = response?.product || response?.data || response
+    // apiService hace response.data automáticamente por el interceptor
+    const response: any = await apiService.post('/admin/productos', payload)
+    // El interceptor ya unwrapeó, response = response.data original
+    const createdProduct = response?.product || response
 
     // Crear opciones si existen
-    const newProductId = createdProduct.id
+    const newProductId = createdProduct?.id || createdProduct?.product?.id
     if (newProductId && form.value.opciones.length > 0) {
       for (const opt of form.value.opciones) {
         if (opt.nombre.trim()) {
-          await api.post(`/admin/productos/${newProductId}/options`, opt)
+          await apiService.post(`/admin/productos/${newProductId}/options`, opt)
         }
       }
     }
@@ -137,10 +149,11 @@ async function handleSubmit() {
     resetForm()
     emit('close')
   } catch (err: any) {
-    error.value = err.response?.data?.errors?.[0]?.msg || err.response?.data?.message || err.message || 'Error al crear producto'
+    error.value = err?.response?.data?.errors?.[0]?.msg || err?.response?.data?.message || err?.message || 'Error al crear producto'
     console.error('[ProductCreateModal] Error detallado:', err)
   } finally {
     loading.value = false
+    uploadingImages.value = false
   }
 }
 

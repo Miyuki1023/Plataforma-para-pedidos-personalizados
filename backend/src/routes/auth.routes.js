@@ -63,9 +63,14 @@ router.post(
   authController.forgotPassword
 );
 
+// NEW: Verify reset code (was missing - root cause of ConfigSection bug)
+router.post(
+  '/verify-reset-code',
+  authController.verifyResetCode
+);
+
 router.post(
   '/change-password',
-  verifyToken,
   changePasswordLimiter,
   authController.changePassword
 );

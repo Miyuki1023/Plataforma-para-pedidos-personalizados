@@ -2,8 +2,9 @@
 import { ref, computed, onMounted } from "vue";
 import ProductCreateModal from "./ProductCreateModal.vue";
 import ProductEditModal from "./ProductEditModal.vue";
-import api from "../../lib/api";
-import NewSaleModal from "../molecules/NewSaleModal.vue"
+import { apiService } from "../../lib/api";
+import NewSaleModal from "../molecules/NewSaleModal.vue";
+
 interface Product {
   id: number;
   nombre: string;
@@ -87,7 +88,7 @@ async function fetchProducts() {
   loading.value = true;
   error.value = "";
   try {
-    const response: any = await api.get("/productos");
+    const response: any = await apiService.get("/productos");
     products.value = Array.isArray(response) ? response : (response?.data || response?.products || []);
   } catch (err) {
     console.error(err);
@@ -142,7 +143,7 @@ async function handleDeleteProducts() {
   error.value = "";
   try {
     for (const id of selected.value) {
-      await api.delete(`/productos/${id}`);
+      await apiService.delete(`/productos/${id}`);
     }
     
     products.value = products.value.filter((p) => !selected.value.includes(p.id));
@@ -166,7 +167,7 @@ async function toggleAvailability(product: Product) {
   
   try {
     // Mandamos todo el body estructurado como lo espera tu backend en updateProduct
-    await api.put(`/productos/${product.id}`, {
+    await apiService.put(`/productos/${product.id}`, {
       nombre: product.nombre,
       descripcion: product.descripcion,
       precio: product.precio,

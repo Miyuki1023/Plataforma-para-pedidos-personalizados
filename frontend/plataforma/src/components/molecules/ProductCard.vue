@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 import BaseButton from '../atoms/BaseButton.vue'
@@ -15,47 +16,72 @@ interface Props {
   isNew?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  id: 0,
+  name: 'Producto',
+  price: 0,
+  description: '',
+  imageUrl: '',
+  category: '',
+  isNew: false
+})
 
 const router = useRouter()
 const favStore = useFavoritesStore()
 
+// ✅ Sanitize
+const safeId = computed(() => String(props.id ?? 0).replace('id:', ''))
+const safeName = computed(() => props.name || 'Producto')
+const safePrice = computed(() => Number(props.price) || 0)
+const safeImageUrl = computed(() => props.imageUrl || '')
+const safeCategory = computed(() => props.category || '')
+const safeDescription = computed(() => props.description || '')
+
 const goToProduct = () => {
-  if (!props.id) return
-  router.push(`/producto/${props.id}`)
+  if (!safeId.value || safeId.value === '0') return
+  router.push(`/producto/${safeId.value}`)
 }
 
-// 🔥 Lógica centralizada en Pinia
 const toggleFavorite = () => {
   favStore.toggleFavorite({
-    id: props.id,
-    name: props.name,
-    price: props.price,
-    imageUrl: props.imageUrl
+    id: safeId.value,
+    name: safeName.value,
+    price: safePrice.value,
+    imageUrl: safeImageUrl.value
   })
 }
 </script>
 
 <template>
-  <article class="product-card">
+  <article
+    v-if="safeId && safeId !== '0'"
+    class="product-card"
+  >
 
     <!-- IMAGE -->
     <div class="card-image-wrapper">
 
       <img
-        :src="props.imageUrl"
-        :alt="props.name"
+        v-if="safeImageUrl"
+        :src="safeImageUrl"
+        :alt="safeName"
         class="card-image"
         loading="lazy"
       />
+      <div
+        v-else
+        class="card-image-placeholder"
+      >
+        <span>📸</span>
+      </div>
 
       <span v-if="props.isNew" class="badge-new">
         NUEVO
       </span>
 
-      <!-- ❤️ FAVORITO (FIX FINAL) -->
+      <!-- ❤️ FAVORITO -->
       <FavoriteIcon
-        :active="favStore.isFavorite(props.id)"
+        :active="favStore.isFavorite(safeId)"
         @toggle="toggleFavorite"
         class="fav-icon"
       />
@@ -65,20 +91,20 @@ const toggleFavorite = () => {
     <!-- BODY -->
     <div class="card-body">
 
-      <span v-if="props.category" class="card-category">
-        {{ props.category }}
+      <span v-if="safeCategory" class="card-category">
+        {{ safeCategory }}
       </span>
 
       <h3 class="card-name">
-        {{ props.name }}
+        {{ safeName }}
       </h3>
 
-      <p v-if="props.description" class="card-desc">
-        {{ props.description }}
+      <p v-if="safeDescription" class="card-desc">
+        {{ safeDescription }}
       </p>
 
       <p class="card-price">
-        S/ {{ props.price }}
+        S/ {{ safePrice }}
       </p>
 
       <BaseButton

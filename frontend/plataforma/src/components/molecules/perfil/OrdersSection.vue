@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { apiService } from '../../../lib/api'
 
 interface OrderItem {
@@ -29,6 +29,16 @@ interface Order {
 const orders = ref<Order[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
+
+// Paginación
+const currentPage = ref(1)
+const itemsPerPage = 5
+
+const totalPages = computed(() => Math.max(1, Math.ceil(orders.value.length / itemsPerPage)))
+const paginatedOrders = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage
+  return orders.value.slice(start, start + itemsPerPage)
+})
 
 const loadOrders = async () => {
   try {
@@ -188,7 +198,7 @@ onMounted(loadOrders)
     </div>
 
     <div v-else class="premium-orders-grid">
-      <article v-for="order in orders" :key="order.id_pedido" class="order-history-card">
+      <article v-for="order in paginatedOrders" :key="order.id_pedido" class="order-history-card">
         <div class="order-card-header">
           <div>
             <p class="order-card-title">Pedido #{{ order.id_pedido }}</p>
@@ -207,6 +217,25 @@ onMounted(loadOrders)
           Descargar boleta
         </button>
       </article>
+    </div>
+
+    <!-- Paginación -->
+    <div v-if="totalPages > 1" class="orders-pagination">
+      <button
+        class="page-btn"
+        :disabled="currentPage <= 1"
+        @click="currentPage--"
+      >
+        ← Anterior
+      </button>
+      <span class="page-info">Página {{ currentPage }} de {{ totalPages }}</span>
+      <button
+        class="page-btn"
+        :disabled="currentPage >= totalPages"
+        @click="currentPage++"
+      >
+        Siguiente →
+      </button>
     </div>
   </section>
 </template>

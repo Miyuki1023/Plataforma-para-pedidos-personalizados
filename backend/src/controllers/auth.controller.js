@@ -134,11 +134,25 @@ exports.forgotPassword = async (req, res) => {
 
 };
 
+// NEW: Verify reset code endpoint (was missing - root cause of the bug)
+exports.verifyResetCode = async (req, res) => {
+  try {
+    const { email, code } = req.body;
+    const userId = req.user?.id || null;
+    const result = await authService.verifyResetCode(userId, email, code);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({
+      message: error.message
+    });
+  }
+};
+
 exports.changePassword = async (req, res) => {
 
   try {
 
-    const userId = req.user.id; // Del usuario autenticado
+    const userId = req.user?.id || null; // Allow null for forgot-password flow
     const {
       email,
       code,

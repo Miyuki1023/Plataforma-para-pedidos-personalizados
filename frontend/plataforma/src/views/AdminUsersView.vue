@@ -19,6 +19,16 @@ const loading = ref(false)
 const searchQuery = ref('')
 const showModal = ref(false)
 
+// Filtro por rol: null = todos, 1 = clientes, 2 = trabajadores, 3 = admins
+const roleFilter = ref<number | null>(null)
+
+const ROLE_FILTERS = [
+  { label: 'Todos', value: null },
+  { label: 'Clientes', value: 1 },
+  { label: 'Trabajadores', value: 2 },
+  { label: 'Administradores', value: 3 },
+] as const
+
 // Paginación
 const currentPage = ref(1)
 const itemsPerPage = 10
@@ -85,13 +95,26 @@ const stats = computed(() => {
   }
 })
 
-// Filtro por búsqueda
+// Filtro por búsqueda + rol
 const filteredUsers = computed(() => {
-  return users.value.filter(u => 
-    u.usuario.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-    u.email.toLowerCase().includes(searchQuery.value.toLowerCase())
-  )
+  return users.value.filter(u => {
+    // Filtro por búsqueda textual
+    const matchesSearch = 
+      u.usuario.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      u.email.toLowerCase().includes(searchQuery.value.toLowerCase())
+    if (!matchesSearch) return false
+
+    // Filtro por rol
+    if (roleFilter.value !== null && u.id_rol !== roleFilter.value) return false
+
+    return true
+  })
 })
+
+const setRoleFilter = (role: number | null) => {
+  roleFilter.value = role
+  currentPage.value = 1
+}
 
 // 2. Lógica de Paginación (10 en 10)
 const totalPages = computed(() => {
@@ -199,6 +222,20 @@ onMounted(fetchUsers)
             Nuevo Usuario
           </button>
         </header>
+
+        <!-- Role filter bar -->
+        <div class="role-filter-bar" role="group" aria-label="Filtrar por rol">
+          <button
+            v-for="f in ROLE_FILTERS"
+            :key="String(f.value)"
+            class="role-filter-btn"
+            :class="{ 'role-filter-btn--active': roleFilter === f.value }"
+            @click="setRoleFilter(f.value)"
+            :aria-pressed="roleFilter === f.value"
+          >
+            {{ f.label }}
+          </button>
+        </div>
 
         <section class="stats-grid">
           <div class="stat-card total">
@@ -386,6 +423,42 @@ onMounted(fetchUsers)
 .content-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; }
 .page-title { font-family: 'Noto Serif', serif; font-size: 1.8rem; color: #3f0006; margin: 0; }
 .page-subtitle { font-size: 0.85rem; color: #7c5730; margin: 0.25rem 0 0; }
+
+/* Role filter bar */
+.role-filter-bar {
+  display: flex;
+  gap: 0.25rem;
+  background: #fef9ef;
+  border: 1px solid #e8d5d5;
+  border-radius: 12px;
+  padding: 0.25rem;
+  margin-bottom: 1.25rem;
+  width: fit-content;
+}
+
+.role-filter-btn {
+  padding: 0.4rem 1rem;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #7c5730;
+  font-family: 'Lato', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.role-filter-btn:hover {
+  background: #f5ece4;
+  color: #3f0006;
+}
+
+.role-filter-btn--active {
+  background: #8b1a2e;
+  color: #fff;
+}
 
 /* Estilos de las tarjetas superiores */
 .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem; margin-bottom: 2rem; }

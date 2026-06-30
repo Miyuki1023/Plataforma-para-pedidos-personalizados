@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import BaseButton from '../atoms/BaseButton.vue'
 import FavoriteIcon from '../atoms/FavoriteIcon.vue'
 import { useFavoritesStore } from '../../stores/favorites'
@@ -13,7 +14,16 @@ interface Props {
   isNew?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  id: 0,
+  name: 'Producto',
+  price: 0,
+  description: '',
+  imageUrl: '',
+  category: '',
+  isNew: false
+})
+
 const favStore = useFavoritesStore()
 
 const emit = defineEmits([
@@ -22,12 +32,20 @@ const emit = defineEmits([
   'toggle-favorite'
 ])
 
+// ✅ Sanitize: valores seguros nunca undefined
+const safeId = computed(() => String(props.id ?? 0).replace('id:', ''))
+const safeName = computed(() => props.name || 'Producto')
+const safePrice = computed(() => Number(props.price) || 0)
+const safeImageUrl = computed(() => props.imageUrl || '')
+const safeCategory = computed(() => props.category || '')
+const safeDescription = computed(() => props.description || '')
+
 const toggleFavorite = () => {
   favStore.toggleFavorite({
-    id: props.id,
-    name: props.name,
-    price: props.price,
-    imageUrl: props.imageUrl
+    id: safeId.value,
+    name: safeName.value,
+    price: safePrice.value,
+    imageUrl: safeImageUrl.value
   })
 }
 
@@ -41,8 +59,9 @@ const formatPrice = (value: number) => {
 
 <template>
   <div
+    v-if="safeId && safeId !== '0'"
     class="product-card"
-    @click="emit('view-details', props.id)"
+    @click="emit('view-details', safeId)"
   >
     
     <div class="card-image-wrapper">
@@ -56,45 +75,52 @@ const formatPrice = (value: number) => {
 
       <div class="favorite-wrapper">
         <FavoriteIcon
-          :active="favStore.isFavorite(props.id)"
+          :active="favStore.isFavorite(safeId)"
           @toggle="toggleFavorite"
         />
       </div>
 
       <img
-        :src="imageUrl"
-        :alt="name"
+        v-if="safeImageUrl"
+        :src="safeImageUrl"
+        :alt="safeName"
         class="card-image"
       />
+      <div
+        v-else
+        class="card-image-placeholder"
+      >
+        <span>📸</span>
+      </div>
     </div>
 
     <div class="card-body">
 
       <span
-        v-if="category"
+        v-if="safeCategory"
         class="badge badge--tag"
       >
-        {{ category }}
+        {{ safeCategory }}
       </span>
 
       <h3 class="card-name">
-        {{ name }}
+        {{ safeName }}
       </h3>
 
       <p
-        v-if="description"
+        v-if="safeDescription"
         class="card-desc"
       >
-        {{ description }}
+        {{ safeDescription }}
       </p>
 
       <p class="card-price">
-        {{ formatPrice(price) }}
+        {{ formatPrice(safePrice) }}
       </p>
 
       <BaseButton
         class="btn-card"
-        @click.stop="emit('add-to-cart', props.id)"
+        @click.stop="emit('add-to-cart', safeId)"
       >
         Añadir
       </BaseButton>

@@ -18,8 +18,14 @@ export class ApiError extends Error {
 // ============================================================
 // 2. INSTANCIA AXIOS
 // ============================================================
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+
+if (!import.meta.env.VITE_API_BASE_URL && !import.meta.env.VITE_API_URL) {
+  console.warn('[API] ⚠️ VITE_API_BASE_URL / VITE_API_URL no definidas. Usando fallback:', API_BASE_URL);
+}
+
 const api: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api',
+  baseURL: API_BASE_URL,
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',

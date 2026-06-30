@@ -32,10 +32,10 @@ const logout = async () => {
 </script>
 
 <template>
-  <aside class="emp-sidebar">
+  <aside class="emp-sidebar" aria-label="Menú del empleado">
     <div class="sidebar-brand">Vainilla y Miel</div>
 
-    <nav class="sidebar-nav">
+    <nav class="sidebar-nav" aria-label="Navegación del empleado">
       <RouterLink
         v-for="item in navItems"
         :key="item.id"

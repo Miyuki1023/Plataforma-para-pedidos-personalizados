@@ -172,8 +172,9 @@ onBeforeUnmount(() => {
         </Transition>
       </div>
 
-      <!-- USER -->
-      <RouterLink class="icon-btn" :to="profileLink" aria-label="Ir a perfil">
+      <!-- USER / LOGIN -->
+       <!-- USER -->
+      <RouterLink class="icon-btn" :to="profileLink">
         <BaseIcon name="user" :size="20" />
       </RouterLink>
 
@@ -253,6 +254,27 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+.user-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.user-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #3f0006;
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .user-label {
+    display: none;
+  }
+}
+
 .cart-btn {
   position: relative;
 }
