@@ -13,6 +13,14 @@ const props = defineProps<{
 const router = useRouter()
 const cartStore = useCartStore()
 
+/* ─── IMAGE FALLBACK ──────────────────────────────────────── */
+const IMAGE_FALLBACK = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400"%3E%3Crect fill="%23fdf0f5" width="400" height="400"/%3E%3Ctext fill="%23c05080" font-family="sans-serif" font-size="18" x="50" y="200"%3EImagen no disponible%3C/text%3E%3C/svg%3E'
+
+const safeImage = computed(() => {
+  const img = props.product?.image || props.product?.imageUrl || IMAGE_FALLBACK
+  return String(img)
+})
+
 /* ─── STOCK ─────────────────────────────────────────────── */
 const stock = computed(() => props.product?.stock || props.product?.cantidad || 10)
 const stockStatus = computed(() => {
@@ -95,12 +103,6 @@ const batchFruitToppings = ref<ToppingSlot[]>([{ id: 1, value: '' }])
 const batchCreamToppings = ref<ToppingSlot[]>([{ id: 1, value: '' }])
 let nextBatchFruitId = 2
 let nextBatchCreamId = 2
-
-// Para modo individual - acceder a currentUnit
-const activeIngredient = computed(() => customizationMode.value === 'batch' ? batchIngredient : currentUnit.value.ingredient)
-const activeMessage = computed(() => customizationMode.value === 'batch' ? batchMessage : currentUnit.value.message)
-const activeFruitToppings = computed(() => customizationMode.value === 'batch' ? batchFruitToppings : currentUnit.value.fruitToppings)
-const activeCreamToppings = computed(() => customizationMode.value === 'batch' ? batchCreamToppings : currentUnit.value.creamToppings)
 
 /* Modal */
 type ModalTarget = { array: ToppingSlot[]; options: string[]; extra: string; label: string } | null
@@ -245,7 +247,6 @@ const buildCartItem = (unit: UnitCustomization, index: number) => {
 
 const addToCart = () => {
   if (customizationMode.value === 'batch') {
-    // Modo lote: todas las unidades iguales
     const toppings = [
       ...batchFruitToppings.value.filter(t => t.value).map(t => t.value),
       ...batchCreamToppings.value.filter(t => t.value).map(t => t.value)
@@ -270,7 +271,6 @@ const addToCart = () => {
     }
     cartStore.addItem(cartItem)
   } else {
-    // Modo individual: cada unidad es un item separado
     for (let i = 0; i < units.value.length; i++) {
       const item = buildCartItem(units.value[i], i)
       cartStore.addItem(item)
@@ -284,39 +284,57 @@ const addToCart = () => {
 
 /* ─── GALERÍA ─────────────────────────────────────────────── */
 const gallery = computed(() => [
-  props.product?.image,
-  props.product?.image,
-  props.product?.image
+  safeImage.value,
+  safeImage.value,
+  safeImage.value
 ])
-const activeImage = ref(props.product?.image)
+const activeImage = ref(safeImage.value)
 watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
 </script>
 
 <template>
-  <section class="product-profile">
+  <main class="product-profile">
 
     <!-- ══════════════ GALERÍA ══════════════ -->
     <div class="profile-gallery">
       <div class="profile-image-wrapper">
-        <img :src="activeImage" :alt="props.product.name" class="profile-image" />
+        <img
+          :src="activeImage"
+          :alt="`${props.product?.name || 'Producto'} - Imagen principal`"
+          class="profile-image"
+          width="500"
+          height="500"
+          loading="eager"
+          fetchpriority="high"
+          decoding="async"
+        />
 
-        <span v-if="props.product.isNew" class="profile-badge">Nuevo ✨</span>
+        <span v-if="props.product?.isNew" class="profile-badge">Nuevo ✨</span>
 
         <FavoriteIcon class="profile-fav" />
 
         <div class="image-hint">Toca para zoom</div>
       </div>
 
-      <div class="thumbs-row">
+      <div class="thumbs-row" role="list" aria-label="Galería de imágenes">
         <button
           v-for="(img, i) in gallery"
           :key="i"
           class="thumb-btn"
           :class="{ active: activeImage === img }"
           @click="activeImage = img"
-          :aria-label="`Ver imagen ${i + 1}`"
+          :aria-label="`Ver imagen ${i + 1} del producto`"
+          role="listitem"
         >
-          <img :src="img" class="thumb-image" />
+          <img
+            :src="img"
+            :alt="`Miniatura ${i + 1} de ${props.product?.name || 'Producto'}`"
+            class="thumb-image"
+            width="100"
+            height="100"
+            loading="lazy"
+            decoding="async"
+          />
         </button>
       </div>
     </div>
@@ -327,7 +345,7 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
       <!-- ENCABEZADO -->
       <div class="profile-top">
         <div class="profile-top-row">
-          <span class="profile-category">{{ props.product.category }}</span>
+          <span class="profile-category">{{ props.product?.category }}</span>
           <div class="profile-meta">
             <span class="meta-chip">⭐ 4.9</span>
             <span class="meta-chip">📦 +120 pedidos</span>
@@ -335,12 +353,12 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
           </div>
         </div>
 
-        <h1 class="profile-title">{{ props.product.name }}</h1>
-        <p class="profile-description">{{ props.product.description }}</p>
+        <h1 class="profile-title">{{ props.product?.name }}</h1>
+        <p class="profile-description">{{ props.product?.description }}</p>
 
         <!-- Stock status -->
         <div class="stock-info" :class="stockStatus.class">
-          <span class="stock-icon">{{ stockStatus.icon }}</span>
+          <span class="stock-icon" aria-hidden="true">{{ stockStatus.icon }}</span>
           <span class="stock-label">{{ stockStatus.label }}</span>
           <span class="stock-count" v-if="stock > 0">({{ stock }} disponibles)</span>
         </div>
@@ -355,17 +373,20 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
       <!-- TAMAÑO -->
       <div class="profile-section">
         <div class="section-header">
-          <h3 class="profile-subtitle">Tamaño</h3>
+          <h2 class="profile-subtitle">Tamaño</h2>
           <span class="section-note">El mediano es el más pedido</span>
         </div>
 
-        <div class="sizes-grid">
+        <div class="sizes-grid" role="radiogroup" aria-label="Seleccionar tamaño">
           <button
             v-for="size in sizes"
             :key="size.label"
             class="size-chip"
             :class="{ active: selectedSize === size.label, popular: size.popular }"
             @click="selectedSize = size.label"
+            role="radio"
+            :aria-checked="selectedSize === size.label"
+            :aria-label="`Tamaño ${size.label} - ${size.detail} - S/${size.price}`"
           >
             <span v-if="size.popular" class="popular-badge">Popular</span>
             <span class="size-name">{{ size.label }}</span>
@@ -377,30 +398,32 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
 
       <!-- CANTIDAD -->
       <div class="profile-section">
-        <h3 class="profile-subtitle">Cantidad</h3>
+        <h2 class="profile-subtitle">Cantidad</h2>
         <div class="quantity-box">
-          <button class="qty-btn" @click="decreaseQty" :disabled="quantity <= 1">−</button>
-          <span class="qty-number">{{ quantity }}</span>
-          <button class="qty-btn" @click="increaseQty">+</button>
+          <button class="qty-btn" @click="decreaseQty" :disabled="quantity <= 1" aria-label="Reducir cantidad">−</button>
+          <span class="qty-number" aria-live="polite" aria-atomic="true">{{ quantity }}</span>
+          <button class="qty-btn" @click="increaseQty" aria-label="Aumentar cantidad">+</button>
         </div>
 
         <!-- Stock overflow message -->
-        <div v-if="stockOverflow" class="stock-overflow-notice animate-fadeIn">
-          <span class="stock-overflow-icon">ℹ️</span>
+        <div v-if="stockOverflow" class="stock-overflow-notice animate-fadeIn" role="alert">
+          <span class="stock-overflow-icon" aria-hidden="true">ℹ️</span>
           <p class="stock-overflow-text" v-html="stockOverflow.message"></p>
         </div>
       </div>
 
       <!-- MODO DE PERSONALIZACIÓN (solo si quantity > 1) -->
       <div v-if="quantity > 1" class="profile-section">
-        <h3 class="profile-subtitle">Modo de personalización</h3>
-        <div class="mode-selector">
+        <h2 class="profile-subtitle">Modo de personalización</h2>
+        <div class="mode-selector" role="radiogroup" aria-label="Modo de personalización">
           <button
             class="mode-btn"
             :class="{ active: customizationMode === 'batch' }"
             @click="customizationMode = 'batch'"
+            role="radio"
+            :aria-checked="customizationMode === 'batch'"
           >
-            <span class="mode-icon">📦</span>
+            <span class="mode-icon" aria-hidden="true">📦</span>
             <span class="mode-label">Aplicar por lote</span>
             <span class="mode-desc">Todas las unidades con la misma personalización</span>
           </button>
@@ -408,8 +431,10 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
             class="mode-btn"
             :class="{ active: customizationMode === 'individual' }"
             @click="customizationMode = 'individual'"
+            role="radio"
+            :aria-checked="customizationMode === 'individual'"
           >
-            <span class="mode-icon">🎨</span>
+            <span class="mode-icon" aria-hidden="true">🎨</span>
             <span class="mode-label">Personalizar individualmente</span>
             <span class="mode-desc">Cada unidad con toppings distintos</span>
           </button>
@@ -417,43 +442,45 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
       </div>
 
       <!-- NAVEGACIÓN ENTRE UNIDADES (modo individual) -->
-      <div v-if="customizationMode === 'individual' && quantity > 1" class="unit-navigation">
-        <button class="unit-nav-btn" @click="prevUnit" :disabled="currentUnitIndex === 0">
+      <div v-if="customizationMode === 'individual' && quantity > 1" class="unit-navigation" role="navigation" aria-label="Navegación entre unidades">
+        <button class="unit-nav-btn" @click="prevUnit" :disabled="currentUnitIndex === 0" aria-label="Unidad anterior">
           ← Anterior
         </button>
-        <span class="unit-nav-label">Unidad {{ currentUnitIndex + 1 }} de {{ totalUnits }}</span>
-        <button class="unit-nav-btn" @click="nextUnit" :disabled="currentUnitIndex >= totalUnits - 1">
+        <span class="unit-nav-label" aria-live="polite">Unidad {{ currentUnitIndex + 1 }} de {{ totalUnits }}</span>
+        <button class="unit-nav-btn" @click="nextUnit" :disabled="currentUnitIndex >= totalUnits - 1" aria-label="Siguiente unidad">
           Siguiente →
         </button>
       </div>
 
       <!-- EVITAR INGREDIENTE -->
       <div class="profile-section">
-        <h3 class="profile-subtitle">¿Evitar algún ingrediente?</h3>
+        <h2 class="profile-subtitle">¿Evitar algún ingrediente?</h2>
         <BaseInput
           v-if="customizationMode === 'batch'"
           v-model="batchIngredient"
           placeholder="Ej: Naranja, nueces…"
+          aria-label="Ingrediente a evitar"
         />
         <BaseInput
           v-else
           :model-value="currentUnit.ingredient"
           @update:model-value="currentUnit.ingredient = $event"
           placeholder="Ej: Naranja, nueces…"
+          aria-label="Ingrediente a evitar"
         />
       </div>
 
       <!-- TOPPINGS -->
       <div class="profile-section toppings-section">
         <div class="section-header">
-          <h3 class="profile-subtitle">Personaliza tu torta</h3>
+          <h2 class="profile-subtitle">Personaliza tu torta</h2>
           <span class="section-note">Hasta {{ MAX_TOPPINGS }} por tipo</span>
         </div>
 
         <!-- FRUTAS -->
         <div class="topping-group">
           <div class="topping-group-header">
-            <span class="topping-group-icon">🍓</span>
+            <span class="topping-group-icon" aria-hidden="true">🍓</span>
             <span class="topping-group-label">Frutillas</span>
             <span class="topping-group-price">+S/5 c/u</span>
           </div>
@@ -468,7 +495,7 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
               <button
                 class="topping-chip-remove"
                 @click="removeTopping(customizationMode === 'batch' ? batchFruitToppings : currentUnit.fruitToppings, topping.id)"
-                aria-label="Quitar topping"
+                :aria-label="`Quitar ${topping.value}`"
               >×</button>
             </div>
 
@@ -480,8 +507,9 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
                 (customizationMode === 'batch' ? batchFruitToppings : currentUnit.fruitToppings).find(t => !t.value)?.id ?? -1,
                 fruitOptions, '+S/5', 'Frutilla'
               )"
+              :aria-label="'Agregar frutilla'"
             >
-              <span class="add-icon">+</span>
+              <span class="add-icon" aria-hidden="true">+</span>
               <span>Agregar frutilla</span>
             </button>
           </div>
@@ -490,7 +518,7 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
         <!-- RELLENOS -->
         <div class="topping-group">
           <div class="topping-group-header">
-            <span class="topping-group-icon">🍫</span>
+            <span class="topping-group-icon" aria-hidden="true">🍫</span>
             <span class="topping-group-label">Rellenos extra</span>
             <span class="topping-group-price">+S/8 c/u</span>
           </div>
@@ -505,7 +533,7 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
               <button
                 class="topping-chip-remove"
                 @click="removeTopping(customizationMode === 'batch' ? batchCreamToppings : currentUnit.creamToppings, topping.id)"
-                aria-label="Quitar relleno"
+                :aria-label="`Quitar ${topping.value}`"
               >×</button>
             </div>
 
@@ -517,8 +545,9 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
                 (customizationMode === 'batch' ? batchCreamToppings : currentUnit.creamToppings).find(t => !t.value)?.id ?? -1,
                 creamOptions, '+S/8', 'Relleno'
               )"
+              :aria-label="'Agregar relleno'"
             >
-              <span class="add-icon">+</span>
+              <span class="add-icon" aria-hidden="true">+</span>
               <span>Agregar relleno</span>
             </button>
           </div>
@@ -527,7 +556,7 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
         <!-- MENSAJE -->
         <div class="topping-group">
           <div class="topping-group-header">
-            <span class="topping-group-icon">💌</span>
+            <span class="topping-group-icon" aria-hidden="true">💌</span>
             <span class="topping-group-label">Mensaje en la torta</span>
             <span class="topping-group-price">+S/2</span>
           </div>
@@ -535,18 +564,20 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
             v-if="customizationMode === 'batch'"
             v-model="batchMessage"
             placeholder="Ej: ¡Feliz cumpleaños!"
+            aria-label="Mensaje para la torta"
           />
           <BaseInput
             v-else
             :model-value="currentUnit.message"
             @update:model-value="currentUnit.message = $event"
             placeholder="Ej: ¡Feliz cumpleaños!"
+            aria-label="Mensaje para la torta"
           />
         </div>
       </div>
 
       <!-- RESUMEN DINÁMICO -->
-      <div class="summary-card">
+      <div class="summary-card" aria-label="Resumen del pedido">
         <div class="summary-row">
           <span>Tamaño</span>
           <strong>{{ selectedSize }} — S/{{ selectedSizePrice }}</strong>
@@ -563,7 +594,7 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
           <span>Costo adicional toppings</span>
           <strong>+S/{{ totalToppingsPrice.toFixed(2) }}</strong>
         </div>
-        <div class="summary-divider" />
+        <div class="summary-divider" role="separator" />
         <div class="summary-row summary-total">
           <span>Precio final</span>
           <strong class="total-price">S/{{ totalPrice.toFixed(2) }}</strong>
@@ -577,19 +608,20 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
           class="profile-button"
           :class="{ 'btn-added': addedToCart }"
           @click="addToCart"
+          :aria-label="addedToCart ? 'Producto agregado al carrito' : 'Agregar al carrito'"
         >
           <span v-if="!addedToCart">🛒 Agregar al carrito</span>
           <span v-else>✅ ¡Agregado!</span>
         </BaseButton>
       </div>
     </div><!-- /profile-content -->
-  </section>
+  </main>
 
   <!-- ══════════════ MODAL DE SELECCIÓN ══════════════ -->
   <Teleport to="body">
     <Transition name="modal-fade">
-      <div v-if="modalOpen" class="modal-overlay" @click.self="modalOpen = false">
-        <div class="modal-sheet" role="dialog" aria-modal="true">
+      <div v-if="modalOpen" class="modal-overlay" @click.self="modalOpen = false" role="presentation">
+        <div class="modal-sheet" role="dialog" aria-modal="true" :aria-label="`Elige ${modalTarget?.label || 'opción'}`">
           <div class="modal-header">
             <h3 class="modal-title">
               Elige {{ modalTarget?.label }}
@@ -606,10 +638,11 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
               :class="{ disabled: usedOptions.has(opt) }"
               :disabled="usedOptions.has(opt)"
               @click="selectFromModal(opt)"
+              :aria-label="`Seleccionar ${opt}${usedOptions.has(opt) ? ' (ya agregado)' : ''}`"
             >
               <span class="option-name">{{ opt }}</span>
               <span v-if="usedOptions.has(opt)" class="option-badge">Ya agregado</span>
-              <span v-else class="option-check">+</span>
+              <span v-else class="option-check" aria-hidden="true">+</span>
             </button>
           </div>
 
@@ -619,8 +652,20 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
     </Transition>
   </Teleport>
 </template>
-<style scoped>
 
+<style scoped>
+/* ═══════════════════════════════════════════════════════════
+   LAYOUT — CRÍTICO: scoped para mantener responsive intacto
+   ═══════════════════════════════════════════════════════════ */
+.product-profile {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 40px 24px;
+  align-items: start;
+}
 
 @media (max-width: 768px) {
   .product-profile {
@@ -630,6 +675,9 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
   }
 }
 
+/* ═══════════════════════════════════════════════════════════
+   GALERÍA — aspect-ratio fijo para CLS
+   ═══════════════════════════════════════════════════════════ */
 .profile-gallery {
   position: sticky;
   top: 100px;
@@ -640,8 +688,9 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
   position: relative;
   border-radius: 24px;
   overflow: hidden;
-  background: var(--soft-bg);
+  background: var(--color-bg-soft, #fff5f9);
   aspect-ratio: 1;
+  width: 100%;
 }
 
 .profile-image {
@@ -659,7 +708,7 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
   position: absolute;
   top: 16px;
   left: 16px;
-  background: var(--primary);
+  background: var(--primary, #c05080);
   color: white;
   font-size: 0.75rem;
   font-weight: 700;
@@ -712,7 +761,7 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
 }
 
 .thumb-btn.active {
-  border-color: var(--primary);
+  border-color: var(--primary, #c05080);
 }
 
 .thumb-image {
@@ -722,52 +771,37 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
   display: block;
 }
 
+/* ═══════════════════════════════════════════════════════════
+   CONTENIDO
+   ═══════════════════════════════════════════════════════════ */
 .profile-content {
   display: flex;
   flex-direction: column;
   gap: 28px;
 }
 
+/* ═══════════════════════════════════════════════════════════
+   TITULOS
+   ═══════════════════════════════════════════════════════════ */
 .profile-title {
   font-size: 2rem;
   font-weight: 800;
-  color: var(--text-h);
+  color: var(--primary-dark, #4a0028);
   line-height: 1.2;
   margin-bottom: 10px;
 }
 
 .profile-description {
   font-size: 0.95rem;
-  color: var(--text-soft);
+  color: var(--text-muted, #666);
   line-height: 1.6;
 }
 
-/* Stock */
-.stock-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
-  border-radius: 12px;
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-.stock--available { background: #e8f5e9; color: #2e7d32; }
-.stock--low { background: #fff3e0; color: #e65100; }
-.stock--order { background: #f3e5f5; color: #6a1b9a; }
-.stock-icon { font-size: 1rem; }
-.stock-count { opacity: 0.8; font-weight: 400; }
-
-.time-info {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-  font-size: 0.85rem;
-  color: var(--text-soft);
-}
-
+/* ═══════════════════════════════════════════════════════════
+   SECCIONES
+   ═══════════════════════════════════════════════════════════ */
 .profile-section {
-  border-top: 1px solid var(--border);
+  border-top: 1px solid #f1e3ea;
   padding-top: 24px;
 }
 
@@ -781,14 +815,17 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
 .profile-subtitle {
   font-size: 1rem;
   font-weight: 700;
-  color: var(--text-h);
+  color: var(--primary-dark, #4a0028);
 }
 
 .section-note {
   font-size: 0.78rem;
-  color: var(--text-muted);
+  color: #999;
 }
 
+/* ═══════════════════════════════════════════════════════════
+   TAMAÑOS
+   ═══════════════════════════════════════════════════════════ */
 .sizes-grid {
   display: flex;
   gap: 12px;
@@ -810,16 +847,16 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
 }
 
 .size-chip:hover {
-  border-color: var(--primary);
+  border-color: var(--primary, #c05080);
 }
 
 .size-chip.active {
-  border-color: var(--primary);
+  border-color: var(--primary, #c05080);
   background: #fff2f7;
 }
 
 .size-chip.popular {
-  border-color: var(--primary);
+  border-color: var(--primary, #c05080);
 }
 
 .popular-badge {
@@ -827,7 +864,7 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
   top: -10px;
   left: 50%;
   transform: translateX(-50%);
-  background: var(--primary);
+  background: var(--primary, #c05080);
   color: white;
   font-size: 0.6rem;
   font-weight: 700;
@@ -835,93 +872,38 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
   border-radius: 999px;
 }
 
-.size-name { font-size: 0.9rem; font-weight: 700; }
-.size-detail { font-size: 0.72rem; color: var(--text-muted); }
-.size-price { font-size: 0.9rem; font-weight: 700; color: var(--primary); }
-
-/* Mode Selector */
-.mode-selector {
-  display: flex;
-  gap: 12px;
-  margin-top: 12px;
-}
-
-.mode-btn {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  padding: 16px;
-  border: 2px solid #eee;
-  border-radius: 18px;
-  background: white;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  text-align: center;
-}
-
-.mode-btn:hover {
-  border-color: var(--primary);
-}
-
-.mode-btn.active {
-  border-color: var(--primary);
-  background: #fff2f7;
-}
-
-.mode-icon { font-size: 1.5rem; }
-.mode-label { font-size: 0.9rem; font-weight: 700; color: var(--text-h); }
-.mode-desc { font-size: 0.75rem; color: var(--text-muted); }
-
-/* Unit Navigation */
-.unit-navigation {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px 16px;
-  background: var(--soft-bg);
-  border-radius: 14px;
-  border: 1px solid var(--border);
-}
-
-.unit-nav-btn {
-  padding: 8px 16px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: white;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 0.85rem;
-  color: var(--primary);
-  transition: all 0.2s;
-}
-
-.unit-nav-btn:hover:not(:disabled) {
-  background: var(--primary);
-  color: white;
-}
-
-.unit-nav-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.unit-nav-label {
+.size-name {
   font-size: 0.9rem;
   font-weight: 700;
-  color: var(--text-h);
 }
 
-.toppings-section { display: flex; flex-direction: column; }
+.size-detail {
+  font-size: 0.72rem;
+  color: #999;
+}
+
+.size-price {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--primary, #c05080);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TOPPINGS
+   ═══════════════════════════════════════════════════════════ */
+.toppings-section {
+  display: flex;
+  flex-direction: column;
+}
 
 .topping-group {
   padding: 18px 0;
   border-bottom: 1px dashed #f0dbe6;
 }
 
-.topping-group:last-child { border-bottom: none; }
+.topping-group:last-child {
+  border-bottom: none;
+}
 
 .topping-group-header {
   display: flex;
@@ -930,17 +912,27 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
   margin-bottom: 14px;
 }
 
-.topping-group-icon { font-size: 1.2rem; }
-.topping-group-label { font-size: 0.92rem; font-weight: 700; color: var(--text-h); flex: 1; }
+.topping-group-icon {
+  font-size: 1.2rem;
+}
+
+.topping-group-label {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--primary-dark, #4a0028);
+  flex: 1;
+}
+
 .topping-group-price {
   font-size: 0.75rem;
-  color: var(--primary);
+  color: var(--primary, #c05080);
   background: #fff0f5;
   padding: 4px 10px;
   border-radius: 999px;
   font-weight: 700;
 }
 
+/* Chips */
 .topping-chips-row {
   display: flex;
   flex-wrap: wrap;
@@ -951,7 +943,7 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
   display: flex;
   align-items: center;
   gap: 8px;
-  background: var(--primary);
+  background: var(--primary, #c05080);
   color: white;
   padding: 8px 14px;
   border-radius: 999px;
@@ -972,15 +964,16 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
   justify-content: center;
 }
 
+/* BOTÓN AGREGAR */
 .topping-add-btn {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 10px 18px;
   border-radius: 999px;
-  border: 2px dashed var(--primary);
+  border: 2px dashed var(--primary, #c05080);
   background: #fff5f9;
-  color: var(--primary);
+  color: var(--primary, #c05080);
   font-size: 0.85rem;
   font-weight: 700;
   cursor: pointer;
@@ -996,7 +989,7 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: var(--primary);
+  background: var(--primary, #c05080);
   color: white;
   display: flex;
   align-items: center;
@@ -1004,6 +997,9 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
   font-size: 1rem;
 }
 
+/* ═══════════════════════════════════════════════════════════
+   CANTIDAD
+   ═══════════════════════════════════════════════════════════ */
 .quantity-box {
   display: inline-flex;
   align-items: center;
@@ -1018,7 +1014,7 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
   border: none;
   background: white;
   font-size: 1.3rem;
-  color: var(--primary);
+  color: var(--primary, #c05080);
   cursor: pointer;
 }
 
@@ -1028,26 +1024,11 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
   font-weight: 700;
 }
 
-.stock-overflow-notice {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  margin-top: 12px;
-  padding: 12px 16px;
-  background: #fff8e1;
-  border: 1px solid #ffe082;
-  border-radius: 12px;
-}
-.stock-overflow-icon { font-size: 1.2rem; flex-shrink: 0; }
-.stock-overflow-text {
-  margin: 0;
-  font-size: 0.85rem;
-  color: #795548;
-  line-height: 1.5;
-}
-
+/* ═══════════════════════════════════════════════════════════
+   RESUMEN
+   ═══════════════════════════════════════════════════════════ */
 .summary-card {
-  background: var(--soft-bg);
+  background: #faf5f8;
   border-radius: 20px;
   padding: 20px;
   display: flex;
@@ -1063,12 +1044,22 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
 
 .summary-divider {
   height: 1px;
-  background: var(--border);
+  background: #ead5df;
 }
 
-.summary-total { font-size: 1rem; font-weight: 700; }
-.total-price { color: var(--primary); font-size: 1.4rem; }
+.summary-total {
+  font-size: 1rem;
+  font-weight: 700;
+}
 
+.total-price {
+  color: var(--primary, #c05080);
+  font-size: 1.4rem;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   FOOTER
+   ═══════════════════════════════════════════════════════════ */
 .profile-footer {
   display: flex;
   flex-direction: column;
@@ -1077,13 +1068,17 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
 
 .footer-note {
   text-align: center;
-  color: var(--text-muted);
+  color: #999;
   font-size: 0.8rem;
 }
 
-.profile-button { width: 100%; }
-.btn-added { background: var(--success) !important; }
+.profile-button {
+  width: 100%;
+}
 
+/* ═══════════════════════════════════════════════════════════
+   MODAL
+   ═══════════════════════════════════════════════════════════ */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -1133,7 +1128,7 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
 .modal-price {
   font-size: 0.75rem;
   background: #fff0f5;
-  color: var(--primary);
+  color: var(--primary, #c05080);
   padding: 4px 10px;
   border-radius: 999px;
 }
@@ -1148,6 +1143,7 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
   font-size: 1.2rem;
 }
 
+/* Opciones */
 .modal-options {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1157,48 +1153,91 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
 
 .modal-option {
   border: none;
-  background: #faf5f8;
-  border-radius: 16px;
-  padding: 16px;
-  cursor: pointer;
-  transition: all 0.2s;
+  background: #fff5f9;
+  padding: 18px 16px;
+  border-radius: 18px;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 6px;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.modal-option:hover:not(:disabled) {
+.modal-option:hover:not(.disabled) {
+  transform: translateY(-2px);
   background: #ffe3ef;
-  transform: scale(1.03);
 }
 
 .modal-option.disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
-.option-name { font-weight: 700; font-size: 0.9rem; }
-.option-badge { font-size: 0.7rem; color: var(--text-muted); }
+.option-name {
+  font-weight: 600;
+}
+
 .option-check {
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
-  background: var(--primary);
+  background: var(--primary, #c05080);
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.8rem;
+}
+
+.option-badge {
+  font-size: 0.72rem;
+  background: #eee;
+  padding: 4px 8px;
+  border-radius: 999px;
 }
 
 .modal-cancel {
   width: 100%;
-  padding: 12px;
-  border: 1px solid #eee;
+  padding: 14px;
   border-radius: 14px;
+  border: 1px solid #ddd;
   background: white;
   cursor: pointer;
   font-weight: 600;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TRANSICIÓN
+   ═══════════════════════════════════════════════════════════ */
+.modal-fade-enter-active,
+.modal-fade-leave-active {
+  transition: opacity .25s;
+}
+
+.modal-fade-enter-from,
+.modal-fade-leave-to {
+  opacity: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RESPONSIVE — scoped para no romper layout
+   ═══════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .profile-gallery {
+    position: relative;
+    top: unset;
+  }
+
+  .sizes-grid {
+    flex-direction: column;
+  }
+
+  .modal-options {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-sheet {
+    padding: 22px;
+    border-radius: 24px;
+  }
 }
 </style>
