@@ -23,8 +23,8 @@ onMounted(async () => {
   try {
     loading.value = true
 
-    // Limit to 8 products, only request needed fields (no descripcion for home)
-    const data = await apiService.get('/productos?limit=8&fields=id,nombre,precio,categoria,imagen_url,stock,fecha_creacion')
+    // Limit to 8 products from API to reduce payload
+    const data = await apiService.get('/productos?limit=8')
 
     const rawProducts = Array.isArray(data)
       ? data
@@ -52,6 +52,9 @@ onMounted(async () => {
           p.categoria || p.category || 'OTROS'
         ).toUpperCase(),
         image: finalImg,
+        imageUrl: finalImg,
+        isNew: p.fecha_creacion
+          ? new Date(p.fecha_creacion).
         imageUrl: finalImg,
         isNew: p.fecha_creacion
           ? new Date(p.fecha_creacion).toDateString() === today
