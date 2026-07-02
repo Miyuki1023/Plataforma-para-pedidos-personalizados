@@ -54,7 +54,7 @@ const loadProduct = async () => {
       disponible: p.disponible ?? true
     }
 
-    // Diferir carga de componentes secundarios
+    // Diferir componentes secundarios con requestIdleCallback o rAF
     requestAnimationFrame(() => {
       showRelated.value = true
     })
@@ -78,9 +78,12 @@ watch(() => props.id, loadProduct)
   <div class="profile-view">
     <Navbar />
 
+    <!-- ═══════════════════════════════════════════
+         SKELETON — dimensiones EXACTAS del real
+         para eliminar CLS en la transición
+         ═══════════════════════════════════════════ -->
     <template v-if="loading">
-      <!-- Skeleton layout con dimensiones fijas para eliminar CLS -->
-      <section class="skeleton-profile">
+      <section class="skeleton-profile" aria-label="Cargando producto">
         <div class="skeleton-profile-gallery">
           <div class="skeleton-image-main skeleton" />
           <div class="skeleton-thumbs-row">
@@ -119,7 +122,7 @@ watch(() => props.id, loadProduct)
 }
 
 /* ═══════════════════════════════════════════
-   SKELETON LOADING — dimensiones fijas para CLS
+   SKELETON — dimensiones fijas para CLS ~0
    ═══════════════════════════════════════════ */
 .skeleton-profile {
   display: grid;

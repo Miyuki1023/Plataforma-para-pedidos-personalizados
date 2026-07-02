@@ -14,7 +14,7 @@ const router = useRouter()
 const cartStore = useCartStore()
 
 /* ─── IMAGE FALLBACK ──────────────────────────────────────── */
-const IMAGE_FALLBACK = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400"%3E%3Crect fill="%23fdf0f5" width="400" height="400"/%3E%3Ctext fill="%23c05080" font-family="sans-serif" font-size="18" x="50" y="200"%3EImagen no disponible%3C/text%3E%3C/svg%3E'
+const IMAGE_FALLBACK = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="500" height="500" viewBox="0 0 500 500"%3E%3Crect fill="%23fdf0f5" width="500" height="500"/%3E%3Ctext fill="%23c05080" font-family="sans-serif" font-size="18" x="50" y="250"%3EImagen no disponible%3C/text%3E%3C/svg%3E'
 
 const safeImage = computed(() => {
   const img = props.product?.image || props.product?.imageUrl || IMAGE_FALLBACK
@@ -36,7 +36,7 @@ const deliveryTime = computed(() => '2 - 5 días hábiles')
 
 /* ─── CANTIDAD ────────────────────────────────────────────── */
 const quantity = ref(1)
-const increaseQty = () => quantity.value++
+const increaseQty = () => { if (quantity.value < 99) quantity.value++ }
 const decreaseQty = () => { if (quantity.value > 1) quantity.value-- }
 
 /* ─── MODO DE PERSONALIZACIÓN ────────────────────────────── */
@@ -61,7 +61,6 @@ const createEmptyUnit = (): UnitCustomization => ({
 const units = ref<UnitCustomization[]>([])
 const currentUnitIndex = ref(0)
 
-// Sincronizar unidades con la cantidad
 watch(quantity, (newQty) => {
   while (units.value.length < newQty) {
     units.value.push(createEmptyUnit())
@@ -71,32 +70,22 @@ watch(quantity, (newQty) => {
   }
 })
 
-// Inicializar con al menos 1 unidad
 if (units.value.length === 0) {
   units.value.push(createEmptyUnit())
 }
 
 const currentUnit = computed(() => units.value[currentUnitIndex.value] || createEmptyUnit())
-
 const totalUnits = computed(() => units.value.length)
 
-const prevUnit = () => {
-  if (currentUnitIndex.value > 0) currentUnitIndex.value--
-}
-
-const nextUnit = () => {
-  if (currentUnitIndex.value < units.value.length - 1) currentUnitIndex.value++
-}
+const prevUnit = () => { if (currentUnitIndex.value > 0) currentUnitIndex.value-- }
+const nextUnit = () => { if (currentUnitIndex.value < units.value.length - 1) currentUnitIndex.value++ }
 
 /* ─── TOPPINGS DINÁMICOS ──────────────────────────────────── */
 const MAX_TOPPINGS = 5
-
 type ToppingSlot = { id: number; value: string }
-
 const fruitOptions = ['Fresa', 'Arándanos', 'Mango', 'Maracuyá', 'Kiwi', 'Durazno']
 const creamOptions = ['Crema batida', 'Chocolate', 'Manjar', 'Nutella', 'Caramelo']
 
-// Para modo batch - usar las refs existentes
 const batchIngredient = ref('')
 const batchMessage = ref('')
 const batchFruitToppings = ref<ToppingSlot[]>([{ id: 1, value: '' }])
@@ -106,20 +95,14 @@ let nextBatchCreamId = 2
 
 /* Modal */
 type ModalTarget = { array: ToppingSlot[]; options: string[]; extra: string; label: string } | null
-const modalOpen   = ref(false)
+const modalOpen = ref(false)
 const modalTarget = ref<ModalTarget>(null)
 const modalSlotId = ref<number | null>(null)
 
-const openModal = (
-  array: ToppingSlot[],
-  slotId: number,
-  options: string[],
-  extra: string,
-  label: string
-) => {
+const openModal = (array: ToppingSlot[], slotId: number, options: string[], extra: string, label: string) => {
   modalTarget.value = { array, options, extra, label }
   modalSlotId.value = slotId
-  modalOpen.value   = true
+  modalOpen.value = true
 }
 
 const selectFromModal = (value: string) => {
@@ -127,23 +110,18 @@ const selectFromModal = (value: string) => {
   const arr = modalTarget.value.array
   const idx = arr.findIndex(t => t.id === modalSlotId.value)
   if (idx === -1) return
-
   arr[idx].value = value
-
   if (idx === arr.length - 1 && arr.length < MAX_TOPPINGS) {
     const isFruit = modalTarget.value.options === fruitOptions
-    const newId = isFruit ? (customizationMode.value === 'batch' ? nextBatchFruitId++ : nextBatchCreamId++) : (customizationMode.value === 'batch' ? nextBatchCreamId++ : nextBatchCreamId++)
+    const newId = isFruit ? nextBatchFruitId++ : nextBatchCreamId++
     arr.push({ id: newId, value: '' })
   }
-
   modalOpen.value = false
 }
 
 const removeTopping = (array: ToppingSlot[], id: number) => {
   const idx = array.findIndex(t => t.id === id)
-  if (idx !== -1) {
-    array.splice(idx, 1)
-  }
+  if (idx !== -1) array.splice(idx, 1)
   if (array.length === 0 || array[array.length - 1].value !== '') {
     const isFruit = array === (customizationMode.value === 'batch' ? batchFruitToppings.value : currentUnit.value.fruitToppings)
     const newId = isFruit ? nextBatchFruitId++ : nextBatchCreamId++
@@ -167,7 +145,7 @@ const selectedSize = ref('Mediano')
 const sizes = [
   { label: 'Pequeño', detail: '12 cm', price: 60 },
   { label: 'Mediano', detail: '16 cm', price: 80, popular: true },
-  { label: 'Grande',  detail: '20 cm', price: 100 }
+  { label: 'Grande', detail: '20 cm', price: 100 }
 ]
 
 const selectedSizePrice = computed(() =>
@@ -225,7 +203,6 @@ const buildCartItem = (unit: UnitCustomization, index: number) => {
     ...unit.fruitToppings.filter(t => t.value).map(t => t.value),
     ...unit.creamToppings.filter(t => t.value).map(t => t.value)
   ].filter(Boolean)
-
   return {
     id: `${props.product.id || Date.now()}-${index}`,
     image: props.product.image,
@@ -251,7 +228,6 @@ const addToCart = () => {
       ...batchFruitToppings.value.filter(t => t.value).map(t => t.value),
       ...batchCreamToppings.value.filter(t => t.value).map(t => t.value)
     ].filter(Boolean)
-
     const cartItem = {
       id: props.product.id || Date.now(),
       image: props.product.image,
@@ -276,25 +252,19 @@ const addToCart = () => {
       cartStore.addItem(item)
     }
   }
-
   addedToCart.value = true
   router.push({ name: 'carrito' })
   setTimeout(() => { addedToCart.value = false }, 2000)
 }
 
 /* ─── GALERÍA ─────────────────────────────────────────────── */
-const gallery = computed(() => [
-  safeImage.value,
-  safeImage.value,
-  safeImage.value
-])
+const gallery = computed(() => [safeImage.value, safeImage.value, safeImage.value])
 const activeImage = ref(safeImage.value)
 watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
 </script>
 
 <template>
   <main class="product-profile">
-
     <!-- ══════════════ GALERÍA ══════════════ -->
     <div class="profile-gallery">
       <div class="profile-image-wrapper">
@@ -308,27 +278,23 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
           fetchpriority="high"
           decoding="async"
         />
-
         <span v-if="props.product?.isNew" class="profile-badge">Nuevo ✨</span>
-
         <FavoriteIcon class="profile-fav" />
-
         <div class="image-hint">Toca para zoom</div>
       </div>
-
-      <div class="thumbs-row" role="list" aria-label="Galería de imágenes">
+      <div class="thumbs-row" role="list" aria-label="Miniaturas del producto">
         <button
           v-for="(img, i) in gallery"
           :key="i"
           class="thumb-btn"
           :class="{ active: activeImage === img }"
           @click="activeImage = img"
-          :aria-label="`Ver imagen ${i + 1} del producto`"
+          :aria-label="`Ver imagen ${i + 1}`"
           role="listitem"
         >
           <img
             :src="img"
-            :alt="`Miniatura ${i + 1} de ${props.product?.name || 'Producto'}`"
+            :alt="`Miniatura ${i + 1}`"
             class="thumb-image"
             width="100"
             height="100"
@@ -341,7 +307,6 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
 
     <!-- ══════════════ CONTENIDO ══════════════ -->
     <div class="profile-content">
-
       <!-- ENCABEZADO -->
       <div class="profile-top">
         <div class="profile-top-row">
@@ -352,18 +317,13 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
             <span class="meta-chip">🚚 {{ deliveryTime }}</span>
           </div>
         </div>
-
         <h1 class="profile-title">{{ props.product?.name }}</h1>
         <p class="profile-description">{{ props.product?.description }}</p>
-
-        <!-- Stock status -->
         <div class="stock-info" :class="stockStatus.class">
           <span class="stock-icon" aria-hidden="true">{{ stockStatus.icon }}</span>
           <span class="stock-label">{{ stockStatus.label }}</span>
           <span class="stock-count" v-if="stock > 0">({{ stock }} disponibles)</span>
         </div>
-
-        <!-- Preparation time -->
         <div class="time-info">
           <span>⏱️ Preparación: <strong>{{ preparationTime }}</strong></span>
           <span>📬 Entrega: <strong>{{ deliveryTime }}</strong></span>
@@ -376,7 +336,6 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
           <h2 class="profile-subtitle">Tamaño</h2>
           <span class="section-note">El mediano es el más pedido</span>
         </div>
-
         <div class="sizes-grid" role="radiogroup" aria-label="Seleccionar tamaño">
           <button
             v-for="size in sizes"
@@ -386,7 +345,7 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
             @click="selectedSize = size.label"
             role="radio"
             :aria-checked="selectedSize === size.label"
-            :aria-label="`Tamaño ${size.label} - ${size.detail} - S/${size.price}`"
+            :aria-label="`Tamaño ${size.label} ${size.detail} S/${size.price}`"
           >
             <span v-if="size.popular" class="popular-badge">Popular</span>
             <span class="size-name">{{ size.label }}</span>
@@ -404,15 +363,14 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
           <span class="qty-number" aria-live="polite" aria-atomic="true">{{ quantity }}</span>
           <button class="qty-btn" @click="increaseQty" aria-label="Aumentar cantidad">+</button>
         </div>
-
-        <!-- Stock overflow message -->
-        <div v-if="stockOverflow" class="stock-overflow-notice animate-fadeIn" role="alert">
+        <!-- Stock overflow — espacio reservado con min-height para evitar CLS -->
+        <div v-if="stockOverflow" class="stock-overflow-notice" role="alert">
           <span class="stock-overflow-icon" aria-hidden="true">ℹ️</span>
           <p class="stock-overflow-text" v-html="stockOverflow.message"></p>
         </div>
       </div>
 
-      <!-- MODO DE PERSONALIZACIÓN (solo si quantity > 1) -->
+      <!-- MODO DE PERSONALIZACIÓN — espacio reservado con min-height -->
       <div v-if="quantity > 1" class="profile-section">
         <h2 class="profile-subtitle">Modo de personalización</h2>
         <div class="mode-selector" role="radiogroup" aria-label="Modo de personalización">
@@ -441,15 +399,11 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
         </div>
       </div>
 
-      <!-- NAVEGACIÓN ENTRE UNIDADES (modo individual) -->
+      <!-- NAVEGACIÓN ENTRE UNIDADES -->
       <div v-if="customizationMode === 'individual' && quantity > 1" class="unit-navigation" role="navigation" aria-label="Navegación entre unidades">
-        <button class="unit-nav-btn" @click="prevUnit" :disabled="currentUnitIndex === 0" aria-label="Unidad anterior">
-          ← Anterior
-        </button>
+        <button class="unit-nav-btn" @click="prevUnit" :disabled="currentUnitIndex === 0" aria-label="Unidad anterior">← Anterior</button>
         <span class="unit-nav-label" aria-live="polite">Unidad {{ currentUnitIndex + 1 }} de {{ totalUnits }}</span>
-        <button class="unit-nav-btn" @click="nextUnit" :disabled="currentUnitIndex >= totalUnits - 1" aria-label="Siguiente unidad">
-          Siguiente →
-        </button>
+        <button class="unit-nav-btn" @click="nextUnit" :disabled="currentUnitIndex >= totalUnits - 1" aria-label="Siguiente unidad">Siguiente →</button>
       </div>
 
       <!-- EVITAR INGREDIENTE -->
@@ -476,15 +430,12 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
           <h2 class="profile-subtitle">Personaliza tu torta</h2>
           <span class="section-note">Hasta {{ MAX_TOPPINGS }} por tipo</span>
         </div>
-
-        <!-- FRUTAS -->
         <div class="topping-group">
           <div class="topping-group-header">
             <span class="topping-group-icon" aria-hidden="true">🍓</span>
             <span class="topping-group-label">Frutillas</span>
             <span class="topping-group-price">+S/5 c/u</span>
           </div>
-
           <div class="topping-chips-row">
             <div
               v-for="topping in (customizationMode === 'batch' ? batchFruitToppings : currentUnit.fruitToppings).filter(t => t.value)"
@@ -492,37 +443,25 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
               class="topping-chip selected"
             >
               <span>{{ topping.value }}</span>
-              <button
-                class="topping-chip-remove"
-                @click="removeTopping(customizationMode === 'batch' ? batchFruitToppings : currentUnit.fruitToppings, topping.id)"
-                :aria-label="`Quitar ${topping.value}`"
-              >×</button>
+              <button class="topping-chip-remove" @click="removeTopping(customizationMode === 'batch' ? batchFruitToppings : currentUnit.fruitToppings, topping.id)" :aria-label="`Quitar ${topping.value}`">×</button>
             </div>
-
             <button
               v-if="(customizationMode === 'batch' ? batchFruitToppings : currentUnit.fruitToppings).filter(t => t.value).length < MAX_TOPPINGS"
               class="topping-add-btn"
-              @click="openModal(
-                customizationMode === 'batch' ? batchFruitToppings : currentUnit.fruitToppings,
-                (customizationMode === 'batch' ? batchFruitToppings : currentUnit.fruitToppings).find(t => !t.value)?.id ?? -1,
-                fruitOptions, '+S/5', 'Frutilla'
-              )"
-              :aria-label="'Agregar frutilla'"
+              @click="openModal(customizationMode === 'batch' ? batchFruitToppings : currentUnit.fruitToppings, (customizationMode === 'batch' ? batchFruitToppings : currentUnit.fruitToppings).find(t => !t.value)?.id ?? -1, fruitOptions, '+S/5', 'Frutilla')"
+              aria-label="Agregar frutilla"
             >
               <span class="add-icon" aria-hidden="true">+</span>
               <span>Agregar frutilla</span>
             </button>
           </div>
         </div>
-
-        <!-- RELLENOS -->
         <div class="topping-group">
           <div class="topping-group-header">
             <span class="topping-group-icon" aria-hidden="true">🍫</span>
             <span class="topping-group-label">Rellenos extra</span>
             <span class="topping-group-price">+S/8 c/u</span>
           </div>
-
           <div class="topping-chips-row">
             <div
               v-for="topping in (customizationMode === 'batch' ? batchCreamToppings : currentUnit.creamToppings).filter(t => t.value)"
@@ -530,53 +469,31 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
               class="topping-chip selected"
             >
               <span>{{ topping.value }}</span>
-              <button
-                class="topping-chip-remove"
-                @click="removeTopping(customizationMode === 'batch' ? batchCreamToppings : currentUnit.creamToppings, topping.id)"
-                :aria-label="`Quitar ${topping.value}`"
-              >×</button>
+              <button class="topping-chip-remove" @click="removeTopping(customizationMode === 'batch' ? batchCreamToppings : currentUnit.creamToppings, topping.id)" :aria-label="`Quitar ${topping.value}`">×</button>
             </div>
-
             <button
               v-if="(customizationMode === 'batch' ? batchCreamToppings : currentUnit.creamToppings).filter(t => t.value).length < MAX_TOPPINGS"
               class="topping-add-btn"
-              @click="openModal(
-                customizationMode === 'batch' ? batchCreamToppings : currentUnit.creamToppings,
-                (customizationMode === 'batch' ? batchCreamToppings : currentUnit.creamToppings).find(t => !t.value)?.id ?? -1,
-                creamOptions, '+S/8', 'Relleno'
-              )"
-              :aria-label="'Agregar relleno'"
+              @click="openModal(customizationMode === 'batch' ? batchCreamToppings : currentUnit.creamToppings, (customizationMode === 'batch' ? batchCreamToppings : currentUnit.creamToppings).find(t => !t.value)?.id ?? -1, creamOptions, '+S/8', 'Relleno')"
+              aria-label="Agregar relleno"
             >
               <span class="add-icon" aria-hidden="true">+</span>
               <span>Agregar relleno</span>
             </button>
           </div>
         </div>
-
-        <!-- MENSAJE -->
         <div class="topping-group">
           <div class="topping-group-header">
             <span class="topping-group-icon" aria-hidden="true">💌</span>
             <span class="topping-group-label">Mensaje en la torta</span>
             <span class="topping-group-price">+S/2</span>
           </div>
-          <BaseInput
-            v-if="customizationMode === 'batch'"
-            v-model="batchMessage"
-            placeholder="Ej: ¡Feliz cumpleaños!"
-            aria-label="Mensaje para la torta"
-          />
-          <BaseInput
-            v-else
-            :model-value="currentUnit.message"
-            @update:model-value="currentUnit.message = $event"
-            placeholder="Ej: ¡Feliz cumpleaños!"
-            aria-label="Mensaje para la torta"
-          />
+          <BaseInput v-if="customizationMode === 'batch'" v-model="batchMessage" placeholder="Ej: ¡Feliz cumpleaños!" aria-label="Mensaje para la torta" />
+          <BaseInput v-else :model-value="currentUnit.message" @update:model-value="currentUnit.message = $event" placeholder="Ej: ¡Feliz cumpleaños!" aria-label="Mensaje para la torta" />
         </div>
       </div>
 
-      <!-- RESUMEN DINÁMICO -->
+      <!-- RESUMEN DINÁMICO — espacio reservado para evitar CLS -->
       <div class="summary-card" aria-label="Resumen del pedido">
         <div class="summary-row">
           <span>Tamaño</span>
@@ -614,10 +531,10 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
           <span v-else>✅ ¡Agregado!</span>
         </BaseButton>
       </div>
-    </div><!-- /profile-content -->
+    </div>
   </main>
 
-  <!-- ══════════════ MODAL DE SELECCIÓN ══════════════ -->
+  <!-- MODAL -->
   <Teleport to="body">
     <Transition name="modal-fade">
       <div v-if="modalOpen" class="modal-overlay" @click.self="modalOpen = false" role="presentation">
@@ -629,7 +546,6 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
             </h3>
             <button class="modal-close" @click="modalOpen = false" aria-label="Cerrar">×</button>
           </div>
-
           <div class="modal-options">
             <button
               v-for="opt in modalTarget?.options"
@@ -645,7 +561,6 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
               <span v-else class="option-check" aria-hidden="true">+</span>
             </button>
           </div>
-
           <button class="modal-cancel" @click="modalOpen = false">Cancelar</button>
         </div>
       </div>
@@ -655,7 +570,7 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
 
 <style scoped>
 /* ═══════════════════════════════════════════════════════════
-   LAYOUT — CRÍTICO: scoped para mantener responsive intacto
+   LAYOUT — scoped para mantener responsive intacto
    ═══════════════════════════════════════════════════════════ */
 .product-profile {
   display: grid;
@@ -676,7 +591,7 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
 }
 
 /* ═══════════════════════════════════════════════════════════
-   GALERÍA — aspect-ratio fijo para CLS
+   GALERÍA — aspect-ratio fijo + width/height explícitos
    ═══════════════════════════════════════════════════════════ */
 .profile-gallery {
   position: sticky;
@@ -843,7 +758,7 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
   align-items: center;
   gap: 4px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: border-color 0.2s ease, background 0.2s ease;
 }
 
 .size-chip:hover {
@@ -932,7 +847,6 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
   font-weight: 700;
 }
 
-/* Chips */
 .topping-chips-row {
   display: flex;
   flex-wrap: wrap;
@@ -964,7 +878,6 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
   justify-content: center;
 }
 
-/* BOTÓN AGREGAR */
 .topping-add-btn {
   display: flex;
   align-items: center;
@@ -977,12 +890,11 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
   font-size: 0.85rem;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background 0.2s ease;
 }
 
 .topping-add-btn:hover {
   background: #ffe3ef;
-  transform: scale(1.03);
 }
 
 .add-icon {
@@ -1143,7 +1055,6 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
   font-size: 1.2rem;
 }
 
-/* Opciones */
 .modal-options {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1160,11 +1071,10 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background 0.2s ease;
 }
 
 .modal-option:hover:not(.disabled) {
-  transform: translateY(-2px);
   background: #ffe3ef;
 }
 
@@ -1206,7 +1116,7 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
 }
 
 /* ═══════════════════════════════════════════════════════════
-   TRANSICIÓN
+   TRANSICIÓN — solo opacity, sin layout
    ═══════════════════════════════════════════════════════════ */
 .modal-fade-enter-active,
 .modal-fade-leave-active {
@@ -1219,7 +1129,7 @@ watch(() => props.product?.image, (v) => { if (v) activeImage.value = v })
 }
 
 /* ═══════════════════════════════════════════════════════════
-   RESPONSIVE — scoped para no romper layout
+   RESPONSIVE
    ═══════════════════════════════════════════════════════════ */
 @media (max-width: 768px) {
   .profile-gallery {
