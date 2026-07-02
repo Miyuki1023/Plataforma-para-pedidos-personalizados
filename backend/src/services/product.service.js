@@ -1,24 +1,65 @@
 const pool = require('../config/db');
 
-exports.getProducts = async () => {
-  // Eliminamos el WHERE disponible = true para que el editor de productos 
-  // pueda listar y re-activar los productos apagados.
-  const result = await pool.query(`
+exports.getProducts = async (query = {}) => {
+  const { limit, offset, fields, search, categoria } = query;
+
+  let sql = `
     SELECT 
       id,
       nombre,
-      descripcion,
       precio,
       categoria,
       disponible,
       imagen_url,
-      badge,
-      subtitulo,
       stock
-    FROM producto
-    ORDER BY id ASC
-  `);
+  `;
 
+  // Only include description and subtitle when explicitly requested (not for home page)
+  if (fields && fields.includes('descripcion')) {
+    sql = sql.replace('stock', 'stock, descripcion');
+  }
+  if (fields && fields.includes('subtitulo')) {
+    sql = sql.replace('stock', 'stock, subtitulo');
+  }
+  if (fields && fields.includes('badge')) {
+    sql = sql.replace('stock', 'stock, badge');
+  }
+  if (fields && fields.includes('fecha_creacion')) {
+    sql = sql.replace('stock', 'stock, fecha_creacion');
+  }
+
+  sql += `\n    FROM producto\n    WHERE disponible = true`;
+
+  const params = [];
+  let paramIndex = 1;
+
+  if (categoria) {
+    sql += ` AND UPPER(categoria) = UPPER($${paramIndex})`;
+    params.push(categoria);
+    paramIndex++;
+  }
+
+  if (search) {
+    sql += ` AND (LOWER(nombre) LIKE LOWER($${paramIndex}) OR LOWER(descripcion) LIKE LOWER($${paramIndex}))`;
+    params.push(`%${search}%`);
+    paramIndex++;
+  }
+
+  sql += `\n    ORDER BY id ASC`;
+
+  if (limit) {
+    sql += ` LIMIT $${paramIndex}`;
+    params.push(parseInt(limit, 10));
+    paramIndex++;
+  }
+
+  if (offset) {
+    sql += ` OFFSET $${paramIndex}`;
+    params.push(parseInt(offset, 10));
+    paramIndex++;
+  }
+
+  const result = await pool.query(sql, params);
   return result.rows;
 };
 

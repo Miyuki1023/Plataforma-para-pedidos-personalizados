@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import ProductCard from '../../molecules/ProductCard.vue'
-import { apiService } from '../../../lib/api.ts'
+import { apiService } from '../../../lib/api'
 
 const props = defineProps<{
   currentProduct?: any

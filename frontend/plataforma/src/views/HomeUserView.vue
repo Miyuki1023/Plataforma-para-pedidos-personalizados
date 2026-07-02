@@ -1,14 +1,18 @@
 <script setup lang="ts">
+import { defineAsyncComponent } from 'vue'
 import Navbar from '../components/organisms/Navbar.vue'
-import CategoriesSection from '../components/organisms/Home/Categorias.vue'
-import TestimoniosSection from '../components/organisms/Home/TestimoniosSection.vue'
-import Footer from '../components/organisms/Footer.vue'
 import Hero from '../components/organisms/Home/Hero.vue'
-import FeatureCard from '../components/organisms/Home/Features.vue'
-import RecommendedSection from '../components/organisms/Home/ProductsRecomendados.vue'
-import trabajamosSection from '../components/organisms/Home/trabajamosSection.vue'
-import PromosSection from '../components/organisms/Home/PromocionesSection.vue'
-import DiferencianteSection from '../components/organisms/Home/DiferencianteSection.vue'
+import Footer from '../components/organisms/Footer.vue'
+
+// Critical above-the-fold components loaded eagerly
+// Lazy load non-critical below-the-fold components for faster LCP
+const CategoriesSection = defineAsyncComponent(() => import('../components/organisms/Home/Categorias.vue'))
+const FeatureCard = defineAsyncComponent(() => import('../components/organisms/Home/Features.vue'))
+const RecommendedSection = defineAsyncComponent(() => import('../components/organisms/Home/ProductsRecomendados.vue'))
+const trabajamosSection = defineAsyncComponent(() => import('../components/organisms/Home/trabajamosSection.vue'))
+const PromosSection = defineAsyncComponent(() => import('../components/organisms/Home/PromocionesSection.vue'))
+const DiferencianteSection = defineAsyncComponent(() => import('../components/organisms/Home/DiferencianteSection.vue'))
+const TestimoniosSection = defineAsyncComponent(() => import('../components/organisms/Home/TestimoniosSection.vue'))
 </script>
 
 <template>

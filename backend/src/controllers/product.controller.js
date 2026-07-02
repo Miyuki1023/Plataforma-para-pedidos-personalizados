@@ -2,13 +2,11 @@ const productService = require('../services/product.service');
 
 exports.getProducts = async (req, res) => {
   try {
-    const products = await productService.getProducts();
-
+    const { limit, offset, fields, search, categoria } = req.query;
+    const products = await productService.getProducts({ limit, offset, fields, search, categoria });
     res.json(products);
-
   } catch (error) {
     console.error(error);
-
     res.status(500).json({
       message: 'Error al obtener productos',
       details: error.message
@@ -79,7 +77,6 @@ exports.deleteProduct = async (req, res) => {
     const { id } = req.params;
     const result = await productService.deleteProduct(id);
 
-    // Si tu servicio retorna falso o nulo cuando el producto no existía
     if (!result) {
       return res.status(404).json({ message: 'Producto no encontrado' });
     }

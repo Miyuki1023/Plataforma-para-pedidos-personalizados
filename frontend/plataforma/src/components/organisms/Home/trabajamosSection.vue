@@ -12,7 +12,11 @@ const router = useRouter()
 
     <img
       src="../../../assets/about_img.webp"
-      alt="Así trabajamos"
+      alt="Así trabajamos en Vainilla y Miel"
+      width="600"
+      height="450"
+      loading="lazy"
+      decoding="async"
     />
 
     <div class="about-floating-card">

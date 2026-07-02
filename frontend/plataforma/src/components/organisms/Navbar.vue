@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, nextTick, computed } from 'vue'
+import { ref, onMounted, onBeforeUnmount, nextTick, computed, shallowRef } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import { apiService } from '../../lib/api'
@@ -25,58 +25,66 @@ const closeMenu = () => {
 }
 
 const searchQuery = ref('')
-const allProducts = ref<any[]>([])
+const allProducts = shallowRef<any[]>([])
+let searchTimeout: ReturnType<typeof setTimeout> | null = null
 
-const fetchProducts = async () => {
-  if (allProducts.value.length > 0) return
+const fetchSearchResults = async (query: string) => {
+  if (!query.trim()) {
+    allProducts.value = []
+    return
+  }
   try {
-    const data = await apiService.get('/productos')
-    allProducts.value = Array.isArray(data) ? data : (data.products || [])
-  } catch (err) {
-    console.error('Error fetching search products:', err)
+    // Use search endpoint that limits results server-side instead of fetching all
+    const data = await apiService.get(`/productos?limit=8&search=${encodeURIComponent(query)}`)
+    const items = Array.isArray(data) ? data : (data.products || [])
+    allProducts.value = items.slice(0, 5)
+  } catch {
+    // Fallback to empty on error
+    allProducts.value = []
   }
 }
 
-const filteredResults = computed(() => {
-  if (!searchQuery.value.trim()) return []
-  const q = searchQuery.value.toLowerCase()
-  return allProducts.value.filter(p => 
-    (p.nombre || p.name || '').toLowerCase().includes(q)
-  ).slice(0, 5)
-})
+const debouncedSearch = (query: string) => {
+  if (searchTimeout) clearTimeout(searchTimeout)
+  searchTimeout = setTimeout(() => fetchSearchResults(query), 300)
+}
+
+const filteredResults = computed(() => allProducts.value)
 
 const goToProduct = (p: any) => {
   const id = p.id || p.id_producto || p._id
+  if (!id) return
   router.push(`/producto/${id}`)
   isSearchOpen.value = false
   searchQuery.value = ''
+  allProducts.value = []
 }
 
-// Si el usuario está autenticado, lo lleva a su perfil, de lo contrario al login
 const profileLink = computed(() => {
   return authStore.user ? '/perfil' : '/login'
 })
 
-const toggleSearch = async () => {
+const toggleSearch = () => {
   isSearchOpen.value = !isSearchOpen.value
 
-  if (isSearchOpen.value) {
-    await fetchProducts()
+  if (!isSearchOpen.value) {
+    searchQuery.value = ''
+    allProducts.value = []
+  } else {
     nextTick(() => {
       searchInputRef.value?.focus()
     })
-  } else {
-    searchQuery.value = ''
   }
 }
 
 const handleClickOutside = (event: MouseEvent) => {
-
   if (
     navbarRef.value &&
     !navbarRef.value.contains(event.target as Node)
   ) {
     isSearchOpen.value = false
+    searchQuery.value = ''
+    allProducts.value = []
   }
 }
 
@@ -86,6 +94,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleClickOutside)
+  if (searchTimeout) clearTimeout(searchTimeout)
 })
 </script>
 
@@ -134,6 +143,7 @@ onBeforeUnmount(() => {
               placeholder="Buscar..."
               class="search-input"
               aria-label="Buscar productos"
+              @input="debouncedSearch(searchQuery)"
             />
 
             <!-- RESULTADOS DE BÚSQUEDA -->
@@ -145,7 +155,7 @@ onBeforeUnmount(() => {
                   class="result-item"
                   @click="goToProduct(p)"
                 >
-                  <img :src="p.imagen_url || p.imagen || '/placeholder.png'" class="result-img" alt="" />
+                  <img :src="p.imagen_url || p.imagen || '/placeholder.png'" class="result-img" alt="" width="44" height="44" loading="lazy" decoding="async" />
                   <div class="result-info">
                     <span class="result-name">{{ p.nombre || p.name }}</span>
                     <span class="result-price">S/ {{ p.precio || p.price }}</span>
@@ -174,7 +184,7 @@ onBeforeUnmount(() => {
 
       <!-- USER / LOGIN -->
        <!-- USER -->
-      <RouterLink class="icon-btn" :to="profileLink">
+      <RouterLink class="icon-btn" :to="profileLink" :aria-label="authStore.user ? 'Ir a mi perfil' : 'Iniciar sesión'">
         <BaseIcon name="user" :size="20" />
       </RouterLink>
 
@@ -254,27 +264,6 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.user-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  text-decoration: none;
-  color: inherit;
-}
-
-.user-label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #3f0006;
-  white-space: nowrap;
-}
-
-@media (max-width: 480px) {
-  .user-label {
-    display: none;
-  }
-}
-
 .cart-btn {
   position: relative;
 }

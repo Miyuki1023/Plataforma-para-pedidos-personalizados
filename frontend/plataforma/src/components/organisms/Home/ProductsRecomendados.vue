@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, shallowRef } from 'vue'
 import { RouterLink } from 'vue-router'
 
 import ProductCard from '../../molecules/ProductCard.vue'
@@ -7,16 +7,12 @@ import BaseButton from '../../atoms/BaseButton.vue'
 import BaseIcon from '../../atoms/BaseIcon.vue'
 import { apiService } from '../../../lib/api'
 
-const products = ref<any[]>([])
+const products = shallowRef<any[]>([])
 const loading = ref(true)
 const carouselRef = ref<HTMLDivElement | null>(null)
 
 const showArrows = computed(() => products.value.length > 1)
 
-/**
- * Desplazamiento por bloques: 
- * Se mueve el ancho visible del contenedor para avanzar al siguiente grupo de productos.
- */
 const scrollProducts = (direction: number) => {
   if (!carouselRef.value) return
   const scrollAmount = carouselRef.value.clientWidth
@@ -27,7 +23,8 @@ onMounted(async () => {
   try {
     loading.value = true
 
-    const data = await apiService.get('/productos')
+    // Limit to 8 products, only request needed fields (no descripcion for home)
+    const data = await apiService.get('/productos?limit=8&fields=id,nombre,precio,categoria,imagen_url,stock,fecha_creacion')
 
     const rawProducts = Array.isArray(data)
       ? data
@@ -35,7 +32,7 @@ onMounted(async () => {
 
     const today = new Date().toDateString()
 
-    products.value = rawProducts.slice(1, 8).map((p: any) => {
+    products.value = rawProducts.slice(0, 7).map((p: any) => {
       const imgSource =
         p.imagen_url ||
         p.imagen ||

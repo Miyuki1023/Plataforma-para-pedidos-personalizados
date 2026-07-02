@@ -1,53 +1,20 @@
 <script setup lang="ts">
-import {
-  ref,
-  onMounted,
-  onBeforeUnmount,
-  nextTick,
-  watch
-} from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 
 import { useRouter, useRoute } from 'vue-router'
 import CategoryChip from '../../molecules/Category.vue'
 
 const router = useRouter()
 
+// Optimized Unsplash URLs: auto=format for WebP, fit=crop, exact display size (60px), q=75 for quality vs size balance
 const categories = [
-
-  {
-    label: 'Promos',
-    image: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=120&q=80'
-  },
-
-  {
-    label: 'Tortas',
-    image: 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=120&q=80'
-  },
-
-  {
-    label: 'Cupcake',
-    image: 'https://images.unsplash.com/photo-1576618148400-f54bed99fcfd?w=120&q=80'
-  },
-
-  {
-    label: 'Galletas',
-    image: 'https://images.unsplash.com/photo-1499636136210-6f4ee915583e?w=120&q=80'
-  },
-
-  {
-    label: 'Bocaditos',
-    image: 'https://images.unsplash.com/photo-1548365328-8c6db3220e4c?w=120&q=80'
-  },
-
-  {
-    label: 'Pastelería Salada',
-    image: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=120&q=80'
-  },
-
-  {
-    label: 'Cheesecakes',
-    image: 'https://images.unsplash.com/photo-1533134242443-d4fd215305ad?w=120&q=80'
-  }
+  { label: 'Promos', image: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?auto=format&fit=crop&w=60&q=75' },
+  { label: 'Tortas', image: 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?auto=format&fit=crop&w=60&q=75' },
+  { label: 'Cupcake', image: 'https://images.unsplash.com/photo-1576618148400-f54bed99fcfd?auto=format&fit=crop&w=60&q=75' },
+  { label: 'Galletas', image: 'https://images.unsplash.com/photo-1499636136210-6f4ee915583e?auto=format&fit=crop&w=60&q=75' },
+  { label: 'Bocaditos', image: 'https://images.unsplash.com/photo-1548365328-8c6db3220e4c?auto=format&fit=crop&w=60&q=75' },
+  { label: 'Pastelería Salada', image: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&w=60&q=75' },
+  { label: 'Cheesecakes', image: 'https://images.unsplash.com/photo-1533134242443-d4fd215305ad?auto=format&fit=crop&w=60&q=75' }
 ]
 
 const route = useRoute()
@@ -65,12 +32,9 @@ watch(() => route.query.categoria, () => {
 
 const goToCategory = (category: string) => {
   activeCategory.value = category
-
   router.push({
     path: '/catalogo',
-    query: {
-      categoria: category.toUpperCase()
-    }
+    query: { categoria: category.toUpperCase() }
   })
 }
 
@@ -78,81 +42,60 @@ const chipsRowRef = ref<HTMLElement | null>(null)
 const scrollProgress = ref(0)
 const showScrollIndicator = ref(false)
 
+// Batch reads using requestAnimationFrame to avoid forced reflow
 const updateScrollProgress = () => {
+  requestAnimationFrame(() => {
+    const el = chipsRowRef.value
+    if (!el) return
 
-  if (chipsRowRef.value) {
-
-    const {
-      scrollLeft,
-      scrollWidth,
-      clientWidth
-    } = chipsRowRef.value
-
-    const maxScroll =
-      scrollWidth - clientWidth
+    const { scrollLeft, scrollWidth, clientWidth } = el
+    const maxScroll = scrollWidth - clientWidth
 
     if (maxScroll > 0) {
-
-      scrollProgress.value =
-        (scrollLeft / maxScroll) * 100
-
+      scrollProgress.value = (scrollLeft / maxScroll) * 100
       showScrollIndicator.value = true
-
     } else {
-
       scrollProgress.value = 0
       showScrollIndicator.value = false
-    }
-  }
-}
-
-const checkScrollability = () => {
-
-  nextTick(() => {
-
-    if (chipsRowRef.value) {
-
-      showScrollIndicator.value =
-        chipsRowRef.value.scrollWidth >
-        chipsRowRef.value.clientWidth
-
-      updateScrollProgress()
     }
   })
 }
 
+const checkScrollability = () => {
+  requestAnimationFrame(() => {
+    const el = chipsRowRef.value
+    if (!el) return
+
+    showScrollIndicator.value = el.scrollWidth > el.clientWidth
+    updateScrollProgress()
+  })
+}
+
+let resizeObserver: ResizeObserver | null = null
+
 onMounted(() => {
-
-  if (chipsRowRef.value) {
-
-    chipsRowRef.value.addEventListener(
-      'scroll',
-      updateScrollProgress
-    )
+  const el = chipsRowRef.value
+  if (el) {
+    el.addEventListener('scroll', updateScrollProgress, { passive: true })
   }
 
-  window.addEventListener(
-    'resize',
-    checkScrollability
-  )
+  // Use ResizeObserver instead of window resize for better performance
+  if (el?.parentElement) {
+    resizeObserver = new ResizeObserver(() => checkScrollability())
+    resizeObserver.observe(el.parentElement)
+  }
 
   checkScrollability()
 })
 
 onBeforeUnmount(() => {
-
-  if (chipsRowRef.value) {
-
-    chipsRowRef.value.removeEventListener(
-      'scroll',
-      updateScrollProgress
-    )
+  const el = chipsRowRef.value
+  if (el) {
+    el.removeEventListener('scroll', updateScrollProgress)
   }
-
-  window.removeEventListener(
-    'resize',
-    checkScrollability
-  )
+  if (resizeObserver) {
+    resizeObserver.disconnect()
+  }
 })
 </script>
 <template>
@@ -174,7 +117,7 @@ onBeforeUnmount(() => {
             />
           </div>
           <div v-if="showScrollIndicator" class="scroll-indicator-container">
-            <div class="scroll-progress-bar" :style="{ width: scrollProgress + '%' }"></div>
+            <div class="scroll-progress-bar" :style="{ transform: 'scaleX(' + (scrollProgress / 100) + ')' }"></div>
           </div>
         </div>
       </div>
@@ -249,7 +192,8 @@ onBeforeUnmount(() => {
   height: 100%;
   background: #8b1a2e;
   border-radius: 10px;
-  transition: width 0.2s ease;
+  transform-origin: left center;
+  transition: transform 0.2s ease;
 }
 
 /* === RESPONSIVE DESIGN === */

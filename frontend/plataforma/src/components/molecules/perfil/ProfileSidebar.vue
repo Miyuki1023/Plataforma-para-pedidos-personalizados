@@ -5,7 +5,7 @@ import { ref, onMounted, watch } from 'vue'
 import BaseInput from '../../atoms/BaseInput.vue'
 import PrimaryButton from '../../atoms/PrimaryButton.vue'
 import { useAuthStore } from '../../../stores/auth'
-import { apiService } from '../../../lib/api.ts'
+import { apiService } from '../../../lib/api'
 
 interface Address {
   id: number

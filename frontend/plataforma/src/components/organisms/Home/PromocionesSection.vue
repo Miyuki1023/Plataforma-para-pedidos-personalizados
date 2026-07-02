@@ -5,7 +5,7 @@ import BaseIcon from '../../atoms/BaseIcon.vue'
 
 import { useRouter } from 'vue-router'
 import { ref, onMounted } from 'vue'
-import { apiService } from '../../../lib/api.ts'
+import { apiService } from '../../../lib/api'
 
 const router = useRouter()
 
@@ -31,7 +31,8 @@ const carouselRef = ref<HTMLDivElement | null>(null)
 
 const fetchPromos = async () => {
   try {
-    const response = await apiService.get('/productos')
+    // Filter by PROMOS category server-side, only request needed fields
+    const response = await apiService.get('/productos?limit=12&categoria=PROMOS&fields=id,nombre,precio,categoria,imagen_url,stock,badge,subtitulo')
 
     const products = Array.isArray(response)
       ? response

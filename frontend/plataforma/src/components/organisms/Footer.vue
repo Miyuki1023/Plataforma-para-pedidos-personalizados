@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, defineAsyncComponent } from 'vue'
 import BaseIcon from '../atoms/BaseIcon.vue'
 import BaseBadge from '../atoms/BaseBadge.vue'
-import RecommendationModal from '../molecules/RecommendationModal.vue'
+
+const RecommendationModal = defineAsyncComponent(() => import('../molecules/RecommendationModal.vue'))
 
 const isModalOpen = ref(false)
 

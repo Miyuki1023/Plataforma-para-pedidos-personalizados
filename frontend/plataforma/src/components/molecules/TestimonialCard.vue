@@ -23,13 +23,17 @@ defineProps<{
     :src="avatar"
     :alt="name"
     class="testi-avatar-image"
+    width="150"
+    height="150"
+    loading="lazy"
+    decoding="async"
   />
 </div>
 
     <!-- NAME -->
-    <p class="testi-name">
+    <h3 class="testi-name">
       {{ name }}
-    </p>
+    </h3>
 
     <!-- STARS -->
     <div class="testi-stars">

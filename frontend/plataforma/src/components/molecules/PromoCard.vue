@@ -117,7 +117,10 @@ const displayCategory = computed(() =>
         :src="displayImage"
         :alt="`Imagen de ${props.nombre}`"
         class="promo-image"
+        width="400"
+        height="300"
         loading="lazy"
+        decoding="async"
       />
 
       <!-- BADGES -->

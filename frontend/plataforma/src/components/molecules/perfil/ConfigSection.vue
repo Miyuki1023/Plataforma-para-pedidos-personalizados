@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import BaseIcon from '../../atoms/BaseIcon.vue'
 import { useAuthStore } from '../../../stores/auth'
-import { apiService } from '../../../lib/api.ts'
+import { apiService } from '../../../lib/api'
 
 const authStore = useAuthStore()
 const router = useRouter()

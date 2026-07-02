@@ -66,7 +66,10 @@ const toggleFavorite = () => {
         :src="safeImageUrl"
         :alt="safeName"
         class="card-image"
+        width="300"
+        height="300"
         loading="lazy"
+        decoding="async"
       />
       <div
         v-else
