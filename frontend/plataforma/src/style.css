@@ -6128,23 +6128,6 @@ h3 {
 
 /* LAYOUT */
 
-.product-profile {
-
-  display: grid;
-
-  grid-template-columns: 1.1fr 1fr;
-
-  gap: 4rem;
-
-  padding: 4rem 6%;
-
-  background:
-  radial-gradient(
-    circle at top left,
-    #fff6ef,
-    #fdfaf7 45%
-  );
-}
 
 /* GALLERY */
 

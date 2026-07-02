@@ -46,14 +46,14 @@ const logout = async () => {
         :aria-current="route.path === item.to ? 'page' : undefined"
       >
         <span class="material-symbols-outlined" aria-hidden="true">{{ item.icon }}</span>
-        {{ item.label }}
+        <span>{{ item.label }}</span>
       </RouterLink>
     </nav>
 
     <div class="sidebar-bottom">
       <div class="sidebar-user-container">
         <transition name="pop-in">
-          <div v-if="showUserMenu" class="user-dropdown-menu" role="menu">
+          <div v-if="showUserMenu" class="user-dropdown-menu" role="menu" aria-label="Opciones de usuario">
             <button @click="logout" class="dropdown-item logout-btn" role="menuitem">
               <span class="material-symbols-outlined" aria-hidden="true">logout</span>
               Cerrar sesión
@@ -66,6 +66,7 @@ const logout = async () => {
           @click="toggleUserMenu"
           :class="{ 'is-active': showUserMenu }"
           :aria-expanded="showUserMenu"
+          :aria-controls="'user-menu-panel'"
           :aria-label="`Menú de usuario: ${authStore.user?.usuario || 'Usuario'}`"
         >
           <img
@@ -73,6 +74,10 @@ const logout = async () => {
             :src="authStore.user.foto_perfil"
             :alt="`Foto de perfil de ${authStore.user.usuario}`"
             class="user-avatar-img"
+            width="32"
+            height="32"
+            loading="lazy"
+            decoding="async"
           />
           <span v-else class="material-symbols-outlined user-avatar-icon" aria-hidden="true">person</span>
           <div class="user-info">
@@ -170,7 +175,7 @@ const logout = async () => {
 
 .user-role {
   font-size: 0.68rem;
-  color: #5a3a3a; /* Improved contrast from #6b4f4f */
+  color: #5a3a3a;
   font-weight: 600;
 }
 

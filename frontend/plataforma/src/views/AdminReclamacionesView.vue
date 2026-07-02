@@ -29,6 +29,16 @@ const labelPorTipo: Record<string, string> = {
   question: 'Pregunta'
 };
 
+const RECOMMENDATIONS_KEY = 'vainilla-recommendations'
+
+const loadLocalRecommendations = (): Reclamo[] => {
+  try {
+    const saved = localStorage.getItem(RECOMMENDATIONS_KEY)
+    if (saved) return JSON.parse(saved)
+  } catch { /* ignore */ }
+  return []
+}
+
 const fetchReclamaciones = async () => {
   try {
     const res = await api.get('/reclamaciones');

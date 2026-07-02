@@ -40,29 +40,6 @@ const categories = [
   { value: 'complaint', label: '⚠️ Queja' }
 ]
 
-// Almacenamiento local de recomendaciones
-const RECOMMENDATIONS_KEY = 'vainilla-recommendations'
-
-const saveRecommendationLocally = (data: FormData) => {
-  try {
-    const existing = JSON.parse(localStorage.getItem(RECOMMENDATIONS_KEY) || '[]')
-    const newEntry = {
-      id: Date.now(),
-      nombre: data.name,
-      email: data.email,
-      tipo_mensaje: data.category,
-      calificacion: data.rating,
-      mensaje: data.message,
-      fecha_creacion: new Date().toISOString(),
-      estado: 'Pendiente'
-    }
-    existing.push(newEntry)
-    localStorage.setItem(RECOMMENDATIONS_KEY, JSON.stringify(existing))
-  } catch (e) {
-    console.error('Error saving recommendation locally:', e)
-  }
-}
-
 const handleSubmit = async () => {
   // 1. Limpieza de datos (trimming) para evitar errores por espacios vacíos
   const data = {

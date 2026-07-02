@@ -8,7 +8,7 @@ import {
 import { useRoute } from 'vue-router'
 import ProductFilter from '../../molecules/FiltroCard.vue'
 import ProductCard from '../../molecules/ProductCard.vue'
-import { apiService } from '../../../lib/api.ts'
+import { apiService } from '../../../lib/api.js'
 const search = ref('')
 
 const selectedCategories = ref<string[]>([])

@@ -20,9 +20,7 @@ export class ApiError extends Error {
 // ============================================================
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
-if (!import.meta.env.VITE_API_BASE_URL && !import.meta.env.VITE_API_URL) {
-  console.warn('[API] ⚠️ VITE_API_BASE_URL / VITE_API_URL no definidas. Usando fallback:', API_BASE_URL);
-}
+// API_BASE_URL is resolved with fallback
 
 const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -44,9 +42,6 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
 
-    if (import.meta.env.DEV) {
-      console.log(`[${config.method?.toUpperCase()}] ${config.url}`, config.data);
-    }
 
     return config;
   },

@@ -6,9 +6,9 @@ import ProductsPanel from "../components/organisms/ProductsPanel.vue";
 <template>
   <div class="layout">
     <Adminsidebar />
-    <div class="layout-content">
+    <main class="layout-content" id="main-content">
       <ProductsPanel />
-    </div>
+    </main>
   </div>
 </template>
 

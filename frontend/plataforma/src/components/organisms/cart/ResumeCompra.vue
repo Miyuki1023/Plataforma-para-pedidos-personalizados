@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../../stores/auth'
 import { useCartStore } from '../../../stores/cart'
-import { apiService } from '../../../lib/api.ts'
+import { apiService } from '../../../lib/api'
 
 import CartProductCard from '../../molecules/CartProductCard.vue'
 import DeliveryCard from '../../molecules/DeliveryCard.vue'
